@@ -1,6 +1,6 @@
 <p align="center">
   <a href="">
-    <img alt="GalaxyVis" src="https://www.galaxybase.com/public/galaxyvis.png" style="width:183px">
+    <img alt="GalaxyVis" src="https://www.galaxybase.com/public/galaxyvis-logo.png" style="width:183px">
   </a>
 </p>
 
@@ -16,7 +16,7 @@ GalaxyVis 是一个图可视化框架。它使用纯原生WebGL和Canvas作为�
 
 GalaxyVis 默认使用 **WebGL** 来呈现，如当前环境不支持 **WebGL** 或性能较差，则自动选择 **Canvas** 来呈现图形。这使得它擅长在网页中呈现中等到较大的图形（数万个节点和边或更多）。
 
-## 文档
+<!-- ## 文档
 
 - [快速入门]()
 - [API]()
@@ -24,7 +24,7 @@ GalaxyVis 默认使用 **WebGL** 来呈现，如当前环境不支持 **WebGL** 
 ## 案例
 
 - [在线案例]()
-- [在线地图案例]()
+- [在线地图案例]() -->
 
 ## 特征
 作为一款专业的图可视化框架，GalaxyVis 具有以下特征：
