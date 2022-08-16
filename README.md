@@ -102,8 +102,7 @@ graph.addGraph(data)
 git clone https://github.com/galaxybase/GalaxyVis.git
 cd GalaxyVis
 npm install
-npm run examples
-// 默认端口为8085
+npm run examples  // 默认端口为8086
 ```
 具体实例请查看[`代码`](./examples)
 
