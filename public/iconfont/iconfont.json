@@ -1,0 +1,37 @@
+{
+  "id": "3122734",
+  "name": "no name",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "380040",
+      "name": "iconfont-5",
+      "font_class": "iconfont5",
+      "unicode": "e63a",
+      "unicode_decimal": 58938
+    },
+    {
+      "icon_id": "749813",
+      "name": "iconfont-phone",
+      "font_class": "iconfontphone",
+      "unicode": "e634",
+      "unicode_decimal": 58932
+    },
+    {
+      "icon_id": "749835",
+      "name": "iconfont-gongyichongwu",
+      "font_class": "iconfontgongyichongwu",
+      "unicode": "e649",
+      "unicode_decimal": 58953
+    },
+    {
+      "icon_id": "1238151",
+      "name": "iconfont-shanzi",
+      "font_class": "iconfont-shanzi",
+      "unicode": "e6c7",
+      "unicode_decimal": 59079
+    }
+  ]
+}
