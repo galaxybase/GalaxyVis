@@ -114,7 +114,7 @@ npm run examples  // 默认端口为8086
 
 ## 贡献
 
-感谢您为我们的项目提出宝贵的建议或意见，欢迎提交[issue]()。
+感谢您为我们的项目提出宝贵的建议或意见，欢迎提交[issue](https://github.com/galaxybase/GalaxyVis/issues)。
 
 ## License
 [Apache2 license](./LICENSE)。
