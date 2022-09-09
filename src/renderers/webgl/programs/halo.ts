@@ -9,6 +9,7 @@ import { NodeHaloCollection } from '../../../types'
 
 let nodeHaloCollection: NodeHaloCollection = {}
 
+const ATTRIBUTES = 5;
 export default class HaloProgram extends AbstractHaloProgram {
     private edgeHaloProgram!: edgeHaloProgram
 
@@ -28,9 +29,7 @@ export default class HaloProgram extends AbstractHaloProgram {
 
     initCollection() {
         nodeHaloCollection[this.graph.id] = {
-            aOffsetData: [],
-            floatColorData: [],
-            resultsData: [],
+            floatData: [],
         }
     }
 
@@ -57,20 +56,15 @@ export default class HaloProgram extends AbstractHaloProgram {
             let renderHalo = data.halo
             // 如果宽度为0则跳过
             if (renderHalo?.width == 0 || !renderHalo) continue
-            let item = getHaloAttribute(graphId, data)
+            let item = getHaloAttribute(graphId, data);
 
-            collection.aOffsetData.push(...item.offset)
-            collection.resultsData.push(item.zoomResults)
-            collection.floatColorData.push(...item.color)
+            (collection.floatData as number[]).push(...item.offset);
+            (collection.floatData as number[]).push(item.zoomResults);
+            (collection.floatData as number[]).push(...item.color);
         }
-
-        if (collection?.aOffsetData?.length) {
+        if (collection?.floatData?.length) {
             nodeHaloCollection[graphId] = collection
-            this.bind({
-                aOffsetData: collection.aOffsetData, //vec2
-                resultsData: collection.resultsData, //float
-                floatColorData: collection.floatColorData, //vec2
-            })
+            this.bind(new Float32Array(collection.floatData))
             this.render()
         }
 
@@ -80,12 +74,8 @@ export default class HaloProgram extends AbstractHaloProgram {
     refreshProcess(): void {
         // 如果有缓存则使用缓存更新
         let collection = nodeHaloCollection[this.graph.id]
-        if (collection?.aOffsetData?.length) {
-            this.bind({
-                aOffsetData: collection.aOffsetData, //vec2
-                resultsData: collection.resultsData, //float
-                floatColorData: collection.floatColorData, //vec2
-            })
+        if (collection?.floatData?.length) {
+            this.bind(new Float32Array(collection.floatData))
             this.render()
         }
         this.edgeHaloProgram.refreshProcess()
@@ -96,7 +86,6 @@ export default class HaloProgram extends AbstractHaloProgram {
 
         let count = 0,
             needCounts: any = []
-        let NowMap = new Map()
         if (!needFresh.size) {
             this.refreshProcess()
             this.edgeHaloProgram.moveRefresh()
@@ -128,48 +117,6 @@ export default class HaloProgram extends AbstractHaloProgram {
         this.process()
         this.edgeHaloProgram.moveRefresh()
         return
-        // 有bug
-        // needCounts = needCounts.sort((a: any, b: any) => {
-        //     return a - b
-        // })
-        // needFresh.forEach((value: any, key: any) => {
-        //     let renderHalo = nodeList.get(key)?.getAttribute("halo")
-        //     if (nodeList.get(key)?.getAttribute("isVisible")
-        //         && renderHalo && renderHalo.width != 0
-        //     ) {
-        //         let node = nodeList.get(value),
-        //             data = node.getAttribute()
-        //         let item = getHaloAttribute(data)
-        //         NowMap.set(key, {
-        //             offset: item.offset,  //vec3
-        //             zoomResults: item.zoomResults, //float
-        //             color: item.color //vec2
-        //         })
-        //     }
-        // })
-
-        // for (let i = needCounts.length - 1; i >= 0; i--) {
-        //     aOffsetData.splice(needCounts[i] * 3, 3)
-        //     resultsData.splice(needCounts[i] * 1, 1)
-        //     floatColorData.splice(needCounts[i] * 2, 2)
-        // }
-
-        // for (let [key, val] of NowMap) {
-        //     aOffsetData.push(...val.offset)
-        //     resultsData.push(val.zoomResults)
-        //     floatColorData.push(...val.color)
-        // }
-
-        // nodeHaloInfo = {
-        //     aOffsetData,
-        //     resultsData,
-        //     floatColorData
-        // }
-        // if (nodeHaloInfo?.aOffsetData?.length) {
-        //     this.bind(nodeHaloInfo)
-        //     this.render()
-        // }
-        // this.edgeHaloProgram.moveRefresh()
     }
 
     clear(): void {
@@ -194,7 +141,7 @@ export default class HaloProgram extends AbstractHaloProgram {
         gl.uniformMatrix4fv(this.viewMatrixLocation, false, view)
         gl.useProgram(program)
 
-        let drawNum = nodeHaloCollection[this.graph.id].floatColorData.length / 2
+        let drawNum = nodeHaloCollection[this.graph.id].floatData.length / ATTRIBUTES
 
         ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 6, drawNum)
     }

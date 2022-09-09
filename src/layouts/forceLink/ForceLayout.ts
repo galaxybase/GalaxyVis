@@ -1,4 +1,4 @@
-import { globalInfo } from '../../initial/globalProp'
+import { basicData, globalInfo } from '../../initial/globalProp'
 import { AnimateType, PlainObject } from '../../types'
 import { animateNodes } from '../../utils/graphAnimate'
 // @ts-ignore
@@ -16,6 +16,7 @@ import {
 import { EventType } from '../../utils/events'
 import { incrementalLayout } from '../incremental'
 import NodeList from '../../classes/nodeList'
+import { values } from 'lodash'
 
 class ForceLayout {
     private galaxyvis: any
@@ -34,20 +35,36 @@ class ForceLayout {
      * @returns
      */
     init() {
+        const id = this.galaxyvis.id
         let nodeList = this.galaxyvis.getFilterNode(),
+            edgelist = basicData[id].edgeList,
             center: number[] = [],
             width,
             height
         let { nodes } = this.options
         let layoutsNodes: any[] = []
-
+        var layoutsEdges = [], nodesData = [];
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
+            let i = 0;
             nodeList.forEach((values: any, key: any) => {
                 layoutsNodes.push(key)
+                nodesData[i++] = ({ id: key, isSingle: false })
             })
-
-            width = globalInfo[this.galaxyvis.id].BoxCanvas.getWidth
-            height = globalInfo[this.galaxyvis.id].BoxCanvas.getHeight
+            let j = 0
+            edgelist.forEach((values, key) => {
+                let { source, target } = values.value
+                if (values.getAttribute('isVisible') && (
+                    layoutsNodes.indexOf(source) !== -1 &&
+                    layoutsNodes.indexOf(target) !== -1)) {
+                    layoutsEdges[j] = ({
+                        source,
+                        target,
+                        index: j++
+                    })
+                }
+            })
+            width = globalInfo[id].BoxCanvas.getWidth
+            height = globalInfo[id].BoxCanvas.getHeight
             center = [width / 2, height / 2]
         } else {
             layoutsNodes = nodes
@@ -55,11 +72,12 @@ class ForceLayout {
                 width: localWidth,
                 height: localHeight,
                 center: localCenter,
-            } = localComputation(this.galaxyvis.id, nodes)
-            ;(width = localWidth), (height = localHeight), (center = localCenter)
+            } = localComputation(id, nodes);
+            width = localWidth, height = localHeight, center = localCenter;
+            let unionInfo = unionEdges(this.galaxyvis, layoutsNodes, false)
+            nodesData = unionInfo.nodesData;
+            layoutsEdges = unionInfo.layoutsEdges
         }
-
-        var { layoutsEdges, nodesData } = unionEdges(this.galaxyvis, layoutsNodes, false)
 
         this.galaxyvis.events.emit(
             'layoutStart',
@@ -120,8 +138,8 @@ class ForceLayout {
             return strength && typeof strength === 'function'
                 ? strength
                 : strength
-                ? Math.abs(strength) * -1
-                : -1200
+                    ? Math.abs(strength) * -1
+                    : -1200
         })
 
         if (edgeStrength) {
@@ -160,8 +178,8 @@ class ForceLayout {
             })
         }
 
-        return new Promise(async (resolve, reject) => {
-            let initObj = await this.init()
+        return new Promise((resolve, reject) => {
+            let initObj = this.init()
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
                 // @ts-ignore
                 let worker = new LayoutWorker()

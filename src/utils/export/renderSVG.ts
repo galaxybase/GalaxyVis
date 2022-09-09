@@ -22,7 +22,7 @@ var scale: any = 0
 var thumbnail = false
 let imageNumer: number = 0
 let nodeRender: number = 0
-let svgContent: any = null
+let svgContent: any = null;
 let svgRender: any
 let defsStyle: any
 
@@ -51,7 +51,7 @@ export const renderSVG = (graph: any, svg: any) => {
         svgCanvas.height = height
         svgCanvas.width = width
         svgContent = svgCanvas.getContext('2d')
-    } else {
+    }else {
         svgContent = svgGraph?.ctx
     }
     // 获取相机缩放比
@@ -358,7 +358,7 @@ const renderNode = (graphId: any, nodeGroup: any) => {
             var lines = getLines(textLabel, maxLength),
                 baseX = x + labelOffsetX + margin[0] * 100,
                 baseY = Math.round(y + labelOffsetY + margin[1] * 100)
-            if (textPosition == 'left' || textPosition == 'right') {
+            if (textPosition == 'left' || textPosition == 'right'){ 
                 let context = svgContent
                 context.textAlign = 'left'
                 context.font = `${textFontSize / 2}px ${fontFamily}`

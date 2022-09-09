@@ -1,7 +1,9 @@
 import { vec3 } from 'gl-matrix'
-import { basicData, globalInfo, globalProp } from '../initial/globalProp'
+import { basicData, globalInfo, globalProp, instancesGL } from '../initial/globalProp'
 import { originInitial } from '../initial/originInitial'
 import { loopLineType } from '../types'
+import { getTextPixels } from './piexelsCreat'
+import { sdfCreate } from './tinySdf/sdfDrawText'
 
 /**
  * 颜色打包
@@ -110,6 +112,77 @@ export function newfloatColor(val: string): number {
  */
 export const genID = (length: number) => {
     return Number(Math.random().toString().substr(3, length) + Date.now()).toString(36)
+}
+
+// 文字集
+export const initText = (that: any) => {
+    if (that.renderer !== 'webgl') return
+    const textSet = globalProp.textSet
+    if (textSet.size) {
+        sdfCreate(that, textSet, that.thumbnail)
+    }
+}
+// icon和image
+export const initIconOrImage = async (that: any, data: any) => {
+    if (that.renderer !== 'webgl' || that.fast) return
+    globalProp.useIniticon++
+    const atlas = globalProp.atlas,
+        textureCtx = globalProp.textureCtx as CanvasRenderingContext2D
+    // icon类型
+    if (data.type == 'icon') {
+        // 等待字体加载
+        let pix = await getTextPixels(3, data.key, data.font, data.style, 128, data.scale)
+        let newPix = {
+            pixels: pix.pixels,
+            x: 128 * (data.num % atlas),
+            y: 128 * Math.floor(data.num / atlas),
+        }
+        textureCtx.putImageData(newPix.pixels, newPix.x, newPix.y)
+    }
+    // image类型
+    else if (data.type == 'image') {
+        const url = data.key,
+            count = data.num,
+            imageCanvas = document.createElement('canvas'),
+            imageCanvasContext = imageCanvas.getContext('2d') as CanvasRenderingContext2D
+        imageCanvas.height = 128
+        imageCanvas.width = 128
+        imageCanvasContext.fillStyle = '#fff'
+        imageCanvasContext.fillRect(0, 0, 128, 128)
+        // 图片信息
+        var textureInfo = {
+            x: 128 * (count % atlas),
+            y: 128 * Math.floor(count / atlas),
+            pixels: imageCanvasContext.getImageData(0, 0, 128, 128),
+        }
+        var img = new Image()
+        img.crossOrigin = 'anonymous'
+        // 当加载完图片再重新render
+        img.addEventListener('load', function () {
+            try {
+                imageCanvasContext.drawImage(img, 0, 0, 128, 128)
+                textureInfo.pixels = imageCanvasContext.getImageData(0, 0, 128, 128)
+                textureCtx?.putImageData(textureInfo.pixels, textureInfo.x, textureInfo.y)
+                if (Object.keys(instancesGL).length > 0) {
+                    for (let i in instancesGL) {
+                        let gl = instancesGL[i]
+                        initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
+                    }
+                }
+                that.render()
+            } catch (err) {
+                console.log(err, 'err')
+            }
+        })
+        img.src = url
+    }
+    if (Object.keys(instancesGL).length > 0) {
+        for (let i in instancesGL) {
+            let gl = instancesGL[i]
+            initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
+        }
+    }
+    if (that.thumbnail === false) that.render()
 }
 
 /**
@@ -985,4 +1058,13 @@ export function wheelFunction(this: any, event: any) {
 export function mousedownFunction(this: any, event: any) {
     this.mouseCaptor.MouseDownListener(event)
     this.camera.processMouseDown(event)
+}
+
+export function doubleClickFunction(this: any, enent: any){
+    this.mouseCaptor!.MouseDbClickListener()
+}
+
+export const isSameSet = (set1: Set<string | number>, set2: Set<string | number>) => {
+    let s = new Set([...set1, ...set2])
+    return s.size == set1.size && s.size == set2.size
 }

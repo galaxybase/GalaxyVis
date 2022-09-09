@@ -17,11 +17,14 @@ import { originInfo, originInitial } from './initial/originInitial'
 import { basieciDataSetting, globalInfoSetting, originInfoSetting } from './initial/settings'
 import { Options } from './types'
 import {
+    cancelFrame,
+    doubleClickFunction,
     floatColor,
     genID,
     getContainerHeight,
     getContainerWidth,
     initGlTextureBind,
+    initIconOrImage,
     isDom,
     isWebGLSupported,
     mousedownFunction,
@@ -29,6 +32,7 @@ import {
     wheelFunction,
 } from './utils'
 import { cloneDeep, get, has, debounce, merge } from 'lodash'
+import fastnodeProgram from './renderers/webgl/programs/fastnode'
 
 export default class galaxyvis extends Graph {
     public gl!: WebGLRenderingContext // webgl上下文
@@ -38,10 +42,10 @@ export default class galaxyvis extends Graph {
     public id: string
     private camera: Camera | null //相机
     private mouseCaptor: CaptorsMouse | null //鼠标事件
-    private nodeProgram: nodeProgram | nodeCanvas | undefined //点渲染器
-    private textProgram: sdfTextProgram | lableCanvas | undefined //文字渲染器
-    private edgeProgram: edgeProgram | edgeCanvas | undefined //边渲染器
-    private haloProgram: haloProgram | haloCanvas | undefined //光环渲染器
+    private nodeProgram!: nodeProgram | nodeCanvas | fastnodeProgram//点渲染器
+    private textProgram!: sdfTextProgram | lableCanvas //文字渲染器
+    private edgeProgram!: edgeProgram | edgeCanvas //边渲染器
+    private haloProgram!: haloProgram | haloCanvas //光环渲染器
     private debounce: any // 防抖函数
     private localUpdate: boolean = true //开启局部更新
     private textStatus: boolean = true //是否渲染文字
@@ -112,7 +116,7 @@ export default class galaxyvis extends Graph {
         // 重新加载iconMap下的所有数据
         if (this.renderer === 'webgl') {
             globalProp.iconMap.forEach((item, key) => {
-                this.initIconOrImage({
+                initIconOrImage(this, {
                     key,
                     type: item.type,
                     num: item.num,
@@ -170,6 +174,12 @@ export default class galaxyvis extends Graph {
 
         if (get(args, 'options.useLocalUpdate', undefined) == false) {
             this.localUpdate = false
+        }
+
+        if (get(args, 'options.fast') == true) {
+            this.fast = true
+        } else {
+            this.fast = false
         }
 
         if (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
@@ -293,15 +303,13 @@ export default class galaxyvis extends Graph {
         this.WheelFunction = wheelFunction.bind(this)
 
         canvasBox.addEventListener('wheel', this.WheelFunction)
-
         // 阻止默认textmenu事件
         canvasBox.oncontextmenu = function (e) {
             e.preventDefault()
         }
         // 监听双击事件
-        canvasBox.addEventListener('dblclick', () => {
-            this.mouseCaptor!.MouseDbClickListener()
-        })
+        this.doubleClickFunction = doubleClickFunction.bind(this)
+        canvasBox.addEventListener('dblclick', this.doubleClickFunction)
 
         this.MousedownFunction = mousedownFunction.bind(this)
         // 监听鼠标点击事件
@@ -326,7 +334,7 @@ export default class galaxyvis extends Graph {
         // 当浏览器大小发生改变应发重绘
         window.onresize = () => {
             this.resize()
-            this.render()
+            this.renderer == "webgl" ? this.render() : this.renderCanvas(true, true)
         }
     }
     // 订阅发布
@@ -397,11 +405,11 @@ export default class galaxyvis extends Graph {
                 globalInfo[this.id].BoxCanvas.setWidth = width
                 globalInfo[this.id].BoxCanvas.setHeight = height
             }
-        } catch {}
+        } catch { }
     }
     // 初始化着色器
     private initPrograms(): void {
-        this.nodeProgram = new nodeProgram(this.gl)
+        this.nodeProgram = this.fast ? new fastnodeProgram(this.gl) : new nodeProgram(this.gl)
         this.textProgram = new sdfTextProgram(this.gl)
         this.edgeProgram = new edgeProgram(this.gl)
         this.haloProgram = new haloProgram(this.gl)
@@ -410,78 +418,6 @@ export default class galaxyvis extends Graph {
         this.textProgram.initData(this)
         this.edgeProgram.initData(this)
         this.haloProgram.initData(this)
-    }
-
-    // 文字集
-    public initText(): void {
-        if (this.renderer !== 'webgl') return
-        const textSet = globalProp.textSet
-        if (textSet.size) {
-            sdfCreate(this, textSet, this.thumbnail)
-        }
-    }
-    // icon和image
-    public initIconOrImage = async (data: any) => {
-        if (this.renderer !== 'webgl') return
-        globalProp.useIniticon++
-        const atlas = globalProp.atlas,
-            textureCtx = globalProp.textureCtx as CanvasRenderingContext2D
-        // icon类型
-        if (data.type == 'icon') {
-            // 等待字体加载
-            let pix = await getTextPixels(3, data.key, data.font, data.style, 128, data.scale)
-            let newPix = {
-                pixels: pix.pixels,
-                x: 128 * (data.num % atlas),
-                y: 128 * Math.floor(data.num / atlas),
-            }
-            textureCtx.putImageData(newPix.pixels, newPix.x, newPix.y)
-        }
-        // image类型
-        else if (data.type == 'image') {
-            const url = data.key,
-                count = data.num,
-                imageCanvas = document.createElement('canvas'),
-                imageCanvasContext = imageCanvas.getContext('2d') as CanvasRenderingContext2D
-            imageCanvas.height = 128
-            imageCanvas.width = 128
-            imageCanvasContext.fillStyle = '#fff'
-            imageCanvasContext.fillRect(0, 0, 128, 128)
-            // 图片信息
-            var textureInfo = {
-                x: 128 * (count % atlas),
-                y: 128 * Math.floor(count / atlas),
-                pixels: imageCanvasContext.getImageData(0, 0, 128, 128),
-            }
-            var img = new Image()
-            var that = this
-            img.crossOrigin = 'anonymous'
-            // 当加载完图片再重新render
-            img.addEventListener('load', function () {
-                try {
-                    imageCanvasContext.drawImage(img, 0, 0, 128, 128)
-                    textureInfo.pixels = imageCanvasContext.getImageData(0, 0, 128, 128)
-                    textureCtx?.putImageData(textureInfo.pixels, textureInfo.x, textureInfo.y)
-                    if (Object.keys(instancesGL).length > 0) {
-                        for (let i in instancesGL) {
-                            let gl = instancesGL[i]
-                            initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-                        }
-                    }
-                    that.render()
-                } catch (err) {
-                    console.log(err, 'err')
-                }
-            })
-            img.src = url
-        }
-        if (Object.keys(instancesGL).length > 0) {
-            for (let i in instancesGL) {
-                let gl = instancesGL[i]
-                initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-            }
-        }
-        if (this.thumbnail === false) this.render()
     }
 
     // 清理缓冲区和图片缓存
@@ -493,10 +429,10 @@ export default class galaxyvis extends Graph {
             if (thumbnailInfo[this.id]) {
                 thumbnailInfo[this.id].gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
             }
-            ;(this.nodeProgram as nodeProgram).clear()
-            ;(this.textProgram as sdfTextProgram).clear()
-            ;(this.edgeProgram as edgeProgram).clear()
-            ;(this.haloProgram as haloProgram).clear()
+            this.nodeProgram.clear();
+            this.textProgram.clear();
+            this.edgeProgram.clear()
+            this.haloProgram.clear()
         } else {
             this.clearCanvas()
         }
@@ -527,29 +463,36 @@ export default class galaxyvis extends Graph {
         const gl = this.gl
         const that = this
         const showText = this.textStatus
-        requestFrame(tick)
+
+        if (this.frameId && this.renderType == "camera") {
+            cancelFrame(this.frameId);
+            this.frameId = null;
+        }
+        this.frameId = requestFrame(tickFrame)
 
         var strategies: { [key: string]: Function } = {
             0: () => {
-                ;(that.haloProgram as haloProgram).refreshProcess()
+                if (!that.fast)
+                    (that.haloProgram as haloProgram).refreshProcess();
             },
             1: () => {
-                ;(that.edgeProgram as edgeProgram).refreshProcess()
+                (that.edgeProgram as edgeProgram).refreshProcess();
             },
             2: () => {
                 if (showText && !this.thumbnail)
-                    (that.textProgram as sdfTextProgram).refreshProcessEdge()
+                    (that.textProgram as sdfTextProgram).refreshProcessEdge();
             },
             3: () => {
-                ;(that.nodeProgram as nodeProgram).refreshProcess()
+                (that.nodeProgram as nodeProgram).refreshProcess();
             },
             4: () => {
                 if (showText && !this.thumbnail)
-                    (that.textProgram as sdfTextProgram).refreshProcess()
+                    (that.textProgram as sdfTextProgram).refreshProcess();
             },
         }
+        this.renderType = "camera"
         let i = 0
-        function tick() {
+        function tickFrame() {
             gl.clear(gl.COLOR_BUFFER_BIT)
             do {
                 strategies[i++]()
@@ -573,34 +516,45 @@ export default class galaxyvis extends Graph {
         const gl = this.gl
         const that = this
         const showText = this.textStatus
-        requestFrame(tick)
+        if (showText && !this.thumbnail) {
+            this.camera?.quad.clear()
+            this.camera?.quad.root.clear()
+        }
+        if (this.frameId && this.renderType == "partial") {
+            cancelFrame(this.frameId);
+            this.frameId = null;
+        }
+        this.frameId = requestFrame(tickFrame)
         var strategies: { [key: string]: Function } = {
             0: () => {
-                ;(that.haloProgram as haloProgram).moveProcess()
+                if (!that.fast)
+                    (that.haloProgram as haloProgram).moveProcess();
             },
             1: () => {
-                ;(that.edgeProgram as edgeProgram).process(true)
+                (that.edgeProgram as edgeProgram).process(true);
             },
             2: () => {
                 if (showText && !this.thumbnail)
-                    (that.textProgram as sdfTextProgram).moveProcessEdge()
+                    (that.textProgram as sdfTextProgram).moveProcessEdge();
             },
             3: () => {
-                ;(that.nodeProgram as nodeProgram).process()
+                (that.nodeProgram as nodeProgram).process();
             },
             4: () => {
                 if (showText && !this.thumbnail)
-                    (that.textProgram as sdfTextProgram).moveProcessNode()
+                    (that.textProgram as sdfTextProgram).moveProcessNode();
             },
         }
 
+        this.renderType = "partial"
+
         let i = 0
-        function tick() {
+        function tickFrame() {
             gl.clear(gl.COLOR_BUFFER_BIT)
             do {
                 try {
                     strategies[i++]()
-                } catch {}
+                } catch { }
             } while (i < 5)
         }
     }
@@ -610,7 +564,7 @@ export default class galaxyvis extends Graph {
             return void 0
         }
         if (this.renderer !== 'webgl') {
-            return this.renderCanvas(true, false)
+            return this.renderCanvas(true, true)
         }
 
         if (thumbnailInfo[this.id] && !this.thumbnail) {
@@ -620,39 +574,48 @@ export default class galaxyvis extends Graph {
         const showText = this.textStatus
         const gl = this.gl
         const that = this
+        if (showText && !this.thumbnail) {
+            this.camera?.quad.clear()
+            this.camera?.quad.root.clear()
+        }
 
         var strategies: { [key: string]: Function } = {
             0: () => {
-                ;(that.haloProgram as haloProgram).process()
+                if (!that.fast)
+                    (that.haloProgram as haloProgram).process();
             },
             1: () => {
-                ;(that.edgeProgram as edgeProgram).process(false)
+                (that.edgeProgram as edgeProgram).process(false);
             },
             2: () => {
-                if (showText && !this.thumbnail) (that.textProgram as sdfTextProgram).processEdge()
+                if (showText && !this.thumbnail) (that.textProgram as sdfTextProgram).processEdge();
             },
             3: () => {
-                ;(that.nodeProgram as nodeProgram).process()
+                (that.nodeProgram as nodeProgram).process();
             },
             4: () => {
-                if (showText && !this.thumbnail) (that.textProgram as sdfTextProgram).processNode()
+                if (showText && !this.thumbnail) (that.textProgram as sdfTextProgram).processNode();
             },
         }
-
+        if (this.frameId && this.renderType == "total") {
+            cancelFrame(this.frameId);
+            this.frameId = null;
+        }
         if (boolean == false || basicData[this.id].edgeList.size < 2500000) {
-            requestFrame(processTask)
+            this.frameId = requestFrame(processTask)
         } else {
-            requestFrame(tick)
+            this.frameId = requestFrame(tickFrame)
             gl.clear(gl.COLOR_BUFFER_BIT)
         }
+        this.renderType = "total"
         let i = 0
-        function tick(taskStartTime: number) {
+        function tickFrame(taskStartTime: number) {
             var taskFinishTime: number
             do {
                 strategies[i++]()
                 taskFinishTime = window.performance.now()
             } while (taskFinishTime - taskStartTime < 5 && i < 5)
-            if (i <= 4) requestFrame(tick)
+            if (i <= 4) requestFrame(tickFrame)
         }
         function processTask(then: number) {
             gl.clear(gl.COLOR_BUFFER_BIT)
@@ -670,11 +633,8 @@ export default class galaxyvis extends Graph {
     }
 
     public async renderCanvas(boolean: boolean = true, viewChange: boolean = false): Promise<any> {
-        if (!basicData[this.id]) {
+        if (!basicData[this.id] || this.renderer == 'webgl') {
             return void 0
-        }
-        if (this.renderer == 'webgl') {
-            return
         }
 
         if (thumbnailInfo[this.id] && !this.thumbnail) {
@@ -684,30 +644,29 @@ export default class galaxyvis extends Graph {
         const showText = this.textStatus
         const that = this
 
-        if (boolean) {
-            this.camera?.quad.clear()
-        }
+        this.camera?.quad.clear()
 
         var strategies: { [key: string]: Function } = {
             0: () => {
-                ;(that.haloProgram as haloCanvas).drawNodeHalo()
+                if (!that.fast)
+                    (that.haloProgram as haloCanvas).drawNodeHalo();
             },
             1: () => {
-                ;(that.edgeProgram as edgeCanvas).drawEdge(boolean)
+                (that.edgeProgram as edgeCanvas).drawEdge(boolean, viewChange);
             },
             2: () => {
-                if (showText && !this.thumbnail) (that.textProgram as lableCanvas).drawEdgeLabel()
+                if (showText && !this.thumbnail) (that.textProgram as lableCanvas).drawEdgeLabel(viewChange);
             },
             3: () => {
-                ;(that.nodeProgram as nodeCanvas).drawNode(boolean)
+                (that.nodeProgram as nodeCanvas).drawNode(boolean, viewChange);
             },
             4: () => {
-                if (showText && !this.thumbnail) (that.textProgram as lableCanvas).drawNodeLabel()
+                if (showText && !this.thumbnail) (that.textProgram as lableCanvas).drawNodeLabel(viewChange);
             },
         }
 
         let i = 0
-        async function tick(taskStartTime: number) {
+        async function tickFrame(taskStartTime: number) {
             that.clearCanvas()
             do {
                 await strategies[i++]()
@@ -715,6 +674,10 @@ export default class galaxyvis extends Graph {
 
             if (i === 5 && viewChange) that.debounce()
         }
-        requestFrame(tick)
+        if (this.frameId) {
+            cancelFrame(this.frameId);
+            this.frameId = null;
+        }
+        this.frameId = requestFrame(tickFrame)
     }
 }

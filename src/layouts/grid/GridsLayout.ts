@@ -32,7 +32,7 @@ class GridsLayout {
         let { nodes, sortBy, width: GridWidth, height: GridHeight } = this.options,
             width,
             height
-
+        
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             nodeList.forEach((values: any, key: any) => {
                 layoutsNodes.push({ key, value: values.value })
@@ -47,7 +47,7 @@ class GridsLayout {
                         y = value.getAttribute('y')
                     center = [x, y]
                 }
-            } catch {}
+            } catch { }
         } else {
             for (let i in nodes) {
                 layoutsNodes.push({
@@ -60,7 +60,7 @@ class GridsLayout {
                 height: localHeight,
                 center: localCenter,
             } = localComputation(this.galaxyvis.id, nodes, 'grid')
-            ;(width = localWidth), (height = localHeight), (center = localCenter)
+                ; (width = localWidth), (height = localHeight), (center = localCenter)
             if (nodes.length == 1) {
                 let value = nodeList.get(nodes[0]),
                     x = value.getAttribute('x'),

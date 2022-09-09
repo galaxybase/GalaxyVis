@@ -5,7 +5,7 @@ import { QuadTree } from '../utils/quadTree'
 import Event from '../utils/event'
 
 class Camera {
-    public gl: WebGLRenderingContext
+    public gl: WebGLRenderingContext | CanvasRenderingContext2D
     public position: vec3 //相机位置
     public Matrix: mat4 //矩阵
     public front: vec3 = [0, 0, -1] //视图方向
@@ -63,8 +63,16 @@ class Camera {
         this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
         let width = this.gl.canvas.width
         let height = this.gl.canvas.height
+        let maxRatio = 2 * this.position[2] * Math.tan((this.maxZoom * Math.PI) / 360)
         this.aspectRatio = width / height
-        this.quad = new QuadTree({ x: 0, y: 0, width, height }, false, 4, 4)
+        this.quad = this.renderer === "canvas" ?
+            new QuadTree({ x: 0, y: 0, width, height }, false, 4, 4) :
+            new QuadTree({ 
+                x: -maxRatio / 2, 
+                y: -maxRatio / 2, 
+                width: maxRatio, 
+                height: maxRatio 
+            }, false, 4, 4)
         if (!thumbnail)
             basicData[graphId].transform = width / globalProp.globalScale / this.aspectRatio
     }
@@ -184,9 +192,11 @@ class Camera {
                 let scale = globalProp.globalScale / this.ratio
                 pointX = getX(e)
                 pointY = getY(e)
-                x = (pointX - this.startMouseX) / scale
-                y = (pointY - this.startMouseY) / scale
-                vec3.sub(this.position, this.position, [-x, -y, 0])
+                x = (pointX - this.startMouseX) / scale;
+                y = (pointY - this.startMouseY) / scale;
+
+                vec3.sub(this.position, this.position, [-x, -y, 0]);
+                // (this.gl as CanvasRenderingContext2D).translate(x * scale, y * scale);
                 this.startMouseX = pointX
                 this.startMouseY = pointY
             }

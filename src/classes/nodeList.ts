@@ -92,10 +92,14 @@ export default class NodeList {
     public getAdjacentNodes = (options?: AdjacencyOptions) => {
         let list: string[] = []
 
-        this.ids?.forEach(id => {
-            list.push(...this.galaxyvis.getNode(id)?.getAdjacentNodes(options))
-        })
-
+        if (!this.ids || !this.ids?.length)
+            return new NodeList(this.galaxyvis, list)
+        try {
+            for (let i = 0, len = this.ids.length; i < len; i++) {
+                let id = this.ids[i];
+                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentNodes(options))
+            }
+        } catch { }
         list = Array.from(new Set(list))
         return new NodeList(this.galaxyvis, list)
     }
@@ -183,9 +187,15 @@ export default class NodeList {
      */
     public getAdjacentEdges = () => {
         let list: string[] = []
-        this.ids.forEach(id => {
-            list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges())
-        })
+        
+        if (!this.ids || !this.ids?.length)
+            return new NodeList(this.galaxyvis, list)
+        try {
+            this.ids.forEach(id => {
+                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges())
+            })
+        } catch { }
+
         list = Array.from(new Set(list))
         return new EdgeList(this.galaxyvis, list)
     }
@@ -266,7 +276,7 @@ export default class NodeList {
         this.ids.forEach(id => {
             let { x, y } = nodeList.get(id).getPosition()
             if (incrementalNode === id) {
-                ;(x = 0), (y = 0)
+                ; (x = 0), (y = 0)
             }
             maxX = Math.max(maxX, x + staticOffsetX)
             maxY = Math.max(maxY, y - staticOffsetY)

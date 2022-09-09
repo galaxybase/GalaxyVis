@@ -101,6 +101,7 @@ export const basieciDataSetting = {
     unSelectedNodes: new Set() as Set<any>, //相继上次选择取消选中的点
     unSelectedEdges: new Set() as Set<any>, //相继上次选择取消选中的边
     informationNewEdge: new Map(),
+    adjacentEdges: []
 }
 export const originInfoSetting = {
     nodeList: new Map(),

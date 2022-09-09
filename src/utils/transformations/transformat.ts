@@ -1,5 +1,5 @@
 import { animateNodes } from '../graphAnimate'
-import { defaultsDeep } from 'lodash'
+import { cloneDeep, defaultsDeep } from 'lodash'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import NodeList from '../../classes/nodeList'
 import { genID } from '..'
@@ -67,7 +67,7 @@ export class transformat<T, K> {
      */
     public whenApplied = () => {
         var promise = new Promise((resolve, reject) => {
-            resolve((): void => {})
+            resolve((): void => { })
         })
         return promise
     }
@@ -129,17 +129,20 @@ export class transformat<T, K> {
                                         })
                                     }
                                 }
+                                edge && edge.changeAttribute({
+                                    isFilterNode: false,
+                                })
                             })
                         }
 
                         let item = nodeList.get(key)
 
-                        let useMergeNode = item.getAttribute('useMergeNode')
+                        let useMergeNode = item?.getAttribute('useMergeNode')
 
                         if (item && !useMergeNode)
                             item.changeAttribute({
                                 isVisible: true,
-                                isFilter: false,
+                                isFilter: false
                             })
                     }
                     if (update) {
@@ -149,21 +152,15 @@ export class transformat<T, K> {
                         if (globalInfo[graphId].mergeEdgesTransformat) {
                             let { transformat, options } = globalInfo[graphId].mergeEdgesTransformat
                             transformat.isMerge = true
-                            transformat.destroy(true, 0, false).then(() => {
-                                this.galaxyvis.transformations
-                                    .addEdgeGrouping(options, false)
-                                    .then((data: any) => {
-                                        globalInfo[this.galaxyvis.id].mergeEdgesTransformat = {
-                                            transformat: data,
-                                            options,
-                                        }
-                                    })
-                                transformat.isMerge = false
+                            transformat.destroy(true, 0, false).then(async () => {
+                                await this.galaxyvis.transformations.addEdgeGrouping(options, false)
+                                globalInfo[graphId].mergeEdgesTransformat.transformat.isMerge = false
                             })
                         }
-                    } catch {}
-                    if (isRender) this.galaxyvis.render(false)
-                    resolve((): void => {})
+                    } catch { }
+                    if (isRender)
+                        this.galaxyvis.render(false)
+                    resolve((): void => { })
                 },
                 2: () => {
                     let hasMergeFlag = false,
@@ -174,7 +171,8 @@ export class transformat<T, K> {
                     }
 
                     if (hasMergeFlag) {
-                        let { changed } = globalInfo[graphId].mergeEdgesTransformat.transformat
+                        let { changed } =
+                            globalInfo[graphId].mergeEdgesTransformat.transformat
 
                         for (let index = 0, len = changed.length; index < len; index++) {
                             const key = changed[index]
@@ -211,14 +209,8 @@ export class transformat<T, K> {
                             }
                             let sourceNode = item.getSource()
                             let targetNode = item.getTarget()
-                            if (
-                                sourceNode.getAttribute('isVisible') &&
-                                targetNode.getAttribute('isVisible')
-                            ) {
-                                if (
-                                    sourceNode.getAttribute('isGroupNode') ||
-                                    targetNode.getAttribute('isGroupNode')
-                                ) {
+                            if (sourceNode.getAttribute('isVisible') && targetNode.getAttribute('isVisible')) {
+                                if (sourceNode.getAttribute('isGroupNode') || targetNode.getAttribute('isGroupNode')) {
                                     item.changeAttribute({
                                         isVisible: true,
                                         isFilter: false,
@@ -227,27 +219,22 @@ export class transformat<T, K> {
                             }
                         }
                     }
-                    if (update) globalInfo[graphId].filterEdgesTransformat?.delete(this.id)
+                    if (update)
+                        globalInfo[graphId].filterEdgesTransformat?.delete(this.id)
 
                     try {
                         if (globalInfo[graphId].mergeEdgesTransformat) {
                             let { transformat, options } = globalInfo[graphId].mergeEdgesTransformat
                             transformat.isMerge = true
-                            transformat.destroy(true, 0, false).then(() => {
-                                this.galaxyvis.transformations
-                                    .addEdgeGrouping(options, false)
-                                    .then((data: any) => {
-                                        globalInfo[this.galaxyvis.id].mergeEdgesTransformat = {
-                                            transformat: data,
-                                            options,
-                                        }
-                                    })
-                                transformat.isMerge = false
+                            transformat.destroy(true, 0, false).then(async () => {
+                                await this.galaxyvis.transformations.addEdgeGrouping(options, false)
+                                globalInfo[graphId].mergeEdgesTransformat.transformat.isMerge = false
                             })
                         }
-                    } catch {}
-                    if (isRender) this.galaxyvis.render(false)
-                    resolve((): void => {})
+                    } catch { }
+                    if (isRender)
+                        this.galaxyvis.render(false)
+                    resolve((): void => { })
                 },
                 3: () => {
                     let allNodelist = basicNodeList,
@@ -307,10 +294,10 @@ export class transformat<T, K> {
                                 y: targetNode.getAttribute('y'),
                             })
                             // 更新被合并的点的位置
-                            target[children[j].key] = {
+                            target[children[j].key] = cloneDeep({
                                 x: children[j].x,
                                 y: children[j].y,
-                            }
+                            })
 
                             if (hasMergeFlag) {
                                 edgeList?.forEach((item: any) => {
@@ -340,9 +327,9 @@ export class transformat<T, K> {
 
                                 if (edge && !edge.getAttribute('isVisible') && flag) {
                                     if (!hasMergeFlag && !edge.getAttribute('isGroupEdge')) {
-                                        edge.changeAttribute({ isVisible: true })
+                                        edge.changeAttribute({ isVisible: true, useMergeEdge: false })
                                     } else if (hasMergeFlag && mergeEageTable.indexOf(item) == -1) {
-                                        edge.changeAttribute({ isVisible: true })
+                                        edge.changeAttribute({ isVisible: true, useMergeEdge: false })
                                     }
                                 }
                                 if (
@@ -357,14 +344,16 @@ export class transformat<T, K> {
                                         j++
                                     ) {
                                         let mergeEdge = allEdgelist.get(edge.value?.children[j])
-                                        let sourceNode = mergeEdge.getSource()
-                                        let targetNode = mergeEdge.getTarget()
+                                        let sourceNode = mergeEdge?.getSource()
+                                        let targetNode = mergeEdge?.getTarget()
                                         if (
                                             mergeEdge &&
-                                            sourceNode?.getAttribute('isVisible') &&
-                                            targetNode?.getAttribute('isVisible')
+                                            (sourceNode?.getAttribute('isVisible') &&
+                                                targetNode?.getAttribute('isVisible')) ||
+                                            (sourceNode?.getAttribute('isFilter') &&
+                                                targetNode?.getAttribute('isFilter'))
                                         ) {
-                                            mergeEdge.changeAttribute({ isVisible: true })
+                                            mergeEdge.changeAttribute({ isVisible: true, usedMerge: false, useMergeEdge: false })
                                         }
                                     }
                                 }
@@ -372,8 +361,46 @@ export class transformat<T, K> {
                         }
                     }
 
-                    if (hasMergeFlag) {
-                        let { transformat, options } = globalInfo[graphId].mergeEdgesTransformat
+                    if (hasMergeFlag && globalInfo[graphId].mergeEdgesTransformat) {
+                        let { transformat } =
+                            globalInfo[graphId].mergeEdgesTransformat
+                        transformat.changed?.push(...mergeEdge)
+                    }
+
+                    if (globalInfo[graphId].filterNodesTransformat?.size) {
+                        let filterNodes = globalInfo[graphId].filterNodesTransformat
+                        filterNodes!.forEach(async (item: any, key: string) => {
+                            let { transformat, options } = item
+                            await transformat.destroy(false).then(() => {
+                                let transFilter = transformatAddNodeFilter(
+                                    this.galaxyvis,
+                                    options,
+                                    false,
+                                )
+                                transformat.update(transFilter.changed)
+                            })
+                        })
+                    }
+
+                    if (globalInfo[graphId].filterEdgesTransformat?.size) {
+                        let filterEdges = globalInfo[graphId].filterEdgesTransformat
+                        filterEdges!.forEach(async (item: any, key: string) => {
+                            let { transformat, options } = item
+                            transformat.hasMergeFlag = hasMergeFlag
+                            await transformat.destroy(false).then(() => {
+                                let transFilter = transformatAddEdgeFilter(
+                                    this.galaxyvis,
+                                    options,
+                                    false,
+                                )
+                                transformat.update(transFilter.changed)
+                            })
+                        })
+                    }
+
+                    if (hasMergeFlag && globalInfo[graphId].mergeEdgesTransformat) {
+                        let { transformat, options } =
+                            globalInfo[graphId].mergeEdgesTransformat
                         transformat.destroy(false).then(() => {
                             transformatEdgeGroup(this.galaxyvis, options, false).then(
                                 (data: any) => {
@@ -388,37 +415,6 @@ export class transformat<T, K> {
                             )
                         })
                     }
-
-                    if (globalInfo[graphId].filterNodesTransformat?.size) {
-                        let filterNodes = globalInfo[graphId].filterNodesTransformat
-                        filterNodes!.forEach((item: any, key: string) => {
-                            let { transformat, options } = item
-                            transformat.destroy(false).then(() => {
-                                let transFilter = transformatAddNodeFilter(
-                                    this.galaxyvis,
-                                    options,
-                                    false,
-                                )
-                                transformat.update(transFilter.changed)
-                            })
-                        })
-                    }
-
-                    if (globalInfo[graphId].filterEdgesTransformat?.size) {
-                        let filterEdges = globalInfo[graphId].filterEdgesTransformat
-                        filterEdges!.forEach((item: any, key: string) => {
-                            let { transformat, options } = item
-                            transformat.destroy(false).then(() => {
-                                let transFilter = transformatAddEdgeFilter(
-                                    this.galaxyvis,
-                                    options,
-                                    false,
-                                )
-                                transformat.update(transFilter.changed)
-                            })
-                        })
-                    }
-
                     // 动画效果
                     animateNodes(
                         this.galaxyvis,
@@ -434,33 +430,43 @@ export class transformat<T, K> {
                                 'nodesUnselected',
                                 new NodeList(this.galaxyvis, []),
                             )
-                            resolve((): void => {})
+                            resolve((): void => { })
                         },
                         false,
                     )
                 },
                 4: () => {
+                    if (update && isRender) {
+                        this.isMerge = false
+                        basicEdgeList.forEach((value, key) => {
+                            if(value.getAttribute('isGroupEdge') && 
+                                (value.getAttribute('isVisible') || value.getAttribute('isFilter')))
+                                this.changed.push(key)
+                        })
+                    }
                     if (globalInfo[graphId].mergeEdgesTransformat && !this.isMerge) {
                         let { transformat } = globalInfo[graphId].mergeEdgesTransformat
-                        this.changed = transformat.changed
+                        let concatChanged = this.changed.concat(transformat.changed)
+                        this.changed = [...new Set(concatChanged)];
                     }
+
                     for (let index = 0, len = this.changed.length; index < len; index++) {
                         const key = this.changed[index]
                         let item = edgeList.get(key)
                         let sourceNode = item.getSource()
                         let targetNode = item.getTarget()
-                        let flag = false
+                        let flag = false;
                         if (
                             (sourceNode.getAttribute('isVisible') &&
                                 targetNode.getAttribute('isVisible')) ||
                             (sourceNode.getAttribute('isFilter') &&
-                                targetNode.getAttribute('isFilter'))
-                        ) {
-                            if (
-                                sourceNode.getAttribute('isFilter') &&
                                 targetNode.getAttribute('isFilter')
                             )
-                                flag = true
+                        ) {
+                            if ((sourceNode.getAttribute('isFilter') &&
+                                targetNode.getAttribute('isFilter')
+                            ))
+                                flag = true;
                             item.changeAttribute({
                                 isVisible: false,
                             })
@@ -499,8 +505,9 @@ export class transformat<T, K> {
                     basicData[graphId].selectedEdgeTable = new Set()
                     basicData[graphId].selectedNodes = new Set()
                     basicData[graphId].selectedEdges = new Set()
-                    if (isRender) this.galaxyvis.render(false)
-                    resolve((): void => {})
+                    if (isRender)
+                        this.galaxyvis.render(false)
+                    resolve((): void => { })
                 },
             }
             try {
@@ -594,7 +601,8 @@ export class transformat<T, K> {
                             })
                         }
                         if (globalInfo[graphId].mergeEdgesTransformat) {
-                            let { transformat, options } = globalInfo[graphId].mergeEdgesTransformat
+                            let { transformat, options } =
+                                globalInfo[graphId].mergeEdgesTransformat
                             transformat.destroy(false).then(() => {
                                 transformatEdgeGroup(this.galaxyvis, options, false).then(
                                     (data: any) => {
@@ -635,7 +643,7 @@ export class transformat<T, K> {
                     reject(err)
                 }
 
-                reslove(() => {})
+                reslove(() => { })
             })
         }
     }

@@ -84,6 +84,7 @@ export interface Options {
     }
     useLocalUpdate?: boolean //是否开启局部更新
     thumbnail?: boolean //缩略图
+    fast?: boolean //快速模式
 }
 
 export interface strategiesFace {
@@ -417,6 +418,7 @@ export interface basicDataType {
         unSelectedNodes: Set<any> //相继上次选择取消选中的点
         unSelectedEdges: Set<any> //相继上次选择取消选中的边
         informationNewEdge: Map<any, any>
+        adjacentEdges: Array<string>
     }
 }
 
@@ -451,17 +453,12 @@ export interface NodeCollection {
 
 export interface EdgeCollection {
     [key: string]: {
-        drawNum: any
-        spInformation: Set<string>
-        informationNewEdge: Map<string, any> | null
         color: any
         width: any
         col14row2: any
-        plotTwoDrawNum: number
         plotsTwoColor: any
         plotsTwoWidth: any
         plotsTwoC42: any
-        plotsInformation: Set<string>
     }
 }
 
@@ -479,32 +476,18 @@ export interface EdgeHaloCollection {
 
 export interface NodeHaloCollection {
     [key: string]: {
-        aOffsetData: number[]
-        floatColorData: number[]
-        resultsData: number[]
+        floatData: number[] | Float32Array
     }
 }
 
 export interface NodeLabelCollection {
     [key: string]: {
-        labelFloat32Array: Float32Array
-        // arrsVer1: number[]
-        // arrsVer2: number[]
-        // arrsTex1: number[]
-        // arrsTex2: number[]
-        // others: number[]
-        // fontSizes: number[]
+        labelFloat32Array: Float32Array,
     }
 }
 
 export interface EdgeLabelCollection {
     [key: string]: {
-        labelFloat32Array: Float32Array
-        // arrsVer1_edge: number[]
-        // arrsVer2_edge: number[]
-        // arrsTex1_edge: number[]
-        // arrsTex2_edge: number[]
-        // others_edge: number[]
-        // fontSizes_edge: number[]
+        labelFloat32Array: Float32Array,
     }
 }

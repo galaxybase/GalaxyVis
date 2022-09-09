@@ -16,15 +16,26 @@ float circle(in vec2 st, in float radius) {
       dot(dist, dist) * 4.0);
 }
 
+float sdCircle( in vec2 p, in float r ){
+    return length(p)-r;
+}
+
 void main(void) {
   if(opacity == 0.0) {gl_FragColor = vec4(0.0); return;}
   float c = background;
-  vec3 backgroundColor;
+  vec4 backgroundColor;
   backgroundColor.b=mod(c,256.);c=floor(c/256.);
   backgroundColor.g=mod(c,256.);c=floor(c/256.);
   backgroundColor.r=mod(c,256.);c=floor(c/256.);backgroundColor/=255.;
-  if (circle(u_texcoord, 1.0) < 0.5) {
-    discard;
-  }
-  gl_FragColor = mix(vec4(backgroundColor,1.0),u_color, opacity);
+  backgroundColor.a = 1.;
+  float d = sdCircle(vec2(.5)-u_texcoord,0.45);
+
+  vec4 col =  u_color;
+  col = mix(col, backgroundColor, 1.0-smoothstep(0.0, 0.03,abs(d)));
+
+  col = mix(backgroundColor,col, opacity);
+  if(sign(d)>0.0)
+    col = col - sign(d)*vec4(vec3(.0),1.0);
+  col = mix( col, backgroundColor, 1.0-smoothstep(0.0,0.01,abs(d)) );
+  gl_FragColor = col;
 }

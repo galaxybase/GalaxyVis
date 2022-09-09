@@ -26,7 +26,7 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
         changedTable: string[] = [] //更改的数据id表
     nodeList.forEach((item: any, key: any) => {
         // 匹配规则
-        if (!criteria(item)) {
+        if (!criteria(item) && item.getAttribute('isVisible')) {
             // 获取当前边的关联关系
             let edgelist = relationTable[key]
             if (edgelist) {
@@ -55,7 +55,7 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
             // 设置为不可见
             item.changeAttribute({
                 isVisible: false,
-                isFilter: true,
+                isFilter: true
             })
             galaxyvis.mouseCaptor.selected = false
             //把当前更改的点id传入到changedTable
@@ -80,7 +80,8 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
 
     edgeList.forEach((item: any, key: any) => {
         if (!criteria(item)) {
-            if (!item.getAttribute('isFilter') && !item.getAttribute('usedMerge')) {
+            if ((!item.getAttribute('isFilter') && 
+                !item.getAttribute('usedMerge'))) {
                 let { source, target } = item.getAttribute()
                 nodeList.get(source).setSelected(false, false, true)
                 basicData[galaxyvis.id].selectedTable.delete(source)
@@ -279,6 +280,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                         thisEdges.get(item).changeAttribute({
                                             isVisible: false,
                                             isSelect: false,
+                                            useMergeEdge: true,
                                         })
                                     }
                                 })
@@ -302,8 +304,8 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
 
                                     if (source && target) {
                                         let node = source.getAttribute('isVisible')
-                                                ? source.getId()
-                                                : target.getAttribute('isVisible')
+                                            ? source.getId()
+                                            : target.getAttribute('isVisible')
                                                 ? target.getId()
                                                 : null, // 创建因为合并点所形成的合并边
                                             n =
@@ -437,12 +439,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
  * @param opts
  * @returns
  */
-export const transformatEdgeGroup = (
-    galaxyvis: any,
-    opts?: any,
-    isRender = true,
-    isMerge = false,
-): Promise<any> => {
+export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true, isMerge = false): Promise<any> => {
     let { generator } = opts
     try {
         return new Promise((resolve, reject) => {
@@ -466,7 +463,7 @@ export const transformatEdgeGroup = (
                             for (let i = 0, len = newTotal.length; i < len; i++) {
                                 let edgeId = newTotal[i]
                                 let this_edge = edgeList.get(edgeId)
-                                if (this_edge.getAttribute('isGroupEdge')) continue
+                                if(this_edge.getAttribute('isGroupEdge')) continue;
                                 groupEdges.push(edgeId)
                                 if (i == 0 || (!target && !source)) {
                                     target = this_edge.value.target
@@ -480,7 +477,7 @@ export const transformatEdgeGroup = (
                                 })
 
                                 let sourceNode = nodeList.get(source),
-                                    targetNode = nodeList.get(target)
+                                    targetNode = nodeList.get(target);
                                 if (
                                     sourceNode.getAttribute('isSelect') &&
                                     targetNode.getAttribute('isSelect')

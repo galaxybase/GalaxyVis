@@ -50,11 +50,11 @@ export const incrementalLayout = (
 
     if (typeof incrementalNode === 'string') {
         let node = basicData[id].nodeList.get(incrementalNode)
-        if (!node) {
+        if(!node) {
             return {}
         }
-        let { x, y } = node.getPosition()
-        ;(staticOffsetX = x), (staticOffsetY = y)
+        let { x, y } = node.getPosition();
+        staticOffsetX = x, staticOffsetY = y
     }
 
     var originNodesPositions = originNodes

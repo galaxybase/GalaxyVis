@@ -3,7 +3,7 @@ import * as dat from 'dat.gui';
 
 let galaxyVis = new galaxyvis({
     container: 'container',
-    // renderer: "canvas",
+    renderer: "canvas",
     options: {
         backgroundColor: "#F9FBFF",
     }
@@ -26,7 +26,6 @@ let textObject = {
     "颜色": "#fff",
     "背景颜色": [255, 0, 0, 1.0],
     "字体大小": 18,
-    "文字是否在边上": false,
     "文字最长换行": 99,
     "边缘距离x": 0,
     "边缘距离y": 0,
@@ -59,7 +58,6 @@ let labelController = gui.addFolder('文字控制器'),
     maxLength = labelController.add(textObject, "文字最长换行", 1, 99, 1).step(1),
     marginx = labelController.add(textObject, "边缘距离x", -5, 5, 0.1).step(0.1),
     marginy = labelController.add(textObject, "边缘距离y", -5, 5, 0.1).step(0.1),
-    isInline = labelController.add(textObject, "文字是否在边上"),
     textColor = labelController.addColor(textObject, '颜色'),
     textBackgroundColor = labelController.addColor(textObject, '背景颜色');
 labelController.open()
@@ -113,6 +111,8 @@ const edgeTest = () => {
                     background: `rgba(${Math.ceil(bgColor[0])},${Math.ceil(bgColor[1])},${Math.ceil(bgColor[2])},${(bgColor[3])})`,
                     maxLength: maxLength.getValue(),
                     margin: [Number(marginx.getValue()), Number(marginy.getValue())],
+                    // isInLine: isInline.getValue()
+                    // position:"top"
                 },
                 stroke: {
                     selectedColor: selectColor.getValue()
@@ -141,6 +141,7 @@ const edgeTest = () => {
                 background: `rgba(${Math.ceil(bgColor[0])},${Math.ceil(bgColor[1])},${Math.ceil(bgColor[2])},${(bgColor[3])})`,
                 maxLength: maxLength.getValue(),
                 margin: [Number(marginx.getValue()), Number(marginy.getValue())],
+                // isInLine: isInline.getValue()
                 position:"bottom"
                 
             },
@@ -162,7 +163,8 @@ const edgeTest = () => {
             attribute: {
                 x: -300,
                 text: "n1",
-                color: "#81d"
+                color: "#81d",
+                icon: "N"
             }
         }, {
             id: "n2",
@@ -170,14 +172,16 @@ const edgeTest = () => {
                 x: 300,
                 y: 200,
                 text: "n2",
-                color: "#f50"
+                color: "#f50",
+                icon: "\ue773"
             }
         }, {
             id: "n3",
             attribute: {
                 x: 450, y: -350,
                 text: "n3",
-                color: "#890"
+                color: "#890",
+                icon: "\ue772"
             }
         }],
         edges: edges

@@ -51,7 +51,7 @@ export class StyleRule<T, K> {
                     if (update) this.galaxyvis.render()
                     resolve()
                 } else {
-                    reject('获取不到当前图的点边列表')
+                    reject("获取不到当前图的点边列表")
                 }
             } catch (err) {
                 reject(err)

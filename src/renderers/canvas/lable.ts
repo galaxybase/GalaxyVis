@@ -1,70 +1,166 @@
+import { clone } from 'lodash'
+import EdgeList from '../../classes/edgeList'
+import NodeList from '../../classes/nodeList'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'
-import { isInSceen } from '../../utils'
+import { isInSceen, isSameSet } from '../../utils'
 import canvasLabelEdge from './labelCanvas/edgeLael'
 import canvasLabelNode from './labelCanvas/nodeLabel'
 
 export default class lableCanvas {
     private graph
+    private frameCtx: CanvasRenderingContext2D
+    private frameCanvas: HTMLCanvasElement
+    private edgeFrameCtx: CanvasRenderingContext2D
+    private edgeFrameCanvas: HTMLCanvasElement
+    private oldSelectedTable: Set<string | number>
+    private edgeOldSelectedTable: Set<string | number>
+    private ratio: number
+    private position: number[]
+    private context: CanvasRenderingContext2D
+    private thumbnail: boolean
+    private scale: number
+    private adjacentArray: Array<any>
 
     constructor(graph: any) {
         this.graph = graph
+        this.frameCanvas = document.createElement('canvas')
+        this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
+        this.edgeFrameCanvas = document.createElement('canvas')
+        this.edgeFrameCtx = this.edgeFrameCanvas.getContext('2d') as CanvasRenderingContext2D
+        this.oldSelectedTable = new Set()
+        this.edgeOldSelectedTable =new Set()
+        // 获取当前缩放
+        this.ratio = graph.camera.ratio
+        // 获取相机当前位置
+        this.position = graph.camera.position
+        // 获取当前画布
+        this.context = graph.ctx
+        // 缩略图是否开启
+        this.thumbnail = graph.thumbnail
+        // 缩放比例
+        this.scale = (globalProp.globalScale / this.ratio) * 2.0
+        this.adjacentArray = []
     }
     // 绘制点文字
-    drawNodeLabel = () => {
-        // 获取当前graph对象
-        let graph = this.graph
-        // 获取当前相机缩放
-        let ratio = graph.camera.ratio
-        // 获取当前相机位置
-        let position = graph.camera.position
-        // 获取点列表
-        let nodeList = basicData[this.graph.id].nodeList
-        // 获取当前canvas画布
-        let context = graph.ctx
-        let thumbnail = graph.thumbnail
-        // 获取点绘制顺序
-        let nodeOrder = [...globalInfo[graph.id].nodeOrder]
-        let scale = (globalProp.globalScale / ratio) * 2.0
+    drawNodeLabel = (viewChange?: boolean) => {
+        const graph = this.graph
+        const id = graph.id
+        let ratio = this.ratio = graph.camera.ratio
+        let orderNodes = [...globalInfo[id].nodeOrder]
+        let selectedTable = basicData[id].selectedTable
+        this.context = graph.ctx
+        this.thumbnail = graph.thumbnail
+        this.scale = (globalProp.globalScale / ratio) * 2.0
+        this.position = graph.camera.position
 
-        if (thumbnail) return
+        if (this.thumbnail) return
 
-        for (let keys in nodeOrder) {
-            let key = nodeOrder[keys]
-            if (nodeList.has(key)) {
+        if (graph.mouseCaptor?.draggable|| graph.geo.enabled()) {
+            viewChange = true;
+        }
+
+        if (viewChange) {
+            selectedTable = new Set();
+        }
+
+        if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
+            if (selectedTable.size) {
+                // @ts-ignore
+                this.frameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
+                this.context = this.frameCtx;
+            }
+            this.plottingNodeLabel(orderNodes, this.context, !viewChange)
+            this.oldSelectedTable = clone(selectedTable)
+        }
+        if (selectedTable.size) {
+            graph.ctx.drawImage(this.frameCanvas, 0, 0)
+            this.context = graph.ctx;
+            this.plottingNodeLabel([...selectedTable], this.context, false)
+        }
+    }
+
+    plottingNodeLabel = (orderNodes: any[], context: CanvasRenderingContext2D, used: boolean) => {
+        const graph = this.graph;
+        const id = graph.id
+        let nodeList = basicData[id].nodeList
+        let selectedTable = basicData[id].selectedTable
+
+        for (let keys in orderNodes) {
+            let key = orderNodes[keys]
+            if (nodeList.has(key) && (!selectedTable.has(key) || !used)) {
                 let item = nodeList.get(key)
                 let data = item.getAttribute()
                 // 如果被隐藏则跳过
                 if (
                     !data.isVisible ||
                     data.opacity == 0.0 ||
-                    !isInSceen(this.graph.id, 'canvas', scale, position, data, 1)
+                    !isInSceen(id, 'canvas', this.scale, this.position, data, 1)
                 )
                     continue
                 let text = data?.text
                 // 判断该点是否存在文字
                 if (text && text.content && text.content != '') {
-                    canvasLabelNode(graph.id, context, data, position, ratio, thumbnail)
+                    canvasLabelNode(id, context, data, this.position, this.ratio, this.thumbnail)
                 }
             }
         }
     }
-    // 绘制边文字
-    drawEdgeLabel = () => {
-        // 获取当前graph对象
-        let graph = this.graph
-        // 获取当前相机缩放
-        let ratio = graph.camera.ratio
-        // 获取没有被隐藏的边列表
-        let edgeList = basicData[this.graph.id].edgeList
-        // 获取当前canvas画布
-        let context = graph.ctx
-        let orderEdges = [...globalInfo[graph.id].edgeOrder]
-        let thumbnail = graph.thumbnail
 
-        if (thumbnail) return
+    // 绘制边文字
+    drawEdgeLabel = (viewChange?: boolean) => {
+        const graph = this.graph
+        const id = graph.id
+        let ratio = this.ratio = graph.camera.ratio
+        let selectedTable = basicData[id].selectedTable
+        this.context = graph.ctx
+        this.thumbnail = graph.thumbnail
+        this.scale = (globalProp.globalScale / ratio) * 2.0
+        this.position = graph.camera.position
+        let orderEdges = [...globalInfo[graph.id].edgeOrder]
+
+        if (this.thumbnail) return
+
+        if (graph.mouseCaptor?.draggable|| graph.geo.enabled()) {
+            viewChange = true;
+        }
+
+        if (viewChange) {
+            selectedTable = new Set();
+        }
+        let ids = basicData[id].adjacentEdges
+        let adjacentArray: any[] = this.adjacentArray = []
+        if (ids.length > 0) {
+            for (let i = 0, len = ids.length; i < len; i++) {
+                adjacentArray.push(ids[i])
+            }
+        }
+        if (!selectedTable.size || !isSameSet(selectedTable, this.edgeOldSelectedTable) || viewChange) {
+            if (selectedTable.size) {
+                // @ts-ignore
+                this.edgeFrameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.edgeFrameCtx = this.edgeFrameCanvas.getContext('2d') as CanvasRenderingContext2D
+                this.context = this.edgeFrameCtx;
+            }
+            this.plottingEdgeLabel(orderEdges, this.context, !viewChange)
+            this.edgeOldSelectedTable = clone(selectedTable)
+        }
+
+        if (selectedTable.size) {
+            graph.ctx.drawImage(this.edgeFrameCanvas, 0, 0)
+            this.context = graph.ctx;
+            this.plottingEdgeLabel(adjacentArray, this.context, false)
+        }
+    }
+
+    plottingEdgeLabel = (orderEdges: any[], context: CanvasRenderingContext2D, used: boolean,) => {
+        const graph = this.graph
+        const id = graph.id
+        let edgeList = basicData[id].edgeList
 
         for (let keys in orderEdges) {
             let key = orderEdges[keys]
+            if (this.adjacentArray.indexOf(key) != -1 && used) continue
             if (edgeList.has(key)) {
                 let item = edgeList.get(key)
                 let data = item.getAttribute()
@@ -73,9 +169,24 @@ export default class lableCanvas {
                 let text = data?.text
                 // 判断该边是否存在文字
                 if (text && text.content && text.content != '') {
-                    canvasLabelEdge(graph.id, context, data, ratio)
+                    canvasLabelEdge(id, context, data, this.ratio)
                 }
             }
         }
+    }
+
+    clear = () => {
+        // @ts-ignore
+        this.oldSelectedTable = null;
+        // @ts-ignore
+        this.frameCanvas = null;
+        // @ts-ignore
+        this.frameCtx = null;
+        // @ts-ignore
+        this.edgeOldSelectedTable = null;
+        // @ts-ignore
+        this.edgeFrameCanvas = null
+        // @ts-ignore
+        this.edgeFrameCtx = null
     }
 }

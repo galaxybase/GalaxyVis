@@ -40,9 +40,8 @@ export const excessGetEdgeType = (that: any) => {
     for (let [key, item] of edgeList) {
         let attribute = item?.value?.attribute
         if (attribute) {
-            let { type, source, target, isVisible, usedMerge, isFilter } = attribute
-            if (
-                (usedMerge && globalInfo[that.id].mergeEdgesTransformat) ||
+            let { type, source, target, isVisible, usedMerge, isFilter, isGroupEdge } = attribute
+            if ((usedMerge && globalInfo[that.id].mergeEdgesTransformat) ||
                 (isFilter && globalInfo[that.id].filterEdgesTransformat?.size)
             ) {
                 isVisible = false
@@ -50,6 +49,22 @@ export const excessGetEdgeType = (that: any) => {
                     isVisible: false,
                 })
             }
+
+            if(isGroupEdge){
+                let children = item.value.children;
+                let cnt = 0
+                for (let j = 0; j < children.length; j++) {
+                    let edge = edgeList.get(children[j])
+                    if(edge && edge.getAttribute('isVisible')) cnt++
+                }
+                if(cnt == children.length) {
+                    isVisible = false
+                    item.changeAttribute({
+                        isVisible: false,
+                    })
+                }
+            }
+
             if (isVisible) {
                 if (!nodeList.has(source) || !nodeList.has(target)) continue
 
@@ -120,6 +135,9 @@ export const excessGetEdgeType = (that: any) => {
  */
 
 export const excessGetEdgeDrawVal = (that: any) => {
+    if(!typeHash || !baseTypeHash){
+        excessGetEdgeType(that)
+    } 
     let { edgeList, nodeList, drawEdgeCount, drawEdgeList, informationNewEdge } = basicData[that.id]
 
     drawEdgeList = new Map()
@@ -161,10 +179,10 @@ export const excessGetEdgeDrawVal = (that: any) => {
                 val.changeAttribute({ isVisible: false })
                 continue
             } else {
-                let xyOffect = coordTransformation(that.id, sourceX, sourceY)
-                ;(sourceX = xyOffect[0]), (sourceY = xyOffect[1])
-                let xyOffect2 = coordTransformation(that.id, targetX, targetY)
-                ;(targetX = xyOffect2[0]), (targetY = xyOffect2[1])
+                let xyOffect = coordTransformation(that.id, sourceX, sourceY);
+                sourceX = xyOffect[0], sourceY = xyOffect[1];
+                let xyOffect2 = coordTransformation(that.id, targetX, targetY);
+                targetX = xyOffect2[0], targetY = xyOffect2[1];
                 if (type == 'basic') {
                     if (source != target) {
                         size > 1 && size % 2 == 0 && lineNumber++
@@ -317,7 +335,10 @@ const excessGetEdge = (id: string, needFresh: any) => {
         }
     })
     basicData[id].informationNewEdge = informationNewEdge
-    return drawEdgeList
+    return {
+        drawEdgeList,
+        union
+    }
 }
 
 /**
@@ -329,9 +350,12 @@ export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?:
     let count = 0,
         lineDrawCount: any[] = [],
         num = 0,
-        plotNum = 0
+        plotNum = 0,
+        union = new Set()
     if (Partial && needFresh?.size) {
-        basicData[that.id].drawEdgeList = excessGetEdge(that.id, needFresh)
+        let excessEdge =  excessGetEdge(that.id, needFresh)
+        basicData[that.id].drawEdgeList = excessEdge.drawEdgeList
+        union = excessEdge.union
     } else {
         basicData[that.id].drawEdgeList = excessGetEdgeDrawVal(that)
     }
@@ -354,6 +378,7 @@ export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?:
         lineDrawCount,
         num,
         plotNum,
+        union
     }
 }
 /**

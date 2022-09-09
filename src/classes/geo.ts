@@ -7,104 +7,103 @@ import { cloneDeep } from 'lodash'
 const L = window.L //解决未引入leaflet导致编译失败
 const standards = 1.5
 let geoClass: { [key: string]: any } = {}
-L &&
-    (L.CanvasLayer = L.Layer.extend({
-        options: {
-            pane: 'overlayPane',
-            padding: 0,
-            onUpdate: function () {},
-        },
+L && (L.CanvasLayer = L.Layer.extend({
+    options: {
+        pane: 'overlayPane',
+        padding: 0,
+        onUpdate: function () { },
+    },
 
-        initialize: function (e: any) {
-            var n = e.container
-            L.Util.setOptions(this, e), (this._container = n)
-        },
+    initialize: function (e: any) {
+        var n = e.container
+        L.Util.setOptions(this, e), (this._container = n)
+    },
 
-        setLocked: function (value: any) {
-            return (this._locked = value), this
-        },
+    setLocked: function (value: any) {
+        return (this._locked = value), this
+    },
 
-        onAdd: function (n: any) {
-            ;(this._map = n),
-                this.getPane().appendChild(this._container),
-                (this._wgsOrigin = L.latLng([0, 0])),
-                (this._wgsInitialShift = n.project(this._wgsOrigin, this._initialZoom)),
-                L.DomUtil.addClass(this._container, 'leaflet-layer'),
-                this._zoomAnimated &&
-                    (L.DomUtil.addClass(this._container, 'leaflet-zoom-animated'),
-                    (this._container.style.position = 'absolute'),
-                    (this._container.style.zIndex = 9999)),
-                (this._initialZoom = (this._map.getMaxZoom() + this._map.getMinZoom()) / 2),
-                (this._mapInitialZoom = this._map.getZoom()),
-                this._updateBounds(),
-                this._update({})
-        },
+    onAdd: function (n: any) {
+        ; (this._map = n),
+            this.getPane().appendChild(this._container),
+            (this._wgsOrigin = L.latLng([0, 0])),
+            (this._wgsInitialShift = n.project(this._wgsOrigin, this._initialZoom)),
+            L.DomUtil.addClass(this._container, 'leaflet-layer'),
+            this._zoomAnimated &&
+            (L.DomUtil.addClass(this._container, 'leaflet-zoom-animated'),
+                (this._container.style.position = 'absolute'),
+                (this._container.style.zIndex = 9999)),
+            (this._initialZoom = (this._map.getMaxZoom() + this._map.getMinZoom()) / 2),
+            (this._mapInitialZoom = this._map.getZoom()),
+            this._updateBounds(),
+            this._update({})
+    },
 
-        _updateBounds: function () {
-            var e = this.options.padding,
-                n = this._map.getSize(),
-                i = this._map.containerPointToLayerPoint(n.multiplyBy(-e))
-            ;(this._bounds = new L.Bounds(i, i.add(n.multiplyBy(1 + 2 * e)))),
+    _updateBounds: function () {
+        var e = this.options.padding,
+            n = this._map.getSize(),
+            i = this._map.containerPointToLayerPoint(n.multiplyBy(-e))
+            ; (this._bounds = new L.Bounds(i, i.add(n.multiplyBy(1 + 2 * e)))),
                 (this._center = this._map.getCenter()),
                 (this._zoom = this._map.getZoom())
-        },
+    },
 
-        _update: function (e: any) {
-            var n = this
-            this._updateBounds(),
-                this._redraw(this._bounds.min, e),
-                (this._positionTimer = L.Util.requestAnimFrame(function () {
-                    n._container && L.DomUtil.setPosition(n._container, n._bounds.min)
-                }))
-        },
+    _update: function (e: any) {
+        var n = this
+        this._updateBounds(),
+            this._redraw(this._bounds.min, e),
+            (this._positionTimer = L.Util.requestAnimFrame(function () {
+                n._container && L.DomUtil.setPosition(n._container, n._bounds.min)
+            }))
+    },
 
-        _redraw: function () {
-            this.options.onUpdate()
-        },
+    _redraw: function () {
+        this.options.onUpdate()
+    },
 
-        _updateTransform: function (e: any, n: any) {
-            if (!this._locked) {
-                var i = this._map.getZoomScale(n, this._zoom),
-                    r = this._map.getSize().multiplyBy(0.5 + this.options.padding),
-                    o = this._map.project(this._center, n),
-                    s = r.multiplyBy(-i).add(o).subtract(this._map._getNewPixelOrigin(e, n))
-                L.Browser.any3d
-                    ? L.DomUtil.setTransform(this._container, s, i)
-                    : L.DomUtil.setPosition(this._container, s)
-            }
-        },
+    _updateTransform: function (e: any, n: any) {
+        if (!this._locked) {
+            var i = this._map.getZoomScale(n, this._zoom),
+                r = this._map.getSize().multiplyBy(0.5 + this.options.padding),
+                o = this._map.project(this._center, n),
+                s = r.multiplyBy(-i).add(o).subtract(this._map._getNewPixelOrigin(e, n))
+            L.Browser.any3d
+                ? L.DomUtil.setTransform(this._container, s, i)
+                : L.DomUtil.setPosition(this._container, s)
+        }
+    },
 
-        _onZoom: function () {
-            this._updateTransform(this._map.getCenter(), this._map.getZoom())
-        },
+    _onZoom: function () {
+        this._updateTransform(this._map.getCenter(), this._map.getZoom())
+    },
 
-        _onMoveEnd: function (t: any) {
-            this._update(t)
-        },
+    _onMoveEnd: function (t: any) {
+        this._update(t)
+    },
 
-        _onAnimZoom: function (t: any) {
-            var e = t.center,
-                n = t.zoom
-            this._updateTransform(e, n)
-        },
+    _onAnimZoom: function (t: any) {
+        var e = t.center,
+            n = t.zoom
+        this._updateTransform(e, n)
+    },
 
-        bringToFront: function () {
-            L.DomUtil.toFront(this._container)
-        },
+    bringToFront: function () {
+        L.DomUtil.toFront(this._container)
+    },
 
-        getEvents: function () {
-            return {
-                zoom: this._onZoom,
-                moveend: this._onMoveEnd,
-                zoomanim: this._onAnimZoom,
-                layeradd: this.bringToFront,
-                zoomend: this.options.onUpdate,
-            }
-        },
+    getEvents: function () {
+        return {
+            zoom: this._onZoom,
+            moveend: this._onMoveEnd,
+            zoomanim: this._onAnimZoom,
+            layeradd: this.bringToFront,
+            zoomend: this.options.onUpdate,
+        }
+    },
 
-        onRemove: function () {
-            L.DomUtil.removeClass(this._container, 'leaflet-zoom-animated')
-            var n = this._container
+    onRemove: function () {
+        L.DomUtil.removeClass(this._container, 'leaflet-zoom-animated')
+        var n = this._container
             ;[
                 'transform',
                 'webkitTransform',
@@ -118,8 +117,8 @@ L &&
             }),
                 L.Util.cancelAnimFrame(this._positionTimer),
                 (this._container = null)
-        },
-    }))
+    },
+}))
 // `https://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineStreetGray/MapServer/tile/{z}/{y}/{x}`
 // 'https://{s}.tile.osm.org/{z}/{x}/{y}.png'
 // "http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
@@ -142,7 +141,7 @@ export default class geo<T, K> {
     mapContainer: any
     loadingGeoMode: boolean = true
     geoVisibleFilter: any
-
+    options: any
     constructor(galaxyvis: any) {
         this.galaxyvis = galaxyvis
     }
@@ -167,7 +166,7 @@ export default class geo<T, K> {
                 disableNodeDragging: any =
                     Number(o?.disableNodeDragging) == 0 ? o?.disableNodeDragging : true,
                 crs: any = o?.crs || L?.CRS.EPSG3857
-
+            this.options = options
             tiles = Object.assign(DEFAULT_TITLE, tiles)
 
             // 去除canvas的wheel和mousedown的事件
@@ -250,7 +249,8 @@ export default class geo<T, K> {
                             }
                         }
                     })
-            } else {
+            }
+            else {
                 this.map.on('mousemove', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
                     if (node?.isNode()) {
@@ -262,14 +262,13 @@ export default class geo<T, K> {
                         this.galaxyvis.mouseCaptor.geoEnable = true
                         canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     }
-                }) &&
-                    this.map.on('mousedown', (e: any) => {
-                        let node = this.galaxyvis.mouseCaptor.hoverTatget
-                        if (!node?.isNode()) {
-                            let selectedNodes = this.galaxyvis.getSelectedNodes()
-                            if (selectedNodes.size) selectedNodes.setSelected(false)
-                        }
-                    })
+                }) && this.map.on('mousedown', (e: any) => {
+                    let node = this.galaxyvis.mouseCaptor.hoverTatget
+                    if (!node?.isNode()) {
+                        let selectedNodes = this.galaxyvis.getSelectedNodes()
+                        if (selectedNodes.size) selectedNodes.setSelected(false)
+                    }
+                })
             }
 
             this.galaxyvis.view.setView({
@@ -323,7 +322,7 @@ export default class geo<T, K> {
                         lat = centerMap.lat,
                         lng = centerMap.lng,
                         points = map.options.crs.latLngToPoint(L.latLng(lat, lng), 1)
-                    ;(this.layer._x = points.x), (this.layer._y = points.y)
+                        ; (this.layer._x = points.x), (this.layer._y = points.y)
 
                     let { width, height } = globalInfo[id].canvasBox
 
@@ -379,7 +378,7 @@ export default class geo<T, K> {
                             {
                                 duration: duration,
                             },
-                            () => {},
+                            () => { },
                         )
                         this.loadingGeoMode = false
                     } else {
@@ -457,7 +456,7 @@ export default class geo<T, K> {
         var lat, lng
         if (this.layer) {
             var centerMap = this.layer._map.getCenter()
-            ;(lat = centerMap.lat), (lng = centerMap.lng)
+                ; (lat = centerMap.lat), (lng = centerMap.lng)
         }
         return {
             lat,
@@ -532,6 +531,40 @@ export default class geo<T, K> {
     enabled() {
         if (this.layer) return true
         return false
+    }
+    /**
+     * 
+     * @param ids 
+     */
+    locate(ids: string | any[]) {
+        if (!ids || ids?.length == 0) return
+        if (typeof ids === "string") ids = [ids];
+        let len = ids.length
+        let nodeList = basicData[this.galaxyvis.id].nodeList
+        let o = this.options;
+        let latitudePath: any = o?.latitudePath || 'lat',
+            longitudePath: any = o?.longitudePath || 'lng',
+            maxLng = -Infinity, maxLat = -Infinity,
+            minLng = Infinity, minLat = Infinity
+
+        for (let i = 0; i < len; i++) {
+            let node = nodeList.get(ids[i]);
+            let data = node.getData();
+            if (data[latitudePath] && data[longitudePath]) {
+                let lat = Number(data[latitudePath]),
+                    lng = Number(data[longitudePath])
+
+                maxLng = Math.max(maxLng, lng)
+                minLng = Math.min(minLng, lng)
+                maxLat = Math.max(maxLat, lat)
+                minLat = Math.min(minLat, lat)
+            }
+        }
+        let corner1 = L.latLng(minLat, minLng),
+            corner2 = L.latLng(maxLat, maxLng),
+            bounds = L.latLngBounds(corner1, corner2)
+        this.map.fitBounds(bounds)
+
     }
     /**
      * 初始化一个dom

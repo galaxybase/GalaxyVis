@@ -26,11 +26,12 @@ class DagrelLayout {
      * @returns
      */
     init() {
+        const id = this.galaxyvis.id
         let nodeList = this.galaxyvis.getFilterNode()
         let layoutsNodes: any[] = []
         let { nodes } = this.options
-        let width = globalInfo[this.galaxyvis.id].BoxCanvas.getWidth,
-            height = globalInfo[this.galaxyvis.id].BoxCanvas.getHeight
+        let width = globalInfo[id].BoxCanvas.getWidth,
+            height = globalInfo[id].BoxCanvas.getHeight
 
         this.options.width = width
 

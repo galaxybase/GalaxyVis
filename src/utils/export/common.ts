@@ -190,8 +190,9 @@ function getBase64Image(img: any) {
  */
 export function startTrans(src: string, cb: any) {
     var image = new Image()
-    image.src = src // 处理缓存
     image.crossOrigin = 'anonymous' // 支持跨域图片
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = src // 处理缓存
     image.onload = function () {
         var base64 = getBase64Image(image)
         cb && cb(base64)

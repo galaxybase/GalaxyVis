@@ -8,16 +8,17 @@ export const unionEdges = (galaxyvis: any, layoutsNodes: any[], oneLine = true) 
     let relationTable = galaxyvis.getEdgeType().relationTable
     let union = new Set()
     let nodesData: any = []
+    let j = 0
     for (let i = 0, len = layoutsNodes.length; i < len; i++) {
         let needEdgeFresh = relationTable[layoutsNodes[i]]
         if (needEdgeFresh) {
             union = new Set([...union, ...needEdgeFresh])
-            nodesData.push({
+            nodesData[j++] = ({
                 isSingle: false,
                 id: layoutsNodes[i],
             })
         } else {
-            nodesData.push({
+            nodesData[j++] = ({
                 isSingle: true,
                 id: layoutsNodes[i],
             })
@@ -46,7 +47,7 @@ export const unionEdges = (galaxyvis: any, layoutsNodes: any[], oneLine = true) 
                         layoutsNodes.indexOf(source) !== -1 &&
                         layoutsNodes.indexOf(target) !== -1
                     ) {
-                        layoutsEdges.push({
+                        layoutsEdges[i] = ({
                             index: i++,
                             source: sourceInfo,
                             target: targetInfo,

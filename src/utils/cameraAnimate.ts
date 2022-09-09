@@ -69,7 +69,7 @@ export function animateCamera(
 
         camera.ratio = 2 * (camera.position[2] * Math.tan((camera.zoom * Math.PI) / 360))
 
-        graph.camerarefresh()
+        graph.camerarefresh(true)
         // 执行下一帧动画
         frame = requestFrame(step)
     }

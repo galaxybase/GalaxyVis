@@ -1,17 +1,15 @@
-import vertexShaderSource from '../shaders/node.vert.glsl'
-import fragmentShaderSource from '../shaders/node.frag.glsl'
-import { AbstractNodeProgram } from './common/node'
-import { packCircleVertex } from '../../../utils/node/floatPack'
+import vertexShaderSource from '../shaders/node.fast.vert.glsl'
+import fragmentShaderSource from '../shaders/node.fast.frag.glsl'
 import { glMatrix, mat4 } from 'gl-matrix'
-import { getPoint } from '../../../utils/node/getPoint'
-import { globalProp, basicData, thumbnailInfo } from '../../../initial/globalProp'
-import { NodeCollection } from '../../../types'
+import { AbstractHaloProgram } from './common/halo'
+import { coordTransformation, floatColor, isSameSet } from '../../../utils'
+import { basicData, globalProp } from '../../../initial/globalProp'
+import { NodeHaloCollection } from '../../../types'
 import { clone } from 'lodash'
-import { isSameSet } from '../../../utils'
 
-let nodeCollection: NodeCollection = {}
-const ATTRIBUTES = 11
-export default class NodeProgram extends AbstractNodeProgram {
+let fastnodeCollection: NodeHaloCollection = {}
+const ATTRIBUTES = 5;
+export default class fastnodeProgram extends AbstractHaloProgram {
     private oldUpdateNodes: Set<any>
     private len: number
     private plotting32Nodes: any
@@ -26,17 +24,17 @@ export default class NodeProgram extends AbstractNodeProgram {
         this.quad = {}
         // 视图矩阵和透视矩阵
         const projectMatirxLocation = gl.getUniformLocation(this.program, 'projection')
-        if (projectMatirxLocation == null) throw new Error('Node: 获取不到projectionMatrix')
+        if (projectMatirxLocation == null) throw new Error('Halo: 获取不到projectionMatrix')
         this.projectMatirxLocation = projectMatirxLocation
 
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
-        if (viewMatrixLocation == null) throw new Error('Node: 获取不到viewMatrix')
+        if (viewMatrixLocation == null) throw new Error('Halo: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
     }
 
     initCollection(size = 0) {
-        nodeCollection[this.graph.id] = {
-            packedData: new Float32Array(size), //打包的数据
+        fastnodeCollection[this.graph.id] = {
+            floatData: new Float32Array(size), //打包的数据
         }
     }
 
@@ -62,14 +60,7 @@ export default class NodeProgram extends AbstractNodeProgram {
             let attributes = value.attribute
             // 对部分数据过滤及处理
             if (attributes?.isVisible) {
-                const isBadges = attributes.badges ? true : false
-                drawNodeList.set(key, {
-                    badges: isBadges,
-                })
-                if (isBadges)
-                    drawNodeList.set(`badges_` + key, {
-                        badges: true,
-                    })
+                drawNodeList.set(key, { badges: false, })
                 if (!needFresh.size || !needFresh.has(key)) float32Nodes.set(key, value)
             }
         }
@@ -85,7 +76,7 @@ export default class NodeProgram extends AbstractNodeProgram {
         }
 
         this.initCollection(drawNodeList.size * ATTRIBUTES)
-        let collection = nodeCollection[graphId]
+        let collection = fastnodeCollection[graphId]
         let len = 0
         let flag = true;
         if (!this.graph.mouseCaptor?.draggable) {
@@ -107,15 +98,15 @@ export default class NodeProgram extends AbstractNodeProgram {
             this.plotting32Nodes = null;
             let plottingInfo = this.plottingNodes(float32Nodes, len)
             boundBox = plottingInfo.boundBox;
-            if(flag){
+            if (flag) {
                 this.boundBox = boundBox
                 this.len = len = plottingInfo.len;
-                this.plotting32Nodes = collection.packedData
+                this.plotting32Nodes = collection.floatData
             }
         }
 
         if (needFresh.size) {
-            collection.packedData.set(this.plotting32Nodes, 0)
+            (collection.floatData as Float32Array).set(this.plotting32Nodes, 0)
             for (let key in this.quad) {
                 if (nodeList.get(key)?.getAttribute('isVisible'))
                     this.camera.quad.insert(this.quad[key])
@@ -128,8 +119,8 @@ export default class NodeProgram extends AbstractNodeProgram {
             }
         }
 
-        if (!collection.packedData.length) {
-            nodeCollection[graphId] = collection
+        if (!collection.floatData.length) {
+            fastnodeCollection[graphId] = collection
             return
         }
 
@@ -141,10 +132,10 @@ export default class NodeProgram extends AbstractNodeProgram {
         drawNodeList = null
         float32Nodes = null
         updateNodes = null
-        nodeCollection[graphId] = collection
-        // 绘制
-        if (collection?.packedData?.length) {
-            this.bind(collection.packedData)
+        fastnodeCollection[graphId] = collection
+
+        if (collection?.floatData?.length) {
+            this.bind(collection.floatData)
             this.render()
         }
     }
@@ -152,16 +143,13 @@ export default class NodeProgram extends AbstractNodeProgram {
     plottingNodes(float32Nodes: Map<string, any>, len: number) {
         const graphId = this.graph.id
         const transform = basicData[graphId].transform
-        // 获取icon的列表
-        const iconMap = globalProp.iconMap
-        let collection = nodeCollection[graphId]
+        let collection = fastnodeCollection[graphId]
         let boundBox: any = new Map()
 
         for (let [key, val] of float32Nodes) {
             const value = val
             const attributes = value.attribute
-            const isBadges = attributes.badges ? true : false
-            let p: any = getPoint(graphId, attributes, iconMap, transform)
+            let p: any = getFastAttribute(graphId, attributes, transform)
             boundBox.set(key, {
                 xmax: 0.1 * p.zoomResults + p.offsets[0],
                 xmin: -0.1 * p.zoomResults + p.offsets[0],
@@ -185,49 +173,25 @@ export default class NodeProgram extends AbstractNodeProgram {
                 this.camera.quad.insert(this.quad[key])
             }
             // 打包数据 => 变成vec4这类的
-            const { packedBuffer, typesBuffer, offsetsBuffer, uvBuffer, colorBuffer } =
-                packCircleVertex(p, this.camera)
-
-            if (!isBadges) {
-                for (let i = 0; i < 4; i++) {
-                    collection.packedData[len + i] = packedBuffer[i]
-                }
-                for (let i = 0; i < 3; i++) {
-                    collection.packedData[len + i + 4] = uvBuffer[i]
-                }
-                for (let i = 0; i < 2; i++) {
-                    collection.packedData[len + i + 7] = offsetsBuffer[i]
-                }
-                collection.packedData[len + 9] = typesBuffer[0]
-                collection.packedData[len + 10] = colorBuffer[0]
-                len += 11
-            } else {
-                for (let j = 0; j < 2; j++) {
-                    for (let i = 0 + j * 4, k = 0; i < 4 + j * 4; i++, k++) {
-                        collection.packedData[len + k] = packedBuffer[i]
-                    }
-                    for (let i = 0 + j * 3, k = 0; i < 3 + j * 3; i++, k++) {
-                        collection.packedData[len + k + 4] = uvBuffer[i]
-                    }
-                    for (let i = 0 + j * 2, k = 0; i < 2 + j * 2; i++, k++) {
-                        collection.packedData[len + k + 7] = offsetsBuffer[i]
-                    }
-                    collection.packedData[len + 9] = typesBuffer[j]
-                    collection.packedData[len + 10] = colorBuffer[j]
-                    len += 11
-                }
+            const Buffer = packCircleVertex(p)
+            for (let i = 0; i < 5; i++) {
+                collection.floatData[len + i] = Buffer[i]
             }
+            len += ATTRIBUTES
             p = null
         }
-        return { boundBox, len }
+
+        return {
+            len, boundBox
+        }
     }
 
     refreshProcess(): void {
         // 如果有缓存则使用缓存更新
-        let collection = nodeCollection[this.graph.id]
+        let collection = fastnodeCollection[this.graph.id]
         let flag = false
-        if (collection?.packedData?.length) {
-            this.bind(collection?.packedData)
+        if (collection?.floatData?.length) {
+            this.bind(collection?.floatData)
             this.render()
             flag = true
         }
@@ -240,7 +204,7 @@ export default class NodeProgram extends AbstractNodeProgram {
 
     clear(): void {
         this.initCollection()
-        delete nodeCollection[this.graph.id]
+        delete fastnodeCollection[this.graph.id]
         this.quad = {};
         this.boundBox = null;
         this.plotting32Nodes = null;
@@ -264,7 +228,34 @@ export default class NodeProgram extends AbstractNodeProgram {
         gl.uniformMatrix4fv(this.projectMatirxLocation, false, projection)
         gl.uniformMatrix4fv(this.viewMatrixLocation, false, view)
         gl.useProgram(program)
-        let drawNum = nodeCollection[this.graph.id].packedData.length / ATTRIBUTES
+
+        let drawNum = fastnodeCollection[this.graph.id].floatData.length / ATTRIBUTES
+
         ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 6, drawNum)
     }
+}
+
+const getFastAttribute = (graphId: string, data: any, transform: number) => {
+    let { x, y, radius, color, opacity } = data
+
+    // 真实的r比例
+    let zoomResults: number = Math.ceil((radius / globalProp.standardRadius) * 1e2) / 1e2
+    // 偏移量
+    let offsets: number[] = coordTransformation(graphId, x, y, transform)
+    // 颜色
+    color = [floatColor(color).rgb, opacity]
+
+    return {
+        offsets,
+        color,
+        zoomResults,
+    }
+}
+
+const packCircleVertex = (p: any) => {
+    return [
+        ...p.offsets,
+        p.zoomResults,
+        ...p.color
+    ]
 }

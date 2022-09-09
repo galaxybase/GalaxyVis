@@ -108,7 +108,7 @@ export default class Edge {
      * @param value 要改变的值
      * @returns {data}
      */
-    public setData = (param: string | Array<string>, value: any, isRender: boolean = true) => {
+    public setData = (param: string | Array<string>, value: any, isRender:boolean = true) => {
         return setData(this, false, param, value, isRender)
     }
 

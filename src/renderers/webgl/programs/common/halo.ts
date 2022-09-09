@@ -7,6 +7,7 @@ export interface IHaloProgram extends IProgram {
     render(params: any): void
 }
 
+const ATTRIBUTES = 5;
 export abstract class AbstractHaloProgram extends AbstractProgram implements IHaloProgram {
     public positionLocation: GLint //正方形的坐标
     public offesetLocation: GLint //纹理坐标
@@ -44,8 +45,7 @@ export abstract class AbstractHaloProgram extends AbstractProgram implements IHa
         gl.useProgram(this.program)
         // 背景颜色
         gl.uniform1f(this.background, globalInfo[this.graph.id].backgroundColor.floatColor)
-        let { aOffsetData, floatColorData, resultsData } = param
-
+        
         // 向缓冲区绑定坐标
         initAttributeVariable(
             gl,
@@ -70,42 +70,24 @@ export abstract class AbstractHaloProgram extends AbstractProgram implements IHa
             false,
         )
         ext.vertexAttribDivisorANGLE(this.textureCoordLocation, 0)
-        // 向缓冲区绑定偏移量
-        initAttributeVariable(
-            gl,
-            new Float32Array(aOffsetData),
-            this.offesetLocation,
-            2,
-            gl.FLOAT,
-            2 * 4,
-            0,
-            false,
-        )
-        ext.vertexAttribDivisorANGLE(this.offesetLocation, 1)
-        // 向缓冲区绑定颜色
-        initAttributeVariable(
-            gl,
-            new Float32Array(floatColorData),
-            this.colorLocation,
-            2,
-            gl.FLOAT,
-            2 * 4,
-            0,
-            false,
-        )
-        ext.vertexAttribDivisorANGLE(this.colorLocation, 1)
-        // 向缓冲区绑定坐标
-        initAttributeVariable(
-            gl,
-            new Float32Array(resultsData),
-            this.scaleLocation,
-            1,
-            gl.FLOAT,
-            1 * 4,
-            0,
-            false,
-        )
-        ext.vertexAttribDivisorANGLE(this.scaleLocation, 1)
+
+        var Buffer = gl.createBuffer()
+        // 绑定缓冲区
+        gl.bindBuffer(gl.ARRAY_BUFFER, Buffer)
+        // 冲缓冲区获取值
+        gl.bufferData(gl.ARRAY_BUFFER, param, gl.STATIC_DRAW)
+
+        gl.vertexAttribPointer(this.offesetLocation, 2, gl.FLOAT, false, ATTRIBUTES * 4, 0)
+        gl.enableVertexAttribArray(this.offesetLocation)
+        ext.vertexAttribDivisorANGLE(this.offesetLocation, 1) //2
+
+        gl.vertexAttribPointer(this.scaleLocation, 1, gl.FLOAT, false, ATTRIBUTES * 4, 4 * 2)
+        gl.enableVertexAttribArray(this.scaleLocation)
+        ext.vertexAttribDivisorANGLE(this.scaleLocation, 1) //1
+
+        gl.vertexAttribPointer(this.colorLocation, 2, gl.FLOAT, false, ATTRIBUTES * 4, 4 * 3)
+        gl.enableVertexAttribArray(this.colorLocation)
+        ext.vertexAttribDivisorANGLE(this.colorLocation, 1) //2
     }
 }
 

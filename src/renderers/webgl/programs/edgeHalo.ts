@@ -124,7 +124,7 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
                     })
                     collection.spInformation.add(key)
 
-                    line.opacity = opacity * (floatColor(halo.color).a || 1)
+                    line.opacity = opacity * (floatColor(halo.color).a || 1);
                     let val = getHaloAttribute(line)
                     collection.color.push(...val[0])
                     let r1 = val[1].length

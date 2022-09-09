@@ -1,5 +1,5 @@
 import { coordTransformation } from '..'
-import { basicData, globalInfo } from '../../initial/globalProp'
+import { basicData, globalInfo, globalProp } from '../../initial/globalProp'
 import { AnimateOptions } from '../../types'
 import { animateCamera } from '../cameraAnimate'
 
@@ -19,7 +19,7 @@ export const viewZoomChange = (
             if (nowZoom > camera.maxZoom && type == -1) nowZoom = camera.maxZoom
             // 相机动画
             animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts, () => {
-                resolve((): void => {})
+                resolve((): void => { })
             })
         } catch {
             reject('ZoomChange Fail')
@@ -85,51 +85,52 @@ export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => 
             coordBottom: number = Infinity, //下边界
             nodeList = galaxyvis.getFilterNode(),
             camera = galaxyvis.camera,
-            padding = (renderType === 'webgl' ? options?.padding / 3 : options?.padding * 5) || 0 //padding效果的适配
+            padding = options?.padding || 0; //padding效果的适配
+        padding *= 10;
         for (let [key, value] of nodeList) {
             let x = value.getAttribute('x'),
                 y = value.getAttribute('y')
-            if (renderType == 'webgl') {
-                let offset = coordTransformation(galaxyvis.id, x, y)
-                ;(x = offset[0]), (y = offset[1])
-            }
             // 计算最大最小边界
             coordRight = Math.max(coordRight, x)
             coordTop = Math.max(coordTop, y)
             coordLeft = Math.min(coordLeft, x)
             coordBottom = Math.min(coordBottom, y)
         }
+
+        coordRight += padding;
+        coordTop += padding;
+        coordLeft -= padding;
+        coordBottom -= padding;
+
         // 相机偏移量
         let coordMid_x = (coordRight + coordLeft) / 2,
             coordMid_y = (coordTop + coordBottom) / 2,
             nowPosition = [-coordMid_x, -coordMid_y, 3]
-
-        let viewHeight = Math.ceil((coordTop - coordBottom + padding * 2.0) * 1e3) / 1e3,
-            viewWidth = Math.ceil((coordRight - coordLeft + padding * 2.0) * 1e3) / 1e3,
+        let transform = basicData[galaxyvis.id].transform,
+            viewHeight = Math.ceil((coordTop - coordBottom)),
+            viewWidth = Math.ceil((coordRight - coordLeft)),
             useMatrix = viewHeight / BoxCanvas.getHeight > viewWidth / BoxCanvas.getWidth,
             maxratio = useMatrix ? viewHeight : viewWidth,
-            zoomratio
+            zoomratio,
+            zoomBasic = useMatrix ? BoxCanvas.getHeight : BoxCanvas.getWidth,
+            thubnailBasic;
 
         if (renderType == 'webgl') {
-            nowPosition = [coordMid_x, coordMid_y, 3]
-            maxratio = useMatrix ? viewHeight : viewWidth
+            let offset = coordTransformation(galaxyvis.id, coordMid_x, coordMid_y)
+            nowPosition = [offset[0], offset[1], 3];
         }
 
-        zoomratio =
-            renderType === 'webgl' && !galaxyvis.thumbnail
-                ? (useMatrix ? BoxCanvas.getHeight : BoxCanvas.getWidth) /
-                      basicData[galaxyvis.id].transform +
-                  6
-                : renderType === 'webgl' && galaxyvis.thumbnail
-                ? (useMatrix ? thumbnail?.height : thumbnail?.width) / 110 + 6
-                : thumbnail && galaxyvis.thumbnail
-                ? useMatrix
-                    ? thumbnail?.height
-                    : thumbnail?.width
-                : (useMatrix ? BoxCanvas.getHeight : BoxCanvas.getWidth) +
-                  basicData[galaxyvis.id].transform
+        thumbnail && galaxyvis.thumbnail && (
+            thubnailBasic = useMatrix
+                ? thumbnail?.height
+                : thumbnail?.width
+        );
 
-        let zoom = Math.ceil(((Math.atan2(maxratio, zoomratio) * 360) / Math.PI) * 1e3) / 1e3
+        zoomratio = (thumbnail && galaxyvis.thumbnail) ?
+            (renderType == "webgl" ? zoomBasic - transform : thubnailBasic) :
+            zoomBasic + transform
+
+        let zoom = Math.ceil(((Math.atan2(maxratio, zoomratio) * 360) / Math.PI))
 
         if (options?.viewZoom && zoom < options.viewZoom) {
             zoom = options.viewZoom
@@ -149,7 +150,7 @@ export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => 
             { zoom, position: nowPosition },
             { duration: options.duration, easing: options.easing },
             () => {
-                resolve((): void => {})
+                resolve((): void => { })
             },
         )
     })

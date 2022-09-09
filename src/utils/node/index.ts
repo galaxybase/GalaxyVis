@@ -1,4 +1,4 @@
-import { coordTransformation } from '..'
+import { coordTransformation, initIconOrImage, initText } from '..'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'
 import { originInfo } from '../../initial/originInitial'
 import { TEPLATE } from '../../initial/settings'
@@ -20,6 +20,9 @@ import { cloneDeep, clone, defaultsDeep, get, merge } from 'lodash'
 export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any> => {
     return new Promise((resolve, reject) => {
         try {
+            if (that.geo.enabled()) {
+                return that.geo.locate(ids)
+            }
             let coordx_max: number = -Infinity,
                 coordx_min: number = Infinity,
                 coordy_max: number = -Infinity,
@@ -89,6 +92,9 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
 export const nodeLocate = (that: any, options?: any): Promise<any> => {
     return new Promise((resolve, reject) => {
         try {
+            if (that.geo.enabled()) {
+                return that.geo.locate(that.getId())
+            }
             let camera = that.camera
             let x = that.getAttribute('x'),
                 y = that.getAttribute('y')
@@ -123,6 +129,7 @@ export const nodeGetAdjacent = (that: any, options?: AdjacencyOptions) => {
     let inTable: Set<any> = new Set()
     let outTable: Set<any> = new Set()
     try {
+        if(!direction) direction = "both"
         Nodes?.forEach((item: any) => {
             //@ts-ignore
             let edge = basicData[that.id].edgeList.get(item)
@@ -241,6 +248,7 @@ export const nodeGetAdjacentEdges = (that: any, hasFilter?: boolean) => {
             edges?.forEach((id: string) => {
                 let edge = edgeList.get(id)
                 if (
+                    edge &&
                     edge.getAttribute('isVisible') ||
                     (hasFilter && edge.getAttribute('isFilter'))
                 ) {
@@ -378,7 +386,7 @@ export function initWebglAttribute(that: any, attribute: any) {
                 num: globalProp.iconMap.size,
                 font: attribute.icon.font,
             }
-            that.initIconOrImage({
+            initIconOrImage(that, {
                 key: attribute.icon.content,
                 ...initIcon,
             })
@@ -393,7 +401,7 @@ export function initWebglAttribute(that: any, attribute: any) {
                 type: 'image',
                 num: globalProp.iconMap.size,
             }
-            that.initIconOrImage({
+            initIconOrImage(that, {
                 key: attribute.image.url,
                 ...initImage,
             })
@@ -415,7 +423,7 @@ export function initWebglAttribute(that: any, attribute: any) {
                     num: globalProp.iconMap.size,
                 }
 
-                that.initIconOrImage({
+                initIconOrImage(that, {
                     key: image,
                     ...initImage,
                 })
@@ -435,7 +443,7 @@ export function initWebglAttribute(that: any, attribute: any) {
                     font: text?.font || 'iconfont',
                 }
 
-                that.initIconOrImage({
+                initIconOrImage(that, {
                     key: text?.content,
                     ...initIcon,
                 })
@@ -450,7 +458,7 @@ export function initWebglAttribute(that: any, attribute: any) {
         //处理文字
         if (attribute?.text && !thumbnail) {
             let flag = updateSDFTextData(attribute.text)
-            if (flag) that.initText()
+            if (flag) initText(that)
             drawText(
                 attribute.text.fontSize,
                 attribute.text.content,

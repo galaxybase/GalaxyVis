@@ -1,5 +1,8 @@
+import { clone } from 'lodash'
+import EdgeList from '../../classes/edgeList'
+import NodeList from '../../classes/nodeList'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'
-import { hashNumber, isInSceen } from '../../utils'
+import { hashNumber, isInSceen, isSameSet, roundedNum } from '../../utils'
 import canvasEdgeDef from './edgeCanvas/edgeDef'
 import canvasEdgeParallel from './edgeCanvas/edgeParallel'
 import canvasEdgeSelf from './edgeCanvas/edgeSelf'
@@ -22,41 +25,46 @@ interface drawEdgeType {
 
 export default class edgeCanvas {
     private graph
+    private frameCtx: CanvasRenderingContext2D
+    private oldSelectedTable: Set<string | number>
+    private frameCanvas: HTMLCanvasElement
+    private strategies: { [key: string]: Function }
+    private ratio: number
+    private position: number[]
+    private context: CanvasRenderingContext2D
+    private thumbnail: boolean
+    private scale: number
+    private quad: any
+    private typeHash: any
+    private baseTypeHash: any
+    private adjacentMaps: Map<string, any>
 
     constructor(graph: any) {
         this.graph = graph
-    }
-    // 绘制边
-    drawEdge = (boolean?: boolean) => {
-        // 获取当前graph对象
-        let graph = this.graph
+        this.frameCanvas = document.createElement('canvas')
+        this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
+        this.oldSelectedTable = new Set()
         // 获取当前相机缩放等级
-        let ratio = graph.camera.ratio
-        // 获取当前相机位置
-        let position = graph.camera.position
-        // 获取未被隐藏的点列表
-        let nodeList = basicData[this.graph.id].nodeList
-        // 获取边列表
-        let edgeList = basicData[this.graph.id].edgeList
-        // 获取当前canvas画布
-        let context = graph.ctx
-        let thumbnail = graph.thumbnail
-        let scale = (globalProp.globalScale / ratio) * 2.0
-        let {
-            typeHash, //parallel类型的hash表
-            baseTypeHash, //basic类型的hash表
-        } = globalInfo[graph.id].edgeType
+        this.ratio = graph.camera.ratio
+        // 获取相机当前位置
+        this.position = graph.camera.position
+        // 获取当前画布
+        this.context = graph.ctx
+        // 缩略图是否开启
+        this.thumbnail = graph.thumbnail
+        // 缩放比例
+        this.scale = (globalProp.globalScale / this.ratio) * 2.0
         // 策略模式
-        var strategies: { [key: string]: Function } = {
+        this.strategies = {
             // 绘制基础边
             basic: (T: drawEdgeType) => {
                 if (T.source !== T.target) {
                     // 非自环边
                     return canvasEdgeDef(
                         graph.id,
-                        context,
-                        ratio,
-                        position,
+                        this.context,
+                        this.ratio,
+                        this.position,
                         T.data,
                         T.sourceX,
                         T.sourceY,
@@ -65,22 +73,22 @@ export default class edgeCanvas {
                         T.targetSize,
                         T.num,
                         T.forward,
-                        thumbnail,
+                        this.thumbnail,
                         T.size,
                     )
                 } else {
                     // 自环边
                     return canvasEdgeSelf(
                         graph.id,
-                        context,
-                        ratio,
-                        position,
+                        this.context,
+                        this.ratio,
+                        this.position,
                         T.data,
                         T.sourceX,
                         T.sourceY,
                         T.sourceSize,
                         T.num,
-                        thumbnail,
+                        this.thumbnail,
                     )
                 }
             },
@@ -91,9 +99,9 @@ export default class edgeCanvas {
                 }
                 return canvasEdgeParallel(
                     graph.id,
-                    context,
-                    ratio,
-                    position,
+                    this.context,
+                    this.ratio,
+                    this.position,
                     T.data,
                     T.sourceX,
                     T.sourceY,
@@ -103,13 +111,85 @@ export default class edgeCanvas {
                     T.forward,
                     T.sourceSize,
                     T.targetSize,
-                    thumbnail,
+                    this.thumbnail,
                     T.size,
                 )
             },
         }
+        this.quad = {}
+        this.adjacentMaps = new Map()
+    }
+    // 绘制边
+    drawEdge = async (boolean?: boolean, viewChange?: boolean) => {
+        const graph = this.graph
+        const id = graph.id
+        if(!globalInfo[id].edgeType){
+            let edgeType = graph.getEdgeType()
+            globalInfo[graph.id].edgeType = edgeType
+        }
+        let ratio = this.ratio = graph.camera.ratio
+        let edgeList = basicData[id].edgeList
+        let selectedTable = basicData[id].selectedTable
+        let {
+            typeHash, //parallel类型的hash表
+            baseTypeHash, //basic类型的hash表
+        } = globalInfo[id].edgeType
+        this.typeHash = typeHash
+        this.baseTypeHash = baseTypeHash
+        this.context = graph.ctx
+        this.thumbnail = graph.thumbnail
+        this.scale = (globalProp.globalScale / ratio) * 2.0
+        this.position = graph.camera.position
+
+        if (graph.mouseCaptor?.draggable|| graph.geo.enabled() || this.thumbnail) {
+            viewChange = true;
+            graph.geo.enabled() && (boolean = true)
+        }
+
+        if (viewChange) {
+            selectedTable = new Set();
+            this.oldSelectedTable = new Set()
+        }
+
+        let adjacentEdges = new NodeList(graph, [...selectedTable]).getAdjacentEdges()
+        let ids = basicData[id].adjacentEdges = adjacentEdges.getId()
+        let adjacentMaps = this.adjacentMaps = new Map()
+        if (adjacentEdges instanceof EdgeList && ids.length > 0) {
+            for (let i = 0, len = ids.length; i < len; i++) {
+                let key = ids[i]
+                adjacentMaps.set(key, edgeList.get(key))
+            }
+        }
+
+        if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
+            if (selectedTable.size) {
+                // @ts-ignore
+                this.frameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
+                this.context = this.frameCtx;
+            }
+            await this.plottingEdges(edgeList, this.context, !viewChange, boolean)
+            this.oldSelectedTable = clone(selectedTable)
+        }
+
+        if (selectedTable.size) {
+            for (let key in this.quad) {
+                if(edgeList.get(key)?.getAttribute('isVisible'))
+                    graph.camera.quad.insert(this.quad[key])
+            }
+            graph.ctx.drawImage(this.frameCanvas, 0, 0)
+            this.context = graph.ctx;
+            this.plottingEdges(this.adjacentMaps, this.context, false, boolean)
+        }
+    }
+
+    plottingEdges = (orderEdges: Map<string, any>, context: CanvasRenderingContext2D, used: boolean, boolean?: boolean) => {
+        const graph = this.graph
+        const id = graph.id
+        let nodeList = basicData[id].nodeList
+
         let forwadHashTable: any = new Map()
-        for (let [key, values] of edgeList) {
+        for (let [key, values] of orderEdges) {
             let item = values,
                 value = item.value,
                 source = value.source,
@@ -118,13 +198,13 @@ export default class edgeCanvas {
             // 如果被隐藏则跳过
             if (!attribute.isVisible || attribute.opacity == 0.0) continue
             if (!nodeList.has(source) || !nodeList.has(target)) continue
-
+            if (this.adjacentMaps.has(key) && used) continue
             let { type } = attribute,
                 { attribute: souce_attribute, num: sourceNumber } = nodeList.get(source).value,
                 { attribute: target_attribute, num: targetNumber } = nodeList.get(target).value,
                 hash = hashNumber(sourceNumber, targetNumber), //两点之间的hash值
                 forwardSource = forwadHashTable?.get(hash)?.sourceNumber,
-                hashSet = type == 'basic' ? baseTypeHash.get(hash) : typeHash.get(hash), //两点之间hash表
+                hashSet = type == 'basic' ? this.baseTypeHash.get(hash) : this.typeHash.get(hash), //两点之间hash表
                 size = hashSet?.num
 
             if (!size) continue
@@ -134,17 +214,16 @@ export default class edgeCanvas {
                     lineNumber == 0
                         ? 1
                         : size % 2 == 0
-                        ? lineNumber % 2 == 1 && sourceNumber != forwardSource
-                            ? -1
-                            : 1
-                        : lineNumber % 2 == 0 && sourceNumber != forwardSource
-                        ? -1
-                        : 1,
+                            ? lineNumber % 2 == 1 && sourceNumber != forwardSource
+                                ? -1
+                                : 1
+                            : lineNumber % 2 == 0 && sourceNumber != forwardSource
+                                ? -1
+                                : 1,
                 { x: targetX, y: targetY, radius: targetSize } = target_attribute,
                 { x: sourceX, y: sourceY, radius: sourceSize } = souce_attribute
             // 这条边 如果起始点和终止点有一个不存在则直接跳过
             if (!(target_attribute.isVisible && souce_attribute.isVisible)) {
-                // item.changeAttribute({ isVisible: false })
                 item.value.attribute.isVisible = false
                 continue
             }
@@ -160,8 +239,8 @@ export default class edgeCanvas {
                 !isInSceen(
                     this.graph.id,
                     'canvas',
-                    scale,
-                    position,
+                    this.scale,
+                    this.position,
                     {
                         source,
                         target,
@@ -175,14 +254,14 @@ export default class edgeCanvas {
                             targetY,
                             forward,
                         },
-                        graphId: graph.id,
+                        graphId: id,
                     },
                     2,
                 )
             ) {
                 continue
             }
-            let textPromise = strategies[type]({
+            let textPromise = this.strategies[type]({
                 context,
                 source,
                 target,
@@ -203,25 +282,33 @@ export default class edgeCanvas {
                 textPos: textPromise.textMod,
             }
 
-            let nodeBound = textPromise.boundMod
-            if (graph.thumbnail) {
-                basicData[this.graph.id].thumbnailEdgeBoundBox.set(key, { point: nodeBound.point })
-            } else {
-                basicData[this.graph.id].edgeCanvasBoundBox.set(key, { point: nodeBound.point })
-            }
+            let edgeBound = textPromise.boundMod
+            if (!graph.thumbnail)
+                basicData[id].edgeCanvasBoundBox.set(key, { point: edgeBound.point })
             if (boolean) {
-                graph.camera.quad.insert({
-                    x: nodeBound.x,
-                    y: nodeBound.y,
-                    height: nodeBound.height,
-                    width: nodeBound.width,
+                this.quad[key] = {
+                    x: roundedNum(edgeBound.x),
+                    y: roundedNum(edgeBound.y),
+                    height: roundedNum(edgeBound.height),
+                    width: roundedNum(edgeBound.width),
                     id: key,
                     isNode: false,
                     shape: type,
-                })
+                }
+                graph.camera.quad.insert(this.quad[key])
             }
-            nodeBound = null
+            edgeBound = null;
         }
         forwadHashTable = null
+    }
+
+    clear = () => {
+        this.quad = null;
+        // @ts-ignore
+        this.oldSelectedTable = null;
+        // @ts-ignore
+        this.frameCanvas = null;
+        // @ts-ignore
+        this.frameCtx = null;
     }
 }

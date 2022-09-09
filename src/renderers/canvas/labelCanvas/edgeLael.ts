@@ -23,7 +23,6 @@ export default function canvasLabelEdge(
     let scale = (globalProp.globalScale / ratio) * 2.0
 
     let { text, opacity } = data
-
     let {
         color,
         background,
@@ -34,8 +33,9 @@ export default function canvasLabelEdge(
         textPos,
         style = 'normal',
         minVisibleSize,
+        position
     } = text
-
+    let bench = position == "top" ? 0 : -10
     if (style == 'none') style = 'normal'
 
     if (!textPos) {
@@ -58,12 +58,14 @@ export default function canvasLabelEdge(
         baseY = Math.round(labelOffsetY + margin[1] * 100)
     context.font = `${style} ${fontSize}px ${fontFamily}`
     // 计算换行之后的偏移量
-    let len = lines.length > 1 ? lines.length / 2 : 0
+    let len = lines.length > 1 ? lines.length / Math.min(fontSize, 16) : 0
     let width = context.measureText(lines[0]).width
     let buffer = fontSize / 8
     let height = lines.length > 1 ? lines.length - 1 : 0
 
-    baseY -= len * (fontSize + 1)
+    if(textPos.type !== "self"){
+        baseY -= len * (fontSize + 1) + bench
+    }
     baseX -= width / 2
     color = mixColor(graphId, color, opacity)
 

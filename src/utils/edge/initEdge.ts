@@ -776,14 +776,14 @@ const operationUnion = (
     }
 
     for (let i = 0, j = 0; i < points.length; i += 2, j++) {
-        points[i] += attrNormal[i] * width * attrMiter[j]
-        points[i + 1] += attrNormal[i + 1] * width * attrMiter[j]
+        points[i] += attrNormal[i] * (width + 0.01) * attrMiter[j]
+        points[i + 1] += attrNormal[i + 1] * (width + 0.01) * attrMiter[j]
     }
     let MatArray: any = [],
         MatArray2: any = [],
         sy = width * 0.5,
         scaleN = shape?.style == 'dash' || shape == 'dash' ? 3.0 : self == true ? 1.6 : 2.0,
-        constantScale = shape?.style == 'dash' || shape == 'dash' || self ? 0 : 3
+        constantScale = shape?.style == 'dash' || shape == 'dash' || self ? 0 : 100
 
     for (let i = 0, j = 0; i < oldPoint.length - 4; i += 4, j += 5) {
         let distance = disPoint(oldPoint[i], oldPoint[i + 1], oldPoint[i + 4], oldPoint[i + 5])

@@ -178,6 +178,7 @@ export default function canvasEdgeSelf(
         x: text?.position === 'center' ? bezierMid.x : (bezierleft.x + bezierright.x) / 2,
         y: text?.position === 'center' ? bezierMid.y : (bezierleft.y + bezierright.y) / 2,
         ANGLE,
+        type: "self"
     }
 
     let point = getPoint(bezier, width)

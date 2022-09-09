@@ -5,7 +5,8 @@ import { sdfDrawTextNew } from '../../../utils/tinySdf/sdfDrawText'
 import { glMatrix, mat4 } from 'gl-matrix'
 import { EdgeLabelCollection, NodeLabelCollection } from '../../../types'
 import { globalProp, basicData } from '../../../initial/globalProp'
-import { isInSceen } from '../../../utils'
+import { isInSceen, isSameSet } from '../../../utils'
+import { clone } from 'lodash'
 
 let drawNum: number = 0
 
@@ -13,11 +14,20 @@ let nodeLabelCollection: NodeLabelCollection = {}
 
 let edgeLabelCollection: EdgeLabelCollection = {}
 
-const ATTRIBUTES = 18
+const ATTRIBUTES = 17
 
 export default class SdfTextProgram extends AbstractSDFProgram {
+
+    private oldUpdateNodes: Set<any>
+    private floatNodeLabelsLength: number
+    private plotting32Nodes: any
+
     constructor(gl: WebGLRenderingContext) {
         super(gl, vertexShaderSource, fragmentShaderSource)
+
+        this.oldUpdateNodes = new Set();
+        this.floatNodeLabelsLength = 0;
+
         // 透视矩阵和视图矩阵
         const projectMatirxLocation = gl.getUniformLocation(this.program, 'projection')
         if (projectMatirxLocation == null) throw new Error('Text: 获取不到projectionMatrix')
@@ -38,9 +48,9 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         }
     }
 
-    initEdgeCollection() {
+    initEdgeCollection(size = 0) {
         edgeLabelCollection[this.graph.id] = {
-            labelFloat32Array: new Float32Array(),
+            labelFloat32Array: new Float32Array(size),
         }
     }
 
@@ -57,7 +67,7 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         }
         this.initNodeCollection()
         // 获取点列表
-        const graphId = this.graph.id
+        const graphId = this.graph.id;
         const nodeList: Map<string, any> = basicData[graphId].nodeList
         const drawNodeList = basicData[graphId].drawNodeList
         let collection = nodeLabelCollection[graphId]
@@ -136,13 +146,27 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         this.render()
     }
 
+    plottingNodeLabels(drawNodeLableList: Map<string, any>, floatArrayLength: number) {
+        const graphId = this.graph.id
+        let collection = nodeLabelCollection[graphId]
+
+        for (let [key, val] of drawNodeLableList) {
+            const value = val
+            const attribute = value.attribute
+            let p = sdfDrawTextNew(graphId, attribute, 0, 1)
+            collection.labelFloat32Array.set(p, floatArrayLength)
+            floatArrayLength += p.length
+        }
+        return floatArrayLength
+    }
+
     processEdge() {
         if (this.graph.thumbnail) {
             return
         }
         this.initEdgeCollection()
         // 获取绘制边
-        const graphId = this.graph.id
+        const graphId = this.graph.id;
         const drawEdgeList = basicData[graphId].informationNewEdge
         let float32Labels: any = new Map()
         let collection = edgeLabelCollection[graphId]
@@ -168,7 +192,7 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         if (!labelLength) return
         drawEdgeLableList = float32Labels
         basicData[graphId].drawEdgeLableList = drawEdgeLableList
-        this.initNodeCollection(ATTRIBUTES * labelLength)
+        this.initEdgeCollection(ATTRIBUTES * labelLength)
         collection.labelFloat32Array = new Float32Array(ATTRIBUTES * labelLength)
         let floatArrayLength = 0
         for (let [key, val] of float32Labels) {
@@ -176,7 +200,6 @@ export default class SdfTextProgram extends AbstractSDFProgram {
             collection.labelFloat32Array.set(p, floatArrayLength)
             floatArrayLength += p.length
         }
-
         // 绘制
         edgeLabelCollection[graphId] = collection
         drawNum = labelLength
@@ -184,12 +207,12 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         this.render()
     }
 
-    refreshProcessEdge(): void {
-        this.processEdge()
-        return
+    refreshProcessEdge() {
+        return this.processEdge()
     }
 
     moveProcessEdge() {
+        // return this.processEdge()
         const graphId = this.graph.id
         const drawEdgeLableList = basicData[graphId].drawEdgeLableList
         const drawEdgeList = basicData[graphId].informationNewEdge
@@ -215,6 +238,7 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         drawNum = 0
         this.initNodeCollection()
         delete nodeLabelCollection[this.graph.id]
+        this.plotting32Nodes = null
         this.initEdgeCollection()
         delete edgeLabelCollection[this.graph.id]
     }

@@ -1,7 +1,7 @@
 import { originInfo } from '../../initial/originInitial'
 import { PlainObject } from '../../types'
 import { globalInfo } from '../../initial/globalProp'
-import { updateSDFTextData } from '..'
+import { initText, updateSDFTextData } from '..'
 import { drawText } from '../tinySdf/sdfDrawText'
 import { initWebglAttribute } from '../node'
 import { DEFAULT_SETTINGS } from '../../initial/settings'
@@ -126,7 +126,7 @@ export const addClass = (
                 initWebglAttribute(that, attribute)
             } else if (that.renderer === 'webgl' && !that.thumbnail) {
                 let flag = updateSDFTextData(attribute?.text)
-                if (flag) that.initText()
+                if (flag) initText(that)
                 drawText(
                     attribute?.text.fontSize,
                     attribute?.text.content,
@@ -219,7 +219,7 @@ export const setData = (
     nodeOrEdge: boolean,
     param: string | Array<string>,
     value: any,
-    isRender: boolean = true,
+    isRender: boolean = true
 ) => {
     let object = that.value.data || {}
     let data = set(object, param, value)

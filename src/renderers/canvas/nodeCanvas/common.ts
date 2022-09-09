@@ -94,10 +94,10 @@ export const drawImage = (
         context.closePath()
         context.clip()
         context.drawImage(image, x - r, y - r, r * 2, r * 2)
-    } catch {}
+    } catch { }
     context.restore()
 }
-const pattern = /[1-9]\d*\.\d*|0\.\d*[1-9]\d*$/
+const pattern = /[1-9][0-9]*/g
 /**
  * 绘制icon到点
  * @param node
@@ -142,12 +142,12 @@ export const drawIcon = async (
 
     try {
         // 兼容chrome57
-        let execFontSize = (pattern.exec(context.font) as Array<any>)[0]
+        let execFontSize = ((context.font as any).match(pattern) as Array<string | number>)[0]
         if (`${fontSize}` !== execFontSize) {
             context.restore()
             return
         }
-    } catch {}
+    } catch { }
 
     context.textAlign = 'center'
     context.textBaseline = 'middle'

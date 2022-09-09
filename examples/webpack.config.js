@@ -31,10 +31,10 @@ const EXAMPLES = {
         id: "geo",
         title: "地图",
     },
-    test_list: {
-        id: "test_list",
-        title: "测试",
-    },
+    // test_list: {
+    //     id: "test_list",
+    //     title: "测试",
+    // },
 }
 
 const entry = {}

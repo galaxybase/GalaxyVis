@@ -3,7 +3,7 @@ import { basicData } from '../../initial/globalProp'
 import { originInfo } from '../../initial/originInitial'
 import { TEPLATE } from '../../initial/settings'
 import { drawText } from '../tinySdf/sdfDrawText'
-import { hashNumber, switchSelfLinePostion, updateSDFTextData } from '../../utils'
+import { hashNumber, initText, switchSelfLinePostion, updateSDFTextData } from '../../utils'
 import { mouseAddEdgeClass, mouseRemoveEdgeClass } from '../mouse'
 import { Bezier } from './bezier'
 import { bezier3 } from '../../renderers/canvas/edgeCanvas/commom'
@@ -120,7 +120,7 @@ export const edgeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         let thumbnail = that instanceof String || that == null ? that : that.thumbnail
         if (that.renderer === 'webgl' && !thumbnail) {
             let flag = updateSDFTextData(attribute?.text)
-            if (flag) that.initText()
+            if (flag) initText(that)
             drawText(
                 attribute.text.fontSize,
                 attribute.text.content,

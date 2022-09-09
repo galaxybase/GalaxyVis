@@ -185,10 +185,10 @@ class BoundsNode extends Node {
             var node = this.nodes[index]
             // 分裂起源于节点可以插入任何对象，这个对象只要符合子节点都可以被加入。
             if (
-                item.x >= node._bounds.x &&
-                item.x + item.width <= node._bounds.x + node._bounds.width &&
-                item.y >= node._bounds.y &&
-                item.y + item.height <= node._bounds.y + node._bounds.height
+                item.x - item.width / 2 >= node._bounds.x &&
+                item.x + item.width / 2 <= node._bounds.x + node._bounds.width &&
+                item.y - item.height / 2 >= node._bounds.y &&
+                item.y + item.height / 2 <= node._bounds.y + node._bounds.height
             ) {
                 this.nodes[index].insert(item)
             } else {
@@ -226,10 +226,10 @@ class BoundsNode extends Node {
             var node = this.nodes[index]
 
             if (
-                item.x >= node._bounds.x &&
-                item.x + item.width <= node._bounds.x + node._bounds.width &&
-                item.y >= node._bounds.y &&
-                item.y + item.height <= node._bounds.y + node._bounds.height
+                item.x - item.width / 2 >= node._bounds.x &&
+                item.x + item.width / 2 <= node._bounds.x + node._bounds.width &&
+                item.y - item.height / 2 >= node._bounds.y &&
+                item.y + item.height / 2 <= node._bounds.y + node._bounds.height
             ) {
                 out = out.concat(this.nodes[index].retrieve(item))
             } else {
@@ -300,9 +300,9 @@ export class QuadTree {
      * @class QuadTree
      * @constructor
      * @param {Object} bounds
-     * @param {Boolean} pointQuad
-     * @param {Number} maxDepth
-     * @param {Number} maxChildren
+     * @param {Boolean} pointQuad 
+     * @param {Number} maxDepth 
+     * @param {Number} maxChildren 
      **/
     constructor(bounds: any, pointQuad: any, maxDepth: any, maxChildren: any) {
         var node
@@ -316,7 +316,7 @@ export class QuadTree {
     }
     /**
      * @method insert
-     * @param {Object|Array} item
+     * @param {Object|Array} item 
      **/
     public insert(item: string | any[]) {
         if (item instanceof Array) {
@@ -338,7 +338,7 @@ export class QuadTree {
     }
     /**
      * @method retrieve
-     * @param {Object} item
+     * @param {Object} item 
      **/
     retrieve(item: any) {
         var out = this.root.retrieve(item).slice(0)

@@ -13,7 +13,6 @@ function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) 
         strictRadial,
         nodeSize,
     } = options
-
     if (focusNode) {
         let found = false
         for (let i = 0; i < nodes.length; i++) {
@@ -41,8 +40,8 @@ function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) 
 
     const focusNodeD = D[focusIndex]
 
-    width = width || 800
-    height = height || 800
+    width = width || 400
+    height = height || 400
 
     !center && (center = [0, 0])
     let semiWidth = width - center[0] > center[0] ? center[0] : width - center[0]
@@ -53,18 +52,17 @@ function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) 
     if (semiHeight === 0) {
         semiHeight = height / 2
     }
-
     const maxRadius = semiHeight > semiWidth ? semiWidth : semiHeight
     const maxD = Math.max(...focusNodeD)
     const radii: number[] = []
     focusNodeD.forEach((value: number, i: number) => {
         if (!unitRadius) {
-            unitRadius = maxRadius / maxD + 100
+            unitRadius = maxRadius / maxD + 200
         }
         radii[i] = value * unitRadius
     })
 
-    !linkDistance && (linkDistance = 650)
+    !linkDistance && (linkDistance = maxRadius)
     const eIdealD = eIdealDisMatrix(nodes, D, linkDistance, radii, unitRadius)
     const W = getWeightMatrix(eIdealD)
 
@@ -96,11 +94,11 @@ function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) 
         const param = i / maxIteration
         oneIteration(param, positions, radii, eIdealD, W, focusIndex)
     }
-
+    
     if (strictRadial == undefined) strictRadial = true
 
     const nonoverlapForceParams: any = {
-        nodeSizeFunc: () => nodeSize || 100,
+        nodeSizeFunc: (item:any) => item.radius * 5,
         adjMatrix,
         positions,
         radii,
@@ -108,8 +106,8 @@ function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) 
         width,
         strictRadial,
         focusID: focusIndex,
-        iterations: 200,
-        k: positions.length / 4.5,
+        iterations: maxIteration,
+        k: positions.length,
         nodes,
     }
     const nonoverlapForce = new RadialNonoverlapForce(nonoverlapForceParams)
@@ -133,7 +131,6 @@ const oneIteration = (
 ) => {
     const vparam = 1 - param
     positions.forEach((v: any, i: number) => {
-        // v
         const originDis = getEDistance(v, [0, 0])
         const reciODis = originDis === 0 ? 0 : 1 / originDis
         if (i === focusIndex) {
@@ -143,29 +140,27 @@ const oneIteration = (
         let yMolecule = 0
         let denominator = 0
         positions.forEach((u, j) => {
-            // u
             if (i === j) {
                 return
             }
-            // the euclidean distance between v and u
             const edis = getEDistance(v, u)
             const reciEdis = edis === 0 ? 0 : 1 / edis
             const idealDis = D[j][i]
-            // same for x and y
+
             denominator += W[i][j]
-            // x
+
             xMolecule += W[i][j] * (u[0] + idealDis * (v[0] - u[0]) * reciEdis)
-            // y
+
             yMolecule += W[i][j] * (u[1] + idealDis * (v[1] - u[1]) * reciEdis)
         })
         const reciR = radii[i] === 0 ? 0 : 1 / radii[i]
         denominator *= vparam
         denominator += param * reciR * reciR
-        // x
+
         xMolecule *= vparam
         xMolecule += param * reciR * v[0] * reciODis
         v[0] = xMolecule / denominator
-        // y
+
         yMolecule *= vparam
         yMolecule += param * reciR * v[1] * reciODis
         v[1] = yMolecule / denominator
@@ -220,13 +215,10 @@ const eIdealDisMatrix = (
 
 const handleInfinity = (matrix: any[], focusIndex: number, step: number) => {
     const length = matrix.length
-    // 遍历 matrix 中遍历 focus 对应行
     for (let i = 0; i < length; i++) {
-        // matrix 关注点对应行的 Inf 项
         if (matrix[focusIndex][i] === Infinity) {
             matrix[focusIndex][i] = step
             matrix[i][focusIndex] = step
-            // 遍历 matrix 中的 i 行，i 行中非 Inf 项若在 focus 行为 Inf，则替换 focus 行的那个 Inf
             for (let j = 0; j < length; j++) {
                 if (matrix[i][j] !== Infinity && matrix[focusIndex][j] === Infinity) {
                     matrix[focusIndex][j] = step + matrix[i][j]
@@ -235,7 +227,6 @@ const handleInfinity = (matrix: any[], focusIndex: number, step: number) => {
             }
         }
     }
-    // 处理其他行的 Inf。根据该行对应点与 focus 距离以及 Inf 项点 与 focus 距离，决定替换值
     for (let i = 0; i < length; i++) {
         if (i === focusIndex) {
             continue

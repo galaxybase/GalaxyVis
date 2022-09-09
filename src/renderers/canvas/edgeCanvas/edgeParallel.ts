@@ -224,6 +224,7 @@ export default function canvasEdgeParallel(
         x: text?.position === 'center' ? bezierMid.x + xp : bezierMid.x + xp2 * Direction,
         y: text?.position === 'center' ? bezierMid.y + yp : bezierMid.y + yp2 * Direction,
         ANGLE: Math.ceil(Math.atan2(targetY - sourceY, targetX - sourceX) * 1e5) / 1e5,
+        type: "parallel"
     }
 
     let point = getPoint(bezier, width)

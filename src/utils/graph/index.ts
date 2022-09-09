@@ -54,7 +54,7 @@ const transformatStrategies = {
                 })
             })
         }
-    },
+    }
 }
 
 /**
@@ -208,7 +208,9 @@ const graphAddEdgeHandler = (that: any, edgeInfo: edgeAttributes) => {
     edgeInfo.id = edgeInfo?.id || genID(8)
     if (
         !basicData[that.id].edgeList.has(edgeInfo.id) ||
-        !basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('isVisible')
+        (!basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('isVisible') &&
+            !basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('useMergeEdge')
+        )
     ) {
         let attribute = edgeInitAttribute(that, edgeInfo?.attribute || edgeInfo?.attributes)
         let attr = { ...DEFAULT_SETTINGS.edgeAttribute, ...attribute, isFilter: false }
@@ -397,7 +399,7 @@ export const graphGetNonSelectedEdges = (that: any) => {
  * @param nodeId
  * @param isReFlash
  */
-export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: boolean) => {
+export const graphRemoveNode = (that: any, nodeId: string, isReFlash: boolean) => {
     let relationTable = that.getRelationTable()
 
     let edgelist = relationTable[nodeId]
@@ -412,7 +414,7 @@ export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: bool
         })
     }
 
-    node?.setSelected(false)
+    node?.setSelected(false, isReFlash)
     basicData[that.id].nodeList.delete(nodeId)
     originInfo[that.id].nodeList.delete(nodeId)
 
@@ -420,7 +422,7 @@ export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: bool
         that.events.emit('removeNodes', {
             nodes: new NodeList(that, [nodeId]),
         })
-        await that.render()
+        that.render()
     }
 }
 /**
@@ -430,7 +432,7 @@ export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: bool
  * @returns
  */
 export const graphRemoveNodes = (that: any, nodes: string[]) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         try {
             for (let index = 0, len = nodes.length; index < len; index++) {
                 that.removeNode(nodes[index], false)
@@ -439,7 +441,7 @@ export const graphRemoveNodes = (that: any, nodes: string[]) => {
             that.events.emit('removeNodes', {
                 nodes: nodeList,
             })
-            await that.render()
+            that.render()
             resolve(nodeList)
         } catch (err) {
             reject(err)
@@ -452,12 +454,7 @@ export const graphRemoveNodes = (that: any, nodes: string[]) => {
  * @param edgeId
  * @param isReFlash
  */
-export const graphRemoveEdge = async (
-    that: any,
-    edgeId: string,
-    force: boolean,
-    isReFlash: boolean,
-) => {
+export const graphRemoveEdge = async (that: any, edgeId: string, force: boolean, isReFlash: boolean) => {
     let edge = basicData[that.id].edgeList.get(edgeId)
 
     if (

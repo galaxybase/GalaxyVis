@@ -26,11 +26,12 @@ class RadialLayout {
      * @returns
      */
     init() {
+        const id = this.galaxyvis.id
         let nodeList = this.galaxyvis.getFilterNode()
         let layoutsNodes: any[] = []
         let { nodes } = this.options
-        let width = globalInfo[this.galaxyvis.id].BoxCanvas.getWidth,
-            height = globalInfo[this.galaxyvis.id].BoxCanvas.getHeight
+        let width = globalInfo[id].BoxCanvas.getWidth,
+            height = globalInfo[id].BoxCanvas.getHeight
 
         this.options.width = width
 
@@ -46,17 +47,16 @@ class RadialLayout {
 
         // 那些边是需要传入计算引力的
         var { layoutsEdges } = unionEdges(this.galaxyvis, layoutsNodes)
-
         var linksBak: any = layoutsEdges.concat()
         var nodesBak: any = layoutsNodes
             .map((id, index) => {
                 return {
                     id,
                     index,
+                    radius: nodeList.get(id).getAttribute('radius')
                 }
             })
             .concat()
-
         this.galaxyvis.events.emit(
             'layoutStart',
             EventType.layoutStart({
