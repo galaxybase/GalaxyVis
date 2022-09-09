@@ -388,13 +388,12 @@ class CaptorsMouse {
             !this.selectTarget.isNode() &&
             this.selectTarget.getId(),
         )
-
         nodeOrEdgeSelect(
             this.scene,
             selectedNodes,
             mouseAddClass,
             'nodesSelected',
-            selected && this.selectTarget && this.selectTarget.isNode && this.selectTarget.getId(),
+            selected && this.selectTarget && this.selectTarget.isNode() && this.selectTarget.getId(),
         )
 
         basicData[graphId].unSelectedNodes = new Set()
