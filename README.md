@@ -50,7 +50,7 @@ npm run examples  // 默认端口为8086
 此外，还提供了2个更真实的基于 GalaxyVis 的 Web 应用程序demo。它旨在展示一个真实的用例。
 
 - [了解 GalaxyVis 如何处理较大的数据场景](https://galaxyvis.com/demo/)
-- [图结合地图模式的可视化效果](https://galaxyvis.com/demo/)
+- [图结合地图模式的可视化效果](https://galaxyvis.com/demo/geo)
 
 ## 安装
 
