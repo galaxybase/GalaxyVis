@@ -10,7 +10,7 @@
 
 ## 什么是GalaxyVis？
 
-[GalaxyVis]() 是由[创邻科技](https://www.galaxybase.com/)自主研发的图可视化框架，目前已应用于图平台产品Galaxybase的可视化前端中，Galaxybase是国内首款全自主知识产权的超大规模分布式并行原生图平台产品，拥有优异的数据读写查询性能、强⼤的可视化分析能⼒、丰富的可编程接⼝和开箱即用的图算法引擎，是集存储、计算、分析于一体的图数据全⽣命周期⼀站式管理平台，免费版可以[点此](https://www.galaxybase.com/download)获取。
+[GalaxyVis](https://galaxyvis.com/) 是由[创邻科技](https://www.galaxybase.com/)自主研发的图可视化框架，目前已应用于图平台产品Galaxybase的可视化前端中，Galaxybase是国内首款全自主知识产权的超大规模分布式并行原生图平台产品，拥有优异的数据读写查询性能、强⼤的可视化分析能⼒、丰富的可编程接⼝和开箱即用的图算法引擎，是集存储、计算、分析于一体的图数据全⽣命周期⼀站式管理平台，免费版可以[点此](https://www.galaxybase.com/download)获取。
 
 它使用纯原生WebGL和Canvas作为底层绘图协议，不依赖任何第三方框架，自主可控，安全保障。
 
