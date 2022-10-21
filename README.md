@@ -24,14 +24,11 @@
 
 如果您还没有使用过 GalaxyVis， 建议通过 [快速入门](https://galaxyvis.com/Quickstart) 体验 GalaxyVis 的魅力。
 
-<img src="https://galaxyvis.com/assets/布局.gif" height="105"/>
-<img src="https://galaxyvis.com/assets/增量布局.gif" height="105"/>
-<img src="https://galaxyvis.com/assets/地图.gif" height="105"/>
+<img src="https://galaxyvis.com/assets/布局.gif" height="105"/><img src="https://galaxyvis.com/assets/增量布局.gif" height="105"/><img src="https://galaxyvis.com/assets/地图.gif" height="105"/>
 
 <br >
 
-<img src="https://galaxyvis.com/assets/多选-合并点.gif" height="105"/>
-<img src="https://galaxyvis.com/assets/一度高亮.gif" height="105"/>
+<img src="https://galaxyvis.com/assets/多选-合并点.gif" height="105"/><img src="https://galaxyvis.com/assets/一度高亮.gif" height="105"/>
 
 >  强大的布局、功能、动画和交互。
 
