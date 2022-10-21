@@ -8,7 +8,7 @@ import { DEFAULT_SETTINGS } from '../../initial/settings'
 import { defaultsDeep, has, get, merge, cloneDeep, unionBy, throttle, set } from 'lodash'
 
 // 节流函数
-const throttled = throttle(that => {
+const throttled = throttle((that) => {
     that.render()
 }, 100)
 
@@ -134,7 +134,6 @@ export const addClass = (
                     attribute?.text.style,
                 )
             }
-
             if (update) throttled(that)
             resolve(void 0)
         }

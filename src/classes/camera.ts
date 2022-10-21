@@ -1,11 +1,12 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
-import { getX, getY } from '../utils'
+import { getX, getY, vectorAngle } from '../utils'
 import { QuadTree } from '../utils/quadTree'
 import Event from '../utils/event'
+import { originInfo } from '../initial/originInitial'
 
 class Camera {
-    public gl: WebGLRenderingContext | CanvasRenderingContext2D
+    public gl: WebGLRenderingContext
     public position: vec3 //相机位置
     public Matrix: mat4 //矩阵
     public front: vec3 = [0, 0, -1] //视图方向
@@ -63,16 +64,8 @@ class Camera {
         this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
         let width = this.gl.canvas.width
         let height = this.gl.canvas.height
-        let maxRatio = 2 * this.position[2] * Math.tan((this.maxZoom * Math.PI) / 360)
         this.aspectRatio = width / height
-        this.quad = this.renderer === "canvas" ?
-            new QuadTree({ x: 0, y: 0, width, height }, false, 4, 4) :
-            new QuadTree({ 
-                x: -maxRatio / 2, 
-                y: -maxRatio / 2, 
-                width: maxRatio, 
-                height: maxRatio 
-            }, false, 4, 4)
+        this.quad = new QuadTree({ x: 0, y: 0, width, height }, false, 4, 4)
         if (!thumbnail)
             basicData[graphId].transform = width / globalProp.globalScale / this.aspectRatio
     }
@@ -90,6 +83,12 @@ class Camera {
             this.position[0] = 0
             this.position[1] = 0
         }
+    }
+
+    updateTransform() {
+        let graphId = this.graphId;
+        let width = this.gl.canvas.width
+        basicData[graphId].transform = width / globalProp.globalScale / this.aspectRatio
     }
 
     /**
@@ -153,6 +152,7 @@ class Camera {
                 this.mouseType = 3
                 break
             default:
+                this.mouseType = 2
                 console.log('mouse down')
         }
     }
@@ -170,11 +170,11 @@ class Camera {
             y,
             globalThumbnail = globalInfo[this.graphId].thumbnail,
             width = this.thumbnail ? globalThumbnail?.width : this.gl.canvas.width,
-            height = this.thumbnail ? globalThumbnail?.height : this.gl.canvas.height
+            height = this.thumbnail ? globalThumbnail?.height : this.gl.canvas.height;
+        pointX = getX(e)
+        pointY = getY(e)
         if (this.isMouseDown && this.renderer == 'webgl') {
             this.isMoving = true
-            pointX = getX(e)
-            pointY = getY(e)
             if (this.mouseType == 1) {
                 // 拖动
                 x = (((pointX - this.startMouseX) * this.ratio) / width) * this.aspectRatio
@@ -182,26 +182,50 @@ class Camera {
                 vec3.sub(this.position, this.position, [x, -y, 0])
                 this.startMouseX = pointX
                 this.startMouseY = pointY
-
                 this.updateCameraVectors()
             }
             // to do list 鼠标右键旋转整个画布
         } else if (this.isMouseDown && this.renderer == 'canvas') {
+            this.isMoving = true
             if (this.mouseType == 1) {
-                this.isMoving = true
                 let scale = globalProp.globalScale / this.ratio
-                pointX = getX(e)
-                pointY = getY(e)
-                x = (pointX - this.startMouseX) / scale;
-                y = (pointY - this.startMouseY) / scale;
-
-                vec3.sub(this.position, this.position, [-x, -y, 0]);
-                // (this.gl as CanvasRenderingContext2D).translate(x * scale, y * scale);
+                x = (pointX - this.startMouseX) / scale
+                y = (pointY - this.startMouseY) / scale
+                vec3.sub(this.position, this.position, [-x, -y, 0])
                 this.startMouseX = pointX
                 this.startMouseY = pointY
+                this.updateCameraVectors()
             }
-            this.updateCameraVectors()
         }
+        if (this.isMouseDown && this.mouseType == 3) {
+            const RANGLE = vectorAngle([pointX, pointY], [this.startMouseX, this.startMouseY], [width / 2, height / 2]) * 6
+            if (RANGLE !== 0) {
+                let Matrix = mat4.create()
+                mat4.rotateZ(Matrix, Matrix, RANGLE)
+
+                // this.position = [
+                //     (this.position[0]) * Matrix[0] + (this.position[1]) * Matrix[4], 
+                //     (this.position[0]) * Matrix[1] + (this.position[1]) * Matrix[5], 
+                //     0
+                // ]
+                // this.updateCameraVectors()
+
+                let nodeList = basicData[this.graphId].nodeList
+                nodeList.forEach((item, key) => {
+                    let { isVisible, x, y } = item.getAttribute()
+                    if (isVisible) {
+                        item.changeAttribute({
+                            x: (x) * Matrix[0] + (y) * Matrix[4],
+                            y: (x) * Matrix[1] + (y) * Matrix[5]
+                        })
+                    }
+                })
+                Event.trigger('camerarefresh', false, true)
+            }
+            this.startMouseX = pointX
+            this.startMouseY = pointY
+        }
+
 
         if (e.preventDefault) e.preventDefault()
         else e.returnValue = false

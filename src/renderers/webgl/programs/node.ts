@@ -6,24 +6,12 @@ import { glMatrix, mat4 } from 'gl-matrix'
 import { getPoint } from '../../../utils/node/getPoint'
 import { globalProp, basicData, thumbnailInfo } from '../../../initial/globalProp'
 import { NodeCollection } from '../../../types'
-import { clone } from 'lodash'
-import { isSameSet } from '../../../utils'
 
 let nodeCollection: NodeCollection = {}
 const ATTRIBUTES = 11
 export default class NodeProgram extends AbstractNodeProgram {
-    private oldUpdateNodes: Set<any>
-    private len: number
-    private plotting32Nodes: any
-    private quad: any
-    private boundBox: any
-
     constructor(gl: WebGLRenderingContext) {
         super(gl, vertexShaderSource, fragmentShaderSource)
-
-        this.oldUpdateNodes = new Set()
-        this.len = 0
-        this.quad = {}
         // 视图矩阵和透视矩阵
         const projectMatirxLocation = gl.getUniformLocation(this.program, 'projection')
         if (projectMatirxLocation == null) throw new Error('Node: 获取不到projectionMatrix')
@@ -49,9 +37,11 @@ export default class NodeProgram extends AbstractNodeProgram {
     process(): void {
         // 获取当前点列表
         const graphId = this.graph.id
-        const nodeList: Map<any, any> = basicData[graphId].nodeList
-        let needFresh = basicData[graphId].selectedTable
-
+        const transform = basicData[graphId]?.transform || 223
+        const nodeList: Map<any, any> = basicData[graphId]?.nodeList || new Map()
+        const needFresh = basicData[graphId]?.selectedTable || new Set()
+        // 获取icon的列表
+        const iconMap = globalProp.iconMap
         let boundBox: any = new Map()
         let drawNodeList: any = new Map()
         let float32Nodes: any = new Map()
@@ -71,97 +61,33 @@ export default class NodeProgram extends AbstractNodeProgram {
                         badges: true,
                     })
                 if (!needFresh.size || !needFresh.has(key)) float32Nodes.set(key, value)
+                else if (needFresh.has(key)) updateNodes.set(key, value)
             }
         }
 
-        for (let item of needFresh) {
-            let node = nodeList.get(item)
-            if (!node) continue
-            let value = node.value
-            let attributes = value.attribute
-            if (attributes?.isVisible) {
-                updateNodes.set(item, value)
-            }
+        if (updateNodes.size) {
+            for (let [key, value] of updateNodes) float32Nodes.set(key, value)
         }
-
         this.initCollection(drawNodeList.size * ATTRIBUTES)
         let collection = nodeCollection[graphId]
         let len = 0
-        let flag = true;
-        if (!this.graph.mouseCaptor?.draggable) {
-            if (updateNodes.size) {
-                for (let [key, value] of updateNodes) float32Nodes.set(key, value)
-            }
-            needFresh = new Set();
-            flag = false
-        }
-
-        if (!needFresh.size || !isSameSet(needFresh, this.oldUpdateNodes)) {
-            if (needFresh.size) {
-                this.oldUpdateNodes = clone(needFresh)
-            } else {
-                this.oldUpdateNodes = new Set()
-            }
-            this.quad = {};
-            this.boundBox = null;
-            this.plotting32Nodes = null;
-            let plottingInfo = this.plottingNodes(float32Nodes, len)
-            boundBox = plottingInfo.boundBox;
-            if(flag){
-                this.boundBox = boundBox
-                this.len = len = plottingInfo.len;
-                this.plotting32Nodes = collection.packedData
-            }
-        }
-
-        if (needFresh.size) {
-            collection.packedData.set(this.plotting32Nodes, 0)
-            for (let key in this.quad) {
-                if (nodeList.get(key)?.getAttribute('isVisible'))
-                    this.camera.quad.insert(this.quad[key])
-            }
-            boundBox = this.boundBox
-            let plottingInfo = this.plottingNodes(updateNodes, this.len)
-            let plottingBoundBox = plottingInfo.boundBox;
-            for (let [key, item] of plottingBoundBox) {
-                boundBox.set(key, item)
-            }
-        }
-
-        if (!collection.packedData.length) {
-            nodeCollection[graphId] = collection
-            return
-        }
-
-        // 更新数据
-        !this.graph.thumbnail && (basicData[graphId].drawNodeList = drawNodeList)
-        !this.graph.thumbnail && (basicData[graphId].boundBox = boundBox)
-
-        boundBox = null
-        drawNodeList = null
-        float32Nodes = null
-        updateNodes = null
-        nodeCollection[graphId] = collection
-        // 绘制
-        if (collection?.packedData?.length) {
-            this.bind(collection.packedData)
-            this.render()
-        }
-    }
-
-    plottingNodes(float32Nodes: Map<string, any>, len: number) {
-        const graphId = this.graph.id
-        const transform = basicData[graphId].transform
-        // 获取icon的列表
-        const iconMap = globalProp.iconMap
-        let collection = nodeCollection[graphId]
-        let boundBox: any = new Map()
-
         for (let [key, val] of float32Nodes) {
             const value = val
             const attributes = value.attribute
             const isBadges = attributes.badges ? true : false
             let p: any = getPoint(graphId, attributes, iconMap, transform)
+            if (this.graph.textStatus && !this.graph.thumbnail) {
+                this.camera.quad.insert({
+                    x: p.offsets[0],
+                    y: p.offsets[1],
+                    height: p.zoomResults * 0.2,
+                    width: p.zoomResults * 0.2,
+                    id: key,
+                    isNode: true,
+                    shape: attributes.shape,
+                })
+            }
+            // 生成一个AABB的包围盒
             boundBox.set(key, {
                 xmax: 0.1 * p.zoomResults + p.offsets[0],
                 xmin: -0.1 * p.zoomResults + p.offsets[0],
@@ -172,18 +98,6 @@ export default class NodeProgram extends AbstractNodeProgram {
                 num: value.num,
                 shape: attributes.shape,
             })
-            if (this.graph.textStatus && !this.graph.thumbnail) {
-                this.quad[key] = {
-                    x: p.offsets[0],
-                    y: p.offsets[1],
-                    height: p.zoomResults * 0.2,
-                    width: p.zoomResults * 0.2,
-                    id: key,
-                    isNode: true,
-                    shape: attributes.shape,
-                }
-                this.camera.quad.insert(this.quad[key])
-            }
             // 打包数据 => 变成vec4这类的
             const { packedBuffer, typesBuffer, offsetsBuffer, uvBuffer, colorBuffer } =
                 packCircleVertex(p, this.camera)
@@ -219,7 +133,21 @@ export default class NodeProgram extends AbstractNodeProgram {
             }
             p = null
         }
-        return { boundBox, len }
+
+        if (!collection.packedData.length) {
+            nodeCollection[graphId] = collection
+            return
+        }
+
+        // 更新数据
+        !this.graph.thumbnail && (basicData[graphId].drawNodeList = drawNodeList)
+        !this.graph.thumbnail && (basicData[graphId].boundBox = boundBox)
+        nodeCollection[graphId] = collection
+        // 绘制
+        if (collection?.packedData?.length) {
+            this.bind(collection.packedData)
+            this.render()
+        }
     }
 
     refreshProcess(): void {
@@ -241,11 +169,6 @@ export default class NodeProgram extends AbstractNodeProgram {
     clear(): void {
         this.initCollection()
         delete nodeCollection[this.graph.id]
-        this.quad = {};
-        this.boundBox = null;
-        this.plotting32Nodes = null;
-        // @ts-ignore
-        this.oldUpdateNodes = null;
     }
 
     render(): void {

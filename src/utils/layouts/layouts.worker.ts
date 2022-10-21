@@ -51,7 +51,12 @@ function handleLayoutMessage(event: any) {
                 }
     
                 data = concentricLayout(listConcen, options)
-    
+                if (options?.incremental) {
+                    ids = Object.keys(data)
+                    for (let i in data) {
+                        positions.push({ ...data[i], id: i })
+                    }
+                }
                 break
             }
             case 'force': {
@@ -122,7 +127,7 @@ function handleLayoutMessage(event: any) {
                         return !item.used
                     })
                 } catch (error: any) {
-                    throw new Error(error)
+                    console.error(LAYOUT_MESSAGE.ERROR);
                 }
     
                 let result: any = []
@@ -207,6 +212,8 @@ function handleLayoutMessage(event: any) {
         }
     } catch (err) {
         console.error(LAYOUT_MESSAGE.ERROR);
+        // @ts-ignore
+        postMessage({ type: LAYOUT_MESSAGE.ERROR })
     }
     // @ts-ignore
     postMessage({ type: LAYOUT_MESSAGE.END, data, ids, positions })

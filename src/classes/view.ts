@@ -30,6 +30,10 @@ export default class view<T, K> {
      * @param opts
      */
     public zoomIn = (scale?: number, opts?: AnimateOptions) => {
+        if(this.galaxyvis.geo.enabled()){
+            let zoom = this.galaxyvis.geo.getZoom()
+            return this.galaxyvis.geo.setZoom(zoom + 1)
+        }
         return viewZoomChange(1, this.galaxyvis, scale, opts)
     }
 
@@ -38,6 +42,10 @@ export default class view<T, K> {
      * @param opts
      */
     public zoomOut = (scale?: number, opts?: AnimateOptions) => {
+        if(this.galaxyvis.geo.enabled()){
+            let zoom = this.galaxyvis.geo.getZoom()
+            return this.galaxyvis.geo.setZoom(zoom - 1)
+        }
         return viewZoomChange(-1, this.galaxyvis, scale, opts)
     }
 
@@ -59,6 +67,9 @@ export default class view<T, K> {
      */
     public locateGraph = (options?: any) => {
         options = Object.assign({}, ANIMATE_DEFAULTS, options)
+        if(this.galaxyvis.geo.enabled()){
+            return this.galaxyvis.geo.locate()
+        }
         return viewLocateGraph(this.galaxyvis, options)
     }
 

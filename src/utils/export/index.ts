@@ -25,15 +25,17 @@ export function exportImageHandler(type: string, graph: any, options?: any) {
             // 获取原始画布
             let originalCanvas = canvas
 
-            let src = originalCanvas.toDataURL()
+            let src;
 
             if (graph.geo.enabled() && window.domtoimage) {
                 let mapElement = graph.geo.mapContainer
                 src = await domtoimage.toPng(mapElement)
+            } else {
+                src = originalCanvas.toDataURL()
             }
 
             if (download) {
-                downloadImage(src, filename, `image/jpeg`, scale, background, textWatermark)
+                downloadImage(originalCanvas, src, filename, `image/jpeg`, scale, background, textWatermark)
             } else {
                 let image = new Image()
                 let url
@@ -41,8 +43,8 @@ export function exportImageHandler(type: string, graph: any, options?: any) {
                 image.setAttribute('crossOrigin', 'anonymous')
                 image.onload = function () {
                     let canvas = document.createElement('canvas')
-                    canvas.width = image.width
-                    canvas.height = image.height
+                    canvas.width = originalCanvas.width
+                    canvas.height = originalCanvas.height
                     let context: any = canvas.getContext('2d')
                     // 绘制前给背景添加白底，解决描边问题
                     context.fillStyle = background || '#fff'
@@ -67,6 +69,7 @@ export function exportImageHandler(type: string, graph: any, options?: any) {
  * @param {textWatermark<any | undefined>} 水印的参数
  */
 function downloadImage(
+    originalCanvas: any,
     imgsrc: string,
     name: string,
     type: string,
@@ -80,8 +83,8 @@ function downloadImage(
     image.setAttribute('crossOrigin', 'anonymous')
     image.onload = function () {
         let canvas = document.createElement('canvas')
-        canvas.width = image.width
-        canvas.height = image.height
+        canvas.width = originalCanvas.width
+        canvas.height = originalCanvas.height
         let context: any = canvas.getContext('2d')
         // 绘制前给背景添加白底，解决描边问题
         context.fillStyle = background || '#fff'
@@ -157,8 +160,6 @@ export function exportJsonHandler(graph: any, options?: any) {
                             ? options.nodeData(node.value.data)
                             : node.value.data,
                     [IdColumnName]: node.value?.id,
-                    num: node.value?.num,
-                    classList: node.value?.classList,
                 })
             })
             edgeList.forEach((edge: any) => {
@@ -169,8 +170,6 @@ export function exportJsonHandler(graph: any, options?: any) {
                             ? options.edgeData(edge.value.data)
                             : edge.value.data,
                     [IdColumnName]: edge.value?.id,
-                    num: edge.value?.num,
-                    classList: edge.value?.classList,
                 })
             })
             if (download) {
@@ -243,9 +242,9 @@ export function exportExcelHandler(graph: any, options?: any) {
                 let sheetName = options.tab.nodes(node) + ''
                 let data = options.nodeData
                     ? {
-                          [IdColumnName]: node.value.id,
-                          ...options.nodeData(node.value.data),
-                      }
+                        [IdColumnName]: node.value.id,
+                        ...options.nodeData(node.value.data),
+                    }
                     : { [IdColumnName]: node.value.id, ...node.value.data }
                 let sheetIndex = sheet.indexOf(sheetName)
                 if (sheetIndex === -1) {
@@ -263,17 +262,17 @@ export function exportExcelHandler(graph: any, options?: any) {
                 let { id, source, target } = edge.value
                 let data = options.edgeData
                     ? {
-                          [IdColumnName]: id,
-                          source,
-                          target,
-                          ...options.edgeData(edge.value.data),
-                      }
+                        [IdColumnName]: id,
+                        source,
+                        target,
+                        ...options.edgeData(edge.value.data),
+                    }
                     : {
-                          [IdColumnName]: id,
-                          source,
-                          target,
-                          ...edge.value.data,
-                      }
+                        [IdColumnName]: id,
+                        source,
+                        target,
+                        ...edge.value.data,
+                    }
 
                 let sheetIndex = sheet.indexOf(sheetName)
                 if (sheetIndex === -1) {
@@ -389,11 +388,17 @@ export function exportCsvHandler(graph: any, options?: any) {
                 download = options.download
             }
 
-            let { edgeList, nodeList } = basicData[graph.id]
+            let nodeList = options?.nodes || basicData[graph.id].nodeList
+            let edgeList = options?.edges || basicData[graph.id].edgeList
+
             let list: any = []
             let IdColumnName = options?.IdColumnName || `id`
+
             if (options.what === 'nodes') {
                 nodeList.forEach((node: any) => {
+                    if (typeof node === "string") {
+                        node = basicData[graph.id].nodeList.get(node)
+                    }
                     list.push({
                         [IdColumnName]: node.value.id,
                         ...options.nodeData(node.value.data),
@@ -401,6 +406,9 @@ export function exportCsvHandler(graph: any, options?: any) {
                 })
             } else {
                 edgeList.forEach((edge: any) => {
+                    if (typeof edge === "string") {
+                        edge = basicData[graph.id].edgeList.get(edge)
+                    }
                     let { id, source, target } = edge.value
                     list.push({
                         [IdColumnName]: id,

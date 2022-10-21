@@ -1,5 +1,5 @@
 import { mat4 } from 'gl-matrix'
-import { coordTransformation, floatColor, initGlTextureBind, newfloatColor } from '..'
+import { coordTransformation, floatColor, initGlTextureBind } from '..'
 import tinySDF from '.'
 import { globalInfo, globalProp, instancesGL } from '../../initial/globalProp'
 import throttle from 'lodash/throttle'
@@ -41,7 +41,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
         mat4.ortho(pMatrix, 0, glWidth, glHeight, 0, 0, -1)
         mat4.multiply(mvpMatrix, pMatrix, mvMatrix)
 
-        atlas = graph.fast ? 8 : (globalProp.atlas || 8)
+        atlas = graph.fast ? globalProp.fastAtlas : (globalProp.atlas || 8)
         sdfCtx.canvas.width = Math.floor(atlas * 64)
         sdfCtx.canvas.height = Math.floor(atlas * 64)
     }
@@ -79,7 +79,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
         // 字体大小
         const fontSize = 28
         // buffer是控制文字上下浮动的距离
-        const buffer = 2
+        const buffer = 4
         // radius是控制生成sdf文字周边黑色区块的大小
         const radius = 8
         const sdf = new tinySDF({
@@ -117,7 +117,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
 
     try {
         flag = false
-        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) { throttled(graph, gl, texture); }
+        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) { throttled(graph, gl, texture);}
         else {
             initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
             // throttled(graph, gl, texture)
@@ -125,7 +125,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
                 for (let i in instancesGL) {
                     let gl = instancesGL[i]
                     // initGlTextureBind(gl, gl.TEXTURE1, gl.createTexture(), sdfCanvas, false)
-                    throttled(graph, gl, gl.createTexture())
+                    throttled(graph, gl,gl.createTexture())
                 }
             }
 
@@ -142,7 +142,7 @@ export function drawText(size: number, str: string, maxLength: number, style: st
     const vertexElements: number[] = []
     const textureElements: number[] = []
 
-    const fontsize = 32
+    const fontsize = 36
     const buf = fontsize / 24
 
     const height = fontsize + buf * 2
@@ -202,7 +202,7 @@ export function drawText(size: number, str: string, maxLength: number, style: st
         )
         pen.x = pen.x + advance * screenScale * scale
     }
-    return (globalProp.labelStore[str] = {
+    return (globalProp.labelStore[`${size}-${str}-${style}`] = {
         textureElements,
         vertexElements,
         sum,
@@ -214,30 +214,31 @@ export function drawText(size: number, str: string, maxLength: number, style: st
     })
 }
 
-const ATTRIBUTES = 17;
+const ATTRIBUTES = 18;
 export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, type: number) => {
     let { text, x, y, radius, isNode, opacity } = attribute
 
-    let { margin = [0, 0], position, color, background, content, fontSize, minVisibleSize } = text
-
-    let result = globalProp.labelStore[content]
+    let { margin = [0, 0], position, color, background, content, fontSize, minVisibleSize, style } = text
+    !style && (style = "normal")
+    let result = globalProp.labelStore[`${fontSize}-${content}-${style}`]
 
     let height = result.height / globalInfo[graphId].canvasBox.height
 
     let colorFloat = floatColor(color).rgb
-    let backgroundFloat = newfloatColor(background)
+    let backgroundFloat = floatColor(background).rgb
+    let aphaBackground = background[0] == '#' ? 1.0 : floatColor(background).a
 
     // 如果是点文字类型的 更具positioin给不同的偏移量
     let offset: number[] = [0, 0, 0]
 
     if (isNode) {
-        let xyOffect = coordTransformation(graphId, x, y);
-        x = xyOffect[0], y = xyOffect[1];
+        let xyOffect = coordTransformation(graphId, x, y)
+            ; (x = xyOffect[0]), (y = xyOffect[1])
     }
 
     let postionState: { [key: string]: Function } = {
         bottom: () => {
-            return [margin[0] + x, margin[1] + y - radius / 100 - result.size / 500, angle]
+            return [margin[0] + x, margin[1] + y - radius / 100 - result.size / 500 + 0.03, angle]
         },
         right: () => {
             return [
@@ -289,7 +290,10 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
     let labelFloat32Array = new Float32Array(ATTRIBUTES * vEle.length / 4)
 
     // 纹理矩阵和坐标矩阵的计算
-    for (let i = 0, k = 0; i < vEle.length; i += 4, k += ATTRIBUTES) {
+    for (let i = 0, j = 0, k = 0; i < vEle.length; i += 4, j += 2, k += ATTRIBUTES) {
+
+        labelFloat32Array[k] = Number(fontSize) || 15
+        labelFloat32Array[k + 1] = Number(minVisibleSize) || 6
 
         // 顶点矩阵
         let Matrix = mat4.create()
@@ -300,13 +304,13 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
 
         mat4.multiply(Matrix, XmvpMatrix, Matrix)
 
-        labelFloat32Array[k] = Matrix[0]
-        labelFloat32Array[k + 1] = Matrix[4]
-        labelFloat32Array[k + 2] = Matrix[12]
+        labelFloat32Array[k + 2] = Matrix[0]
+        labelFloat32Array[k + 3] = Matrix[4]
+        labelFloat32Array[k + 4] = Matrix[12]
 
-        labelFloat32Array[k + 3] = Matrix[1]
-        labelFloat32Array[k + 4] = Matrix[5]
-        labelFloat32Array[k + 5] = Matrix[13]
+        labelFloat32Array[k + 5] = Matrix[1]
+        labelFloat32Array[k + 6] = Matrix[5]
+        labelFloat32Array[k + 7] = Matrix[13]
 
         // 纹理矩阵
         let TexMatrix = mat4.create()
@@ -315,20 +319,18 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
         // 缩放
         mat4.scale(TexMatrix, TexMatrix, [tEle[i + 2], tEle[i + 3], 0])
 
-        labelFloat32Array[k + 6] = TexMatrix[0]
-        labelFloat32Array[k + 7] = TexMatrix[4]
-        labelFloat32Array[k + 8] = TexMatrix[12]
+        labelFloat32Array[k + 8] = TexMatrix[0]
+        labelFloat32Array[k + 9] = TexMatrix[4]
+        labelFloat32Array[k + 10] = TexMatrix[12]
 
-        labelFloat32Array[k + 9] = TexMatrix[1]
-        labelFloat32Array[k + 10] = TexMatrix[5]
-        labelFloat32Array[k + 11] = TexMatrix[13]
+        labelFloat32Array[k + 11] = TexMatrix[1]
+        labelFloat32Array[k + 12] = TexMatrix[5]
+        labelFloat32Array[k + 13] = TexMatrix[13]
 
-        labelFloat32Array[k + 12] = colorFloat
-        labelFloat32Array[k + 13] = opacity
-        labelFloat32Array[k + 14] = Number(fontSize) || 15
-        labelFloat32Array[k + 15] = Number(minVisibleSize) || 6
-
-        labelFloat32Array[k + 16] = backgroundFloat
+        labelFloat32Array[k + 14] = colorFloat
+        labelFloat32Array[k + 15] = backgroundFloat
+        labelFloat32Array[k + 16] = aphaBackground
+        labelFloat32Array[k + 17] = opacity
     }
 
     result = null

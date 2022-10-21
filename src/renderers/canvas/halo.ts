@@ -13,6 +13,7 @@ export default class haloCanvas {
     }
     // 绘制点Halo
     drawNodeHalo = () => {
+        const graphId = this.graph.id;
         // 获取当前graph对象
         let graph = this.graph
         // 获取当前缩放
@@ -20,11 +21,11 @@ export default class haloCanvas {
         // 获取相机当前位置
         let position = graph.camera.position
         // 获取当前的点列表
-        let nodeList = basicData[this.graph.id].nodeList
+        let nodeList = basicData[graphId].nodeList
         // 获取当前画布
         let context = graph.ctx
         // 获取顺序
-        let orderNodes = [...globalInfo[graph.id].nodeOrder]
+        let orderNodes = [...globalInfo[graphId].nodeOrder]
         let thumbnail = graph.thumbnail
         let scale = (globalProp.globalScale / ratio) * 2.0
 
@@ -41,16 +42,17 @@ export default class haloCanvas {
                 if (
                     !data.isVisible ||
                     data.halo.width == 0 ||
-                    !isInSceen(this.graph.id, 'canvas', scale, position, data, 1)
+                    !isInSceen(graphId, 'canvas', scale, position, data, 1)
                 )
                     continue
-                canvasNodeHalo(graph.id, context, data, ratio, position, thumbnail)
+                canvasNodeHalo(graphId, context, data, ratio, position, thumbnail)
             }
         }
         this.drawEdgeHalo()
     }
 
     drawEdgeHalo = () => {
+        const graphId = this.graph.id;
         // 获取当前graph对象
         let graph = this.graph
         // 获取当前相机缩放等级
@@ -58,12 +60,12 @@ export default class haloCanvas {
         // 获取当前相机位置
         let position = graph.camera.position
         // 获取未被隐藏的点列表
-        let nodeList = basicData[this.graph.id].nodeList
+        let nodeList = basicData[graphId].nodeList
         // 获取边列表
-        let edgeList = basicData[this.graph.id].edgeList
+        let edgeList = basicData[graphId].edgeList
         // 获取个边的类型
         let edgeType = graph.getEdgeType()
-        globalInfo[graph.id].edgeType = edgeType
+        globalInfo[graphId].edgeType = edgeType
         // 获取当前canvas画布
         let context = graph.ctx
         let thumbnail = graph.thumbnail
@@ -117,7 +119,7 @@ export default class haloCanvas {
                     if (source != target) {
                         size > 1 && size % 2 == 0 && lineNumber++
                         canvasEdgeDef(
-                            this.graph.id,
+                            graphId,
                             context,
                             ratio,
                             position,
@@ -135,7 +137,7 @@ export default class haloCanvas {
                         )
                     } else {
                         canvasEdgeSelf(
-                            this.graph.id,
+                            graphId,
                             context,
                             ratio,
                             position,

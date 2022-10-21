@@ -1,5 +1,5 @@
 import { coordTransformation } from '..'
-import { basicData, globalInfo, globalProp } from '../../initial/globalProp'
+import { basicData, globalInfo } from '../../initial/globalProp'
 import { AnimateOptions } from '../../types'
 import { animateCamera } from '../cameraAnimate'
 
@@ -19,7 +19,7 @@ export const viewZoomChange = (
             if (nowZoom > camera.maxZoom && type == -1) nowZoom = camera.maxZoom
             // 相机动画
             animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts, () => {
-                resolve((): void => { })
+                resolve((): void => {})
             })
         } catch {
             reject('ZoomChange Fail')

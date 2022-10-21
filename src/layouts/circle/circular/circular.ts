@@ -23,6 +23,16 @@ function genericCircularLayout(assign: any, nodes: any, options: any) {
     const angleStep = (endAngle - startAngle) / n
     const divN = Math.ceil(n / (divisions || 1))
     const astep = angleStep * (angleRatio || 1)
+
+    if (n == 1) {
+        // @ts-ignore
+        positions[nodes[0]] = {
+            x: center[0],
+            y: center[1],
+        }
+        return positions
+    }
+
     if (!radius && !startRadius && !endRadius) {
         let minDist = (repulsion || nodeSize) + nodeSpace
 
@@ -36,7 +46,6 @@ function genericCircularLayout(assign: any, nodes: any, options: any) {
 
         radius = r
     }
-
     for (let i = 0; i < n; i++) {
         r = radius
         // 螺旋状

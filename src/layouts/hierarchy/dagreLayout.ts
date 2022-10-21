@@ -1,24 +1,16 @@
-import { AnimateType } from '../../types'
-import { animateNodes } from '../../utils/graphAnimate'
+import { AnimateType, LAYOUT_MESSAGE } from '../../types'
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { unionEdges } from '../../utils/layouts/common'
 import { EventType } from '../../utils/events'
 import { globalInfo } from '../../initial/globalProp'
-import { incrementalLayout } from '../incremental'
-import NodeList from '../../classes/nodeList'
 import dagrelLayout from './dagreTree/dagre'
+import { animation } from '../animation'
+import BaseLayout from '../baseLayout'
 
-class DagrelLayout {
-    private galaxyvis: any
-    public options: AnimateType
-    public data: any
-    private ids: any
-    private positions: any
-
+class DagrelLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
-        this.galaxyvis = galaxyvis
-        this.options = options
+        super(galaxyvis, options)
     }
 
     /**
@@ -59,11 +51,11 @@ class DagrelLayout {
             .concat()
 
         this.galaxyvis.events.emit(
-            'layoutStart',
+            LAYOUT_MESSAGE.START,
             EventType.layoutStart({
                 ids: layoutsNodes,
                 name: 'dagre',
-                type: 'layoutStart',
+                type: LAYOUT_MESSAGE.START,
             }),
         )
         return {
@@ -95,6 +87,12 @@ class DagrelLayout {
      */
     layout() {
         return new Promise(async (resolve, reject) => {
+
+            if(this.galaxyvis.geo.enabled()){
+                console.warn("Geo mode does not allow the use of layouts")
+                return resolve(void 0)
+            }
+
             let { linksBak, nodesBak, layoutsNodes: layoutsNode } = await this.init()
 
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
@@ -111,94 +109,25 @@ class DagrelLayout {
                 })
 
                 worker.onmessage = function (event: any) {
-                    if (event.data.type == 'layoutEnd') {
+                    if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-
-                        if (that.options?.incremental)
-                            that.data = incrementalLayout(
-                                that.galaxyvis.id,
-                                event.data.positions,
-                                new NodeList(that.galaxyvis, event.data.ids),
-                                that.options,
-                            )
-
-                        animateNodes(
-                            that.galaxyvis,
-                            that.data,
-                            {
-                                duration: that.options.duration,
-                                easing: that.options.easing,
-                            },
-                            () => {
-                                that.galaxyvis.events.emit(
-                                    'layoutEnd',
-                                    EventType.layoutEnd({
-                                        ids: layoutsNode,
-                                        name: 'concentric',
-                                        type: 'dagre',
-                                        postions: that.options?.incremental
-                                            ? that.data
-                                            : that.data.map((item: any) => {
-                                                  return {
-                                                      x: item.x,
-                                                      y: item.y,
-                                                  }
-                                              }),
-                                    }),
-                                )
-                                worker.terminate()
-                                resolve(true)
-                            },
-                            that.options?.incremental ? false : true,
-                        )
+                        animation(that, event, layoutsNode, 'dagre').then((data) => {
+                            worker.terminate()
+                            resolve(data)
+                        })
                     } else {
                         worker.terminate()
-                        reject('fail')
+                        reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
-                // worker.addEventListener('message', function (event: any) {})
             } else {
                 try {
                     this.execute(nodesBak, linksBak)
-
-                    if (this.options?.incremental)
-                        this.data = incrementalLayout(
-                            this.galaxyvis.id,
-                            this.positions,
-                            new NodeList(this.galaxyvis, this.ids),
-                            this.options,
-                        )
-
-                    animateNodes(
-                        this.galaxyvis,
-                        this.data,
-                        {
-                            duration: this.options.duration,
-                            easing: this.options.easing,
-                        },
-                        () => {
-                            this.galaxyvis.events.emit(
-                                'layoutEnd',
-                                EventType.layoutEnd({
-                                    ids: layoutsNode,
-                                    name: 'dagre',
-                                    type: 'layoutEnd',
-                                    postions: this.options?.incremental
-                                        ? this.data
-                                        : this.data.map((item: any) => {
-                                              return {
-                                                  x: item.x,
-                                                  y: item.y,
-                                              }
-                                          }),
-                                }),
-                            )
-                            resolve(true)
-                        },
-                        this.options?.incremental ? false : true,
-                    )
+                    animation(this, null, layoutsNode, 'dagre').then((data) => {
+                        resolve(data)
+                    })
                 } catch (err) {
-                    reject(err)
+                    reject(LAYOUT_MESSAGE.ERROR)
                 }
             }
         })

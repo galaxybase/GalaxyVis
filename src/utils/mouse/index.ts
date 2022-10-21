@@ -17,7 +17,8 @@ export const nodeOrEdgeSelect = (
             hasNodeEmit =
                 unSelectedNodes.size !== 1 ||
                 selectedNodes.size !== 1 ||
-                [...unSelectedNodes][0] !== [...selectedNodes][0],
+                [...unSelectedNodes][0] !== [...selectedNodes][0] || 
+                selectedEdges.size !== 0 || unSelectedEdges.size !== 0,
             hasEdgeEmit =
                 unSelectedEdges.size !== 1 ||
                 selectedEdges.size !== 1 ||

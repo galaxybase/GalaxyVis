@@ -1,6 +1,5 @@
 import { basicData, globalInfo } from '../../initial/globalProp'
-import { AnimateType, PlainObject } from '../../types'
-import { animateNodes } from '../../utils/graphAnimate'
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from '../../types'
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { localComputation, unionEdges } from '../../utils/layouts/common'
@@ -14,20 +13,12 @@ import {
     forceCollide,
 } from './force'
 import { EventType } from '../../utils/events'
-import { incrementalLayout } from '../incremental'
-import NodeList from '../../classes/nodeList'
-import { values } from 'lodash'
+import { animation } from '../animation'
+import BaseLayout from '../baseLayout'
 
-class ForceLayout {
-    private galaxyvis: any
-    public options: AnimateType
-    public data: any
-    private ids: any
-    private positions: any
-
+class ForceLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
-        this.galaxyvis = galaxyvis
-        this.options = options
+        super(galaxyvis, options)
     }
 
     /**
@@ -46,9 +37,11 @@ class ForceLayout {
         var layoutsEdges = [], nodesData = [];
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             let i = 0;
+            let relationTable = this.galaxyvis.getEdgeType().relationTable
             nodeList.forEach((values: any, key: any) => {
                 layoutsNodes.push(key)
-                nodesData[i++] = ({ id: key, isSingle: false })
+                let needEdgeFresh = relationTable[layoutsNodes[i]]
+                nodesData[i++] = ({ id: key, isSingle: needEdgeFresh ? false : true })
             })
             let j = 0
             edgelist.forEach((values, key) => {
@@ -80,11 +73,11 @@ class ForceLayout {
         }
 
         this.galaxyvis.events.emit(
-            'layoutStart',
+            LAYOUT_MESSAGE.START,
             EventType.layoutStart({
                 ids: layoutsNodes,
                 name: 'force',
-                type: 'layoutStart',
+                type: LAYOUT_MESSAGE.START,
             }),
         )
 
@@ -179,103 +172,50 @@ class ForceLayout {
         }
 
         return new Promise((resolve, reject) => {
+
+            if (this.galaxyvis.geo.enabled()) {
+                console.warn("Geo mode does not allow the use of layouts");
+                return resolve(void 0)
+            }
+
             let initObj = this.init()
+            let { nodesData, layoutsEdges, layoutsNodes, width, height, center } = initObj
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
                 // @ts-ignore
                 let worker = new LayoutWorker()
                 let that = this
                 worker.postMessage({
-                    nodes: initObj.nodesData,
-                    edges: initObj.layoutsEdges,
+                    nodes: nodesData,
+                    edges: layoutsEdges,
                     layoutCfg: {
                         type: 'force',
                         options: this.options,
-                        width: initObj.width,
-                        height: initObj.height,
-                        center: initObj.center,
+                        width: width,
+                        height: height,
+                        center: center,
                     },
                 })
 
                 worker.onmessage = function (event: any) {
-                    if (event.data.type == 'layoutEnd') {
+                    if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-
-                        if (that.options?.incremental)
-                            that.data = incrementalLayout(
-                                that.galaxyvis.id,
-                                event.data.positions,
-                                new NodeList(that.galaxyvis, event.data.ids),
-                                that.options,
-                            )
-
-                        animateNodes(
-                            that.galaxyvis,
-                            that.data,
-                            {
-                                duration: that.options.duration,
-                                easing: that.options.easing,
-                            },
-                            () => {
-                                that.galaxyvis.events.emit(
-                                    'layoutEnd',
-                                    EventType.layoutEnd({
-                                        ids: initObj.layoutsNodes,
-                                        name: 'force',
-                                        type: 'layoutEnd',
-                                        postions: initObj.layoutsNodes.map(
-                                            (item: string | number) => {
-                                                return that.data[item]
-                                            },
-                                        ),
-                                    }),
-                                )
-                                worker.terminate()
-                                resolve(true)
-                            },
-                            that.options?.incremental ? false : true,
-                        )
+                        animation(that, event, layoutsNodes, 'force').then((data) => {
+                            worker.terminate()
+                            resolve(data)
+                        })
                     } else {
                         worker.terminate()
-                        reject('fail')
+                        reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
             } else {
                 try {
                     this.execute(initObj)
-
-                    if (this.options?.incremental)
-                        this.data = incrementalLayout(
-                            this.galaxyvis.id,
-                            this.positions,
-                            new NodeList(this.galaxyvis, this.ids),
-                            this.options,
-                        )
-
-                    animateNodes(
-                        this.galaxyvis,
-                        this.data,
-                        {
-                            duration: this.options.duration,
-                            easing: this.options.easing,
-                        },
-                        () => {
-                            this.galaxyvis.events.emit(
-                                'layoutEnd',
-                                EventType.layoutEnd({
-                                    ids: initObj.layoutsNodes,
-                                    name: 'force',
-                                    type: 'layoutEnd',
-                                    postions: initObj.layoutsNodes.map((item: string | number) => {
-                                        return this.data[item]
-                                    }),
-                                }),
-                            )
-                            resolve(true)
-                        },
-                        this.options?.incremental ? false : true,
-                    )
+                    animation(this, null, layoutsNodes, 'force').then((data) => {
+                        resolve(data)
+                    })
                 } catch (err) {
-                    reject(err)
+                    reject(LAYOUT_MESSAGE.ERROR)
                 }
             }
         })

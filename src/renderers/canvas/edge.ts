@@ -122,18 +122,18 @@ export default class edgeCanvas {
     // 绘制边
     drawEdge = async (boolean?: boolean, viewChange?: boolean) => {
         const graph = this.graph
-        const id = graph.id
-        if(!globalInfo[id].edgeType){
+        const graphId = graph.id
+        if(!globalInfo[graphId].edgeType){
             let edgeType = graph.getEdgeType()
-            globalInfo[graph.id].edgeType = edgeType
+            globalInfo[graphId].edgeType = edgeType
         }
         let ratio = this.ratio = graph.camera.ratio
-        let edgeList = basicData[id].edgeList
-        let selectedTable = basicData[id].selectedTable
+        let edgeList = basicData[graphId].edgeList
+        let selectedTable = basicData[graphId].selectedTable
         let {
             typeHash, //parallel类型的hash表
             baseTypeHash, //basic类型的hash表
-        } = globalInfo[id].edgeType
+        } = globalInfo[graphId].edgeType
         this.typeHash = typeHash
         this.baseTypeHash = baseTypeHash
         this.context = graph.ctx
@@ -152,7 +152,7 @@ export default class edgeCanvas {
         }
 
         let adjacentEdges = new NodeList(graph, [...selectedTable]).getAdjacentEdges()
-        let ids = basicData[id].adjacentEdges = adjacentEdges.getId()
+        let ids = basicData[graphId].adjacentEdges = adjacentEdges.getId()
         let adjacentMaps = this.adjacentMaps = new Map()
         if (adjacentEdges instanceof EdgeList && ids.length > 0) {
             for (let i = 0, len = ids.length; i < len; i++) {
@@ -164,7 +164,7 @@ export default class edgeCanvas {
         if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
             if (selectedTable.size) {
                 // @ts-ignore
-                this.frameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.frameCanvas = globalInfo[graphId].canvasBox.cloneNode(true)
                 this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
                 this.context = this.frameCtx;
             }
@@ -185,8 +185,8 @@ export default class edgeCanvas {
 
     plottingEdges = (orderEdges: Map<string, any>, context: CanvasRenderingContext2D, used: boolean, boolean?: boolean) => {
         const graph = this.graph
-        const id = graph.id
-        let nodeList = basicData[id].nodeList
+        const graphId = graph.id
+        let nodeList = basicData[graphId].nodeList
 
         let forwadHashTable: any = new Map()
         for (let [key, values] of orderEdges) {
@@ -237,7 +237,7 @@ export default class edgeCanvas {
             forwadHashTable?.set(hash, { sourceNumber, targetNumber })
             if (
                 !isInSceen(
-                    this.graph.id,
+                    graphId,
                     'canvas',
                     this.scale,
                     this.position,
@@ -254,7 +254,7 @@ export default class edgeCanvas {
                             targetY,
                             forward,
                         },
-                        graphId: id,
+                        graphId,
                     },
                     2,
                 )
@@ -284,7 +284,7 @@ export default class edgeCanvas {
 
             let edgeBound = textPromise.boundMod
             if (!graph.thumbnail)
-                basicData[id].edgeCanvasBoundBox.set(key, { point: edgeBound.point })
+                basicData[graphId].edgeCanvasBoundBox.set(key, { point: edgeBound.point })
             if (boolean) {
                 this.quad[key] = {
                     x: roundedNum(edgeBound.x),

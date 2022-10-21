@@ -79,7 +79,7 @@ export default class fastnodeProgram extends AbstractHaloProgram {
         let collection = fastnodeCollection[graphId]
         let len = 0
         let flag = true;
-        if (!this.graph.mouseCaptor?.draggable) {
+        if (!this.graph.mouseCaptor?.draggable || !this.graph.textStatus) {
             if (updateNodes.size) {
                 for (let [key, value] of updateNodes) float32Nodes.set(key, value)
             }

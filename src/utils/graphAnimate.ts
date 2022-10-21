@@ -20,6 +20,11 @@ export function animateNodes(
     callback: () => void,
     isInLayout: boolean = true,
 ): () => void {
+
+    if (!basicData[graph.id]) {
+        return () => void 0;
+    }
+
     // 动画缓动方式和延时
     let { duration, easing } = ANIMATE_DEFAULTS
     opts.duration = opts.duration || duration
@@ -54,6 +59,11 @@ export function animateNodes(
     let frame: number | null = null
 
     const step = () => {
+        
+        if (!basicData[graph.id]) {
+            return () => void 0;
+        }
+
         let p = (Date.now() - start) / options.duration
 
         // 回归
@@ -64,7 +74,7 @@ export function animateNodes(
                 basicData[graph.id].nodeList.get(id)?.changeAttribute(attrs)
             }
             if (isInLayout) graph.textStatus = true
-            graph.render(false)
+            graph.render()
             if (typeof callback === 'function') callback()
             return
         }
@@ -84,7 +94,7 @@ export function animateNodes(
             // })
         }
         if (isInLayout) graph.textStatus = false
-        graph.render(false)
+        graph.render()
         // 执行下一帧动画
         frame = requestFrame(step)
     }

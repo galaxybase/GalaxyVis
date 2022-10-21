@@ -42,12 +42,12 @@ export default class lableCanvas {
         this.adjacentArray = []
     }
     // 绘制点文字
-    drawNodeLabel = (viewChange?: boolean) => {
+    drawNodeLabel = async (viewChange?: boolean) => {
         const graph = this.graph
-        const id = graph.id
+        const graphId = graph.id
         let ratio = this.ratio = graph.camera.ratio
-        let orderNodes = [...globalInfo[id].nodeOrder]
-        let selectedTable = basicData[id].selectedTable
+        let orderNodes = [...globalInfo[graphId].nodeOrder]
+        let selectedTable = basicData[graphId].selectedTable
         this.context = graph.ctx
         this.thumbnail = graph.thumbnail
         this.scale = (globalProp.globalScale / ratio) * 2.0
@@ -66,25 +66,25 @@ export default class lableCanvas {
         if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
             if (selectedTable.size) {
                 // @ts-ignore
-                this.frameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.frameCanvas = globalInfo[graphId].canvasBox.cloneNode(true)
                 this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
                 this.context = this.frameCtx;
             }
-            this.plottingNodeLabel(orderNodes, this.context, !viewChange)
+            await this.plottingNodeLabel(orderNodes, this.context, !viewChange)
             this.oldSelectedTable = clone(selectedTable)
         }
         if (selectedTable.size) {
             graph.ctx.drawImage(this.frameCanvas, 0, 0)
             this.context = graph.ctx;
-            this.plottingNodeLabel([...selectedTable], this.context, false)
+            await this.plottingNodeLabel([...selectedTable], this.context, false)
         }
     }
 
-    plottingNodeLabel = (orderNodes: any[], context: CanvasRenderingContext2D, used: boolean) => {
+    plottingNodeLabel = async (orderNodes: any[], context: CanvasRenderingContext2D, used: boolean) => {
         const graph = this.graph;
-        const id = graph.id
-        let nodeList = basicData[id].nodeList
-        let selectedTable = basicData[id].selectedTable
+        const graphId = graph.id
+        let nodeList = basicData[graphId].nodeList
+        let selectedTable = basicData[graphId].selectedTable
 
         for (let keys in orderNodes) {
             let key = orderNodes[keys]
@@ -95,13 +95,13 @@ export default class lableCanvas {
                 if (
                     !data.isVisible ||
                     data.opacity == 0.0 ||
-                    !isInSceen(id, 'canvas', this.scale, this.position, data, 1)
+                    !isInSceen(graphId, 'canvas', this.scale, this.position, data, 1)
                 )
                     continue
                 let text = data?.text
                 // 判断该点是否存在文字
                 if (text && text.content && text.content != '') {
-                    canvasLabelNode(id, context, data, this.position, this.ratio, this.thumbnail)
+                    await canvasLabelNode(graphId, context, data, this.position, this.ratio, this.thumbnail)
                 }
             }
         }
@@ -110,14 +110,14 @@ export default class lableCanvas {
     // 绘制边文字
     drawEdgeLabel = (viewChange?: boolean) => {
         const graph = this.graph
-        const id = graph.id
+        const graphId = graph.id
         let ratio = this.ratio = graph.camera.ratio
-        let selectedTable = basicData[id].selectedTable
+        let selectedTable = basicData[graphId].selectedTable
         this.context = graph.ctx
         this.thumbnail = graph.thumbnail
         this.scale = (globalProp.globalScale / ratio) * 2.0
         this.position = graph.camera.position
-        let orderEdges = [...globalInfo[graph.id].edgeOrder]
+        let orderEdges = [...globalInfo[graphId].edgeOrder]
 
         if (this.thumbnail) return
 
@@ -128,7 +128,7 @@ export default class lableCanvas {
         if (viewChange) {
             selectedTable = new Set();
         }
-        let ids = basicData[id].adjacentEdges
+        let ids = basicData[graphId].adjacentEdges
         let adjacentArray: any[] = this.adjacentArray = []
         if (ids.length > 0) {
             for (let i = 0, len = ids.length; i < len; i++) {
@@ -138,7 +138,7 @@ export default class lableCanvas {
         if (!selectedTable.size || !isSameSet(selectedTable, this.edgeOldSelectedTable) || viewChange) {
             if (selectedTable.size) {
                 // @ts-ignore
-                this.edgeFrameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.edgeFrameCanvas = globalInfo[graphId].canvasBox.cloneNode(true)
                 this.edgeFrameCtx = this.edgeFrameCanvas.getContext('2d') as CanvasRenderingContext2D
                 this.context = this.edgeFrameCtx;
             }
@@ -155,8 +155,8 @@ export default class lableCanvas {
 
     plottingEdgeLabel = (orderEdges: any[], context: CanvasRenderingContext2D, used: boolean,) => {
         const graph = this.graph
-        const id = graph.id
-        let edgeList = basicData[id].edgeList
+        const graphId = graph.id
+        let edgeList = basicData[graphId].edgeList
 
         for (let keys in orderEdges) {
             let key = orderEdges[keys]
@@ -169,7 +169,7 @@ export default class lableCanvas {
                 let text = data?.text
                 // 判断该边是否存在文字
                 if (text && text.content && text.content != '') {
-                    canvasLabelEdge(id, context, data, this.ratio)
+                    canvasLabelEdge(graphId, context, data, this.ratio)
                 }
             }
         }

@@ -61,7 +61,7 @@ export default function canvasNodeDef(
             data,
             x,
             y,
-            size - Math.ceil(1.2 * borderSize * 1e5) / 1e3 - Math.ceil(0.08 * size * 1e3) / 1e3,
+            size - Math.ceil(0.08 * size * 1e3 + (borderSize / 0.4) * size) / 1e3,
             context,
             'anonymous',
         )

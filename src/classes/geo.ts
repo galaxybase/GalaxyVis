@@ -1,8 +1,8 @@
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
 import { originInfo } from '../initial/originInitial'
-import { GeoModeOptions } from '../types'
+import { GeoModeOptions, MouseType } from '../types'
 import { animateNodes } from '../utils/graphAnimate'
-import { cloneDeep } from 'lodash'
+import { cloneDeep, update } from 'lodash'
 
 const L = window.L //解决未引入leaflet导致编译失败
 const standards = 1.5
@@ -119,14 +119,10 @@ L && (L.CanvasLayer = L.Layer.extend({
                 (this._container = null)
     },
 }))
-// `https://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineStreetGray/MapServer/tile/{z}/{y}/{x}`
-// 'https://{s}.tile.osm.org/{z}/{x}/{y}.png'
-// "http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
-// "http://api0.map.bdimg.com/customimage/tile?&x={x}&y={y}&z={z}&udt=20191205&scale=1&ak=5ieMMexWmzB9jivTq6oCRX9j"
 
 const DEFAULT_TITLE = {
     subdomains: 'abc',
-    url: `https://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineStreetGray/MapServer/tile/{z}/{y}/{x}`,
+    url: 'https://{s}.tile.osm.org/{z}/{x}/{y}.png',
 }
 
 /**
@@ -142,8 +138,13 @@ export default class geo<T, K> {
     loadingGeoMode: boolean = true
     geoVisibleFilter: any
     options: any
+    moving: boolean = false
+    minZoomLevel: number
+    maxZoomLevel: number
     constructor(galaxyvis: any) {
         this.galaxyvis = galaxyvis
+        this.minZoomLevel = 0
+        this.maxZoomLevel = 0
     }
     /**
      * 开启geo模式
@@ -155,8 +156,9 @@ export default class geo<T, K> {
             let id = this.galaxyvis.id
             let divContainer
             let o = options
-            let minZoomLevel: any = o?.minZoomLevel || 1,
-                maxZoomLevel: any = o?.maxZoomLevel || 20,
+            let originNodes = originInfo[id].nodeList
+            let minZoomLevel: any = this.minZoomLevel = o?.minZoomLevel || 1,
+                maxZoomLevel: any = this.maxZoomLevel = o?.maxZoomLevel || 20,
                 sizeRatio: any = o?.sizeRatio || 1.0,
                 attribution: any = o?.attribution,
                 tiles: any = o?.tiles || DEFAULT_TITLE,
@@ -169,10 +171,14 @@ export default class geo<T, K> {
             this.options = options
             tiles = Object.assign(DEFAULT_TITLE, tiles)
 
+            const ISLATFUNCTION = typeof (latitudePath) == "function" ? true : false
+            const ISLONGFUNCTION = typeof (longitudePath) == "function" ? true : false
+
             // 去除canvas的wheel和mousedown的事件
             let canvas = this.galaxyvis.gl?.canvas || this.galaxyvis.ctx?.canvas
             canvas.removeEventListener('wheel', this.galaxyvis.WheelFunction)
             canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
+            canvas.removeEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
 
             // 创建geo的容器和图层
             if (!document.getElementById('galaxyvis-geo-map')) {
@@ -191,15 +197,16 @@ export default class geo<T, K> {
             })
 
             if (!this.map) {
-                reject(void 0)
-                return
+                return reject(void 0)
             }
-
+            // 移除地图的双击事件
+            this.map.off('dblclick')
             // 获取Data能支持Path的点信息
             this.geoVisibleFilter = this.galaxyvis.transformations.addNodeFilter((node: any) => {
-                return node.getData(latitudePath) && node.getData(longitudePath)
+                let lat = ISLATFUNCTION ? latitudePath(node) : node.getData(latitudePath)
+                let long = ISLONGFUNCTION ? longitudePath(node) : node.getData(longitudePath)
+                return lat && long
             })
-
             // 拖动图层还是拖点 需要设置disableNodeDragging为false
             var draggable = true,
                 startLat = 0,
@@ -210,7 +217,7 @@ export default class geo<T, K> {
             if (!disableNodeDragging) {
                 this.map.on('mousemove', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
-                    if (node?.isNode()) {
+                    if (node) {
                         draggable = true
                         this.map.dragging['disable']()
                         canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
@@ -219,41 +226,60 @@ export default class geo<T, K> {
                         this.map.dragging['enable']()
                         canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     }
+                    this.moving = true
                 }) &&
                     this.map.on('mousedown', (e: any) => {
                         let node = this.galaxyvis.mouseCaptor.hoverTatget
                         if (node?.isNode()) {
                             startLat = e.latlng.lat
                             startLng = e.latlng.lng
-                        } else {
-                            let selectedNodes = this.galaxyvis.getSelectedNodes()
-                            if (selectedNodes.size) selectedNodes.setSelected(false)
                         }
+                        this.moving = false
                     }) &&
                     this.map.on('mouseup', (e: any) => {
                         let node = this.galaxyvis.mouseCaptor.hoverTatget
-                        if (node?.isNode()) {
+                        if (node?.isNode() && node.getAttribute('draggable')) {
                             endLat = e.latlng.lat
                             endLng = e.latlng.lng
                             let nodeId = node.getId()
-                            let originNode = originInfo[id].nodeList.get(nodeId)
+                            let originNode = originNodes.get(nodeId)
+                            let data = node.getData()
+                            let lats = ISLATFUNCTION ? latitudePath(node) : data?.[latitudePath]
+                            let longs = ISLONGFUNCTION ? longitudePath(node) : data?.[longitudePath]
                             if (originNode.lat && originNode.lng) {
                                 originNode.lat += endLat - startLat
                                 originNode.lng += endLng - startLng
                             } else {
-                                let data = node.getData()
-                                let lat = Number(data[latitudePath]),
-                                    lng = Number(data[longitudePath])
+                                let lat = Number(lats),
+                                    lng = Number(longs)
                                 originNode.lat = lat + (endLat - startLat)
                                 originNode.lng = lng + (endLng - startLng)
                             }
                         }
+                        if (!node && !this.moving) {
+                            let selectedNodes = this.galaxyvis.getSelectedNodes()
+                            if (selectedNodes.size) selectedNodes.setSelected(false)
+                            let selectedEdges = this.galaxyvis.getSelectedEdges()
+                            if (selectedEdges.size) selectedEdges.setSelected(false)
+                            setTimeout(() => {
+                                this.galaxyvis.events.emit('click', {
+                                    button: MouseType[e.originalEvent.button],
+                                    source: 'mouse',
+                                    x: e.originalEvent.x,
+                                    y: e.originalEvent.y,
+                                    domEvent: e.originalEvent,
+                                    target: null,
+                                    isNode: false,
+                                })
+                            }, 1)
+                        }
+
                     })
             }
             else {
                 this.map.on('mousemove', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
-                    if (node?.isNode()) {
+                    if (node) {
                         this.map.dragging['disable']()
                         this.galaxyvis.mouseCaptor.geoEnable = false
                         canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
@@ -262,11 +288,27 @@ export default class geo<T, K> {
                         this.galaxyvis.mouseCaptor.geoEnable = true
                         canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     }
+                    this.moving = true
                 }) && this.map.on('mousedown', (e: any) => {
+                    this.moving = false
+                }) && this.map.on('mouseup', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
-                    if (!node?.isNode()) {
+                    if (!node && !this.moving) {
                         let selectedNodes = this.galaxyvis.getSelectedNodes()
                         if (selectedNodes.size) selectedNodes.setSelected(false)
+                        let selectedEdges = this.galaxyvis.getSelectedEdges()
+                        if (selectedEdges.size) selectedEdges.setSelected(false)
+                        setTimeout(() => {
+                            this.galaxyvis.events.emit('click', {
+                                button: MouseType[e.originalEvent.button],
+                                source: 'mouse',
+                                x: e.originalEvent.x,
+                                y: e.originalEvent.y,
+                                domEvent: e.originalEvent,
+                                target: null,
+                                isNode: false,
+                            })
+                        }, 1)
                     }
                 })
             }
@@ -297,9 +339,12 @@ export default class geo<T, K> {
             nodes.forEach(item => {
                 let data = item.getData()
                 let isVisible = item.getAttribute('isVisible')
-                if (isVisible && data[latitudePath] && data[longitudePath]) {
-                    let lat = Number(data[latitudePath]),
-                        lng = Number(data[longitudePath])
+                let lats = ISLATFUNCTION ? latitudePath(item) : data?.[latitudePath]
+                let longs = ISLONGFUNCTION ? longitudePath(item) : data?.[longitudePath]
+
+                if (isVisible && lats && longs) {
+                    let lat = Number(lats),
+                        lng = Number(longs)
                     longitudeSum += lng
                     latitudeSum += lat
                     len++
@@ -307,6 +352,7 @@ export default class geo<T, K> {
             })
 
             len && ((viewPoint.lat = latitudeSum / len), (viewPoint.lng = longitudeSum / len))
+            !len && ((viewPoint.lat = 39.9043), (viewPoint.lng = 116.3848))
             // 设置地图的经纬度和世界缩放等级
             this.map.setView(new L.LatLng(viewPoint.lat, viewPoint.lng), viewZoom)
 
@@ -314,15 +360,16 @@ export default class geo<T, K> {
                 // geo地图的父级
                 container: this.graphicContainer(),
                 // 触发更新
-                onUpdate: () => {
+                onUpdate: (refesh: boolean = false) => {
                     if (!this.layer._map) return Promise.resolve(void 0)
-
+                    let nodes = basicData[id].nodeList
+                    let originNodes = originInfo[id].nodeList
                     let map = this.layer._map,
                         centerMap = map.getCenter(),
                         lat = centerMap.lat,
                         lng = centerMap.lng,
-                        points = map.options.crs.latLngToPoint(L.latLng(lat, lng), 1)
-                        ; (this.layer._x = points.x), (this.layer._y = points.y)
+                        points = map.options.crs.latLngToPoint(L.latLng(lat, lng), 1);
+                    (this.layer._x = points.x), (this.layer._y = points.y)
 
                     let { width, height } = globalInfo[id].canvasBox
 
@@ -331,8 +378,10 @@ export default class geo<T, K> {
                     nodes.forEach((item, key) => {
                         let data = item.getData()
                         let isVisible = item.getAttribute('isVisible')
-                        if (isVisible) {
-                            let originNode = originInfo[id].nodeList.get(key)
+                        let lats = ISLATFUNCTION ? latitudePath(item) : data?.[latitudePath]
+                        let longs = ISLONGFUNCTION ? longitudePath(item) : data?.[longitudePath]
+                        if (isVisible && lats && longs) {
+                            let originNode = originNodes.get(key)
                             let Coords = { x: 0, y: 0 }
                             if (originNode.lat && originNode.lng && !disableNodeDragging) {
                                 Coords = map.latLngToContainerPoint(
@@ -340,12 +389,12 @@ export default class geo<T, K> {
                                 )
                             } else {
                                 Coords = map.latLngToContainerPoint(
-                                    L.latLng(data[latitudePath], data[longitudePath]),
+                                    L.latLng(lats, longs),
                                 )
                             }
-
-                            if (!originNode.baseRaius)
-                                originNode.baseRaius = cloneDeep(item.value.attribute.radius)
+                            if (!originNode.baseRaius) {
+                                originNode.baseRaius = cloneDeep(item.getAttribute('radius'))
+                            }
                             if (this.loadingGeoMode && duration > 0) {
                                 nodeData[key] = {
                                     x: Coords.x - width / 2,
@@ -358,17 +407,41 @@ export default class geo<T, K> {
                                 })
                             }
                         }
+
                     })
                     // 设置规则给到geo模式的点大小
                     // to do list： 把hover和selected的规则合并，因为geo模式下geo的class应该层次在hover..这类的下一级高于别的rule
-                    if (!geoClass[id])
+                    if (!geoClass[id] || refesh)
                         geoClass[id] = this.galaxyvis.styles.createClass({
+                            name: `geo-class`,
                             nodeAttributes: {
                                 radius(node: any) {
-                                    let originNode = originInfo[id].nodeList.get(node.getId())
+                                    let originNode = originNodes.get(node.getId())
                                     return originNode.baseRaius * sizeRatio * ZOOMRATIO
                                 },
+                                text(node: any) {
+                                    let fontSize = node.getAttribute(['text', 'fontSize'])
+                                    return {
+                                        fontSize:
+                                            Math.max(
+                                                fontSize * sizeRatio * ZOOMRATIO,
+                                                map._zoom
+                                            ),
+                                    }
+                                }
                             },
+                            edgeAttributes: {
+                                text(edge: any) {
+                                    let fontSize = edge.getAttribute(['text', 'fontSize'])
+                                    return {
+                                        fontSize:
+                                            Math.max(
+                                                fontSize * sizeRatio * ZOOMRATIO,
+                                                map._zoom
+                                            ),
+                                    }
+                                }
+                            }
                         })
                     // geo动画事件
                     if (this.loadingGeoMode && duration > 0) {
@@ -376,11 +449,12 @@ export default class geo<T, K> {
                             this.galaxyvis,
                             nodeData,
                             {
-                                duration: duration,
+                                duration,
                             },
-                            () => { },
+                            () => {
+                                this.loadingGeoMode = false
+                            },
                         )
-                        this.loadingGeoMode = false
                     } else {
                         nodeData = {}
                         this.galaxyvis.render()
@@ -424,10 +498,12 @@ export default class geo<T, K> {
                 // graph类的鼠标事件回滚
                 canvas.addEventListener('wheel', this.galaxyvis.WheelFunction)
                 canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
+                canvas.addEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
                 let nodes = basicData[id].nodeList
+                let originNodes = originInfo[id].nodeList
                 // 撤回计算的坐标
                 nodes.forEach((item, key) => {
-                    let originNode = originInfo[id].nodeList.get(key)
+                    let originNode = originNodes.get(key)
                     originNode.baseRaius &&
                         item.changeAttribute({
                             radius: originNode.baseRaius,
@@ -435,8 +511,8 @@ export default class geo<T, K> {
                     originNode.baseRaius && delete originNode.baseRaius
                     originNode.lng && delete originNode.lng
                     originNode.lat && delete originNode.lat
+                    originInfo[id].nodeList.set(key, originNode)
                 })
-
                 // 销毁生成的class的规则 防止冲突
                 geoClass[id] && geoClass[id].destroy() && delete geoClass[id]
                 this.layer = null
@@ -448,6 +524,22 @@ export default class geo<T, K> {
             }
         })
     }
+
+    updateGeoClass() {
+        const id = this.galaxyvis.id
+        let originNodes = originInfo[id].nodeList
+        let nodes = basicData[id].nodeList
+
+        nodes.forEach((item, key) => {
+            let originNode = originNodes.get(key)
+            originNode.baseRaius && delete originNode.baseRaius
+            originNode.baseRaius = item.getAttribute('radius')
+            originInfo[id].nodeList.set(key, originNode)
+        })
+
+        geoClass[id] && geoClass[id].update({})
+    }
+
     /**
      * 获取geo的中心
      * @returns
@@ -521,6 +613,8 @@ export default class geo<T, K> {
      */
     setZoom(zoom: number) {
         if (this.layer) {
+            if (zoom > this.maxZoomLevel) zoom = this.maxZoomLevel
+            if (zoom < this.minZoomLevel) zoom = this.minZoomLevel
             this.layer._map.setZoom(zoom)
         }
     }
@@ -537,7 +631,13 @@ export default class geo<T, K> {
      * @param ids 
      */
     locate(ids: string | any[]) {
-        if (!ids || ids?.length == 0) return
+        if (!ids || ids?.length == 0) {
+            ids = [];
+            let nodeList = this.galaxyvis.getFilterNode()
+            nodeList.forEach((_: any, key: any) => {
+                (ids as Array<any>).push(key)
+            })
+        }
         if (typeof ids === "string") ids = [ids];
         let len = ids.length
         let nodeList = basicData[this.galaxyvis.id].nodeList
@@ -547,12 +647,16 @@ export default class geo<T, K> {
             maxLng = -Infinity, maxLat = -Infinity,
             minLng = Infinity, minLat = Infinity
 
+        const ISLATFUNCTION = typeof (latitudePath) == "function" ? true : false
+        const ISLONGFUNCTION = typeof (longitudePath) == "function" ? true : false
         for (let i = 0; i < len; i++) {
             let node = nodeList.get(ids[i]);
             let data = node.getData();
-            if (data[latitudePath] && data[longitudePath]) {
-                let lat = Number(data[latitudePath]),
-                    lng = Number(data[longitudePath])
+            let lats = ISLATFUNCTION ? latitudePath(node) : data?.[latitudePath]
+            let longs = ISLONGFUNCTION ? longitudePath(node) : data?.[longitudePath]
+            if (lats && longs) {
+                let lat = Number(lats),
+                    lng = Number(longs)
 
                 maxLng = Math.max(maxLng, lng)
                 minLng = Math.min(minLng, lng)

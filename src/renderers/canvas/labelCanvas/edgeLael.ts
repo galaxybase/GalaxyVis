@@ -23,6 +23,7 @@ export default function canvasLabelEdge(
     let scale = (globalProp.globalScale / ratio) * 2.0
 
     let { text, opacity } = data
+
     let {
         color,
         background,
@@ -63,9 +64,7 @@ export default function canvasLabelEdge(
     let buffer = fontSize / 8
     let height = lines.length > 1 ? lines.length - 1 : 0
 
-    if(textPos.type !== "self"){
-        baseY -= len * (fontSize + 1) + bench
-    }
+    baseY -= len * (fontSize + 1) + bench
     baseX -= width / 2
     color = mixColor(graphId, color, opacity)
 

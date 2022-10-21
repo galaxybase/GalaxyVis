@@ -45,7 +45,7 @@ void main(){
     float alpha=
         smoothstep(u_buffer-gamma,u_buffer+gamma,dist);
     if(u_bgColor.a>0.){
-        vec4 realBColor = mix(u_bgColor, u_color, alpha);
+        vec4 realBColor = mix(u_bgColor,vec4(u_color.rgb,1.),alpha);
         gl_FragColor = mix( backgroundColor, realBColor, opacity );
     }
     else{

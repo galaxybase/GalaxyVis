@@ -1,24 +1,16 @@
 import { basicData, globalInfo } from '../../initial/globalProp'
-import { AnimateType, PlainObject } from '../../types'
-import { animateNodes } from '../../utils/graphAnimate'
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from '../../types'
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { EventType } from '../../utils/events'
 import { localComputation } from '../../utils/layouts/common'
-import { incrementalLayout } from '../incremental'
-import NodeList from '../../classes/nodeList'
 import gridLayout from './grid/gridLayout'
+import { animation } from '../animation'
+import BaseLayout from '../baseLayout'
 
-class GridsLayout {
-    private galaxyvis: any
-    public options: AnimateType
-    public data: any
-    private ids: any
-    private positions: any
-
+class GridsLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
-        this.galaxyvis = galaxyvis
-        this.options = options
+        super(galaxyvis, options)
     }
 
     /**
@@ -32,7 +24,7 @@ class GridsLayout {
         let { nodes, sortBy, width: GridWidth, height: GridHeight } = this.options,
             width,
             height
-        
+
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             nodeList.forEach((values: any, key: any) => {
                 layoutsNodes.push({ key, value: values.value })
@@ -83,11 +75,11 @@ class GridsLayout {
         })
 
         this.galaxyvis.events.emit(
-            'layoutStart',
+            LAYOUT_MESSAGE.START,
             EventType.layoutStart({
                 ids: nodesList,
                 name: 'grid',
-                type: 'layoutStart',
+                type: LAYOUT_MESSAGE.START,
             }),
         )
 
@@ -144,6 +136,12 @@ class GridsLayout {
      */
     layout() {
         return new Promise(async (resolve, reject) => {
+
+            if(this.galaxyvis.geo.enabled()){
+                console.warn("Geo mode does not allow the use of layouts")
+                return resolve(void 0)
+            }
+
             let gridsObj = await this.init()
 
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
@@ -164,81 +162,25 @@ class GridsLayout {
                 })
 
                 worker.onmessage = function (event: any) {
-                    if (event.data.type == 'layoutEnd') {
+                    if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-                        if (that.options?.incremental)
-                            that.data = incrementalLayout(
-                                that.galaxyvis.id,
-                                event.data.positions,
-                                new NodeList(that.galaxyvis, event.data.ids),
-                                that.options,
-                            )
-                        animateNodes(
-                            that.galaxyvis,
-                            that.data,
-                            {
-                                duration: that.options.duration,
-                                easing: that.options.easing,
-                            },
-                            () => {
-                                that.galaxyvis.events.emit(
-                                    'layoutEnd',
-                                    EventType.layoutEnd({
-                                        ids: nodesList,
-                                        name: 'grid',
-                                        type: 'layoutEnd',
-                                        postions: nodesList.map((item: string | number) => {
-                                            return that.data[item]
-                                        }),
-                                    }),
-                                )
-                                worker.terminate()
-                                resolve(true)
-                            },
-                            that.options?.incremental ? false : true,
-                        )
+                        animation(that, event, nodesList, 'grid').then((data) => {
+                            worker.terminate()
+                            resolve(data)
+                        })
                     } else {
                         worker.terminate()
-                        reject('fail')
+                        reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
-                // worker.addEventListener('message', function (event: any) {})
             } else {
                 try {
                     this.execute(gridsObj)
-
-                    if (this.options?.incremental)
-                        this.data = incrementalLayout(
-                            this.galaxyvis.id,
-                            this.positions,
-                            new NodeList(this.galaxyvis, this.ids),
-                            this.options,
-                        )
-                    animateNodes(
-                        this.galaxyvis,
-                        this.data,
-                        {
-                            duration: this.options.duration,
-                            easing: this.options.easing,
-                        },
-                        () => {
-                            this.galaxyvis.events.emit(
-                                'layoutEnd',
-                                EventType.layoutEnd({
-                                    ids: gridsObj.nodesList,
-                                    name: 'grid',
-                                    type: 'layoutEnd',
-                                    postions: gridsObj.nodesList.map((item: string | number) => {
-                                        return this.data[item]
-                                    }),
-                                }),
-                            )
-                            resolve(true)
-                        },
-                        this.options?.incremental ? false : true,
-                    )
+                    animation(this, null, gridsObj.nodesList, 'grid').then((data) => {
+                        resolve(data)
+                    })
                 } catch (err) {
-                    reject(err)
+                    reject(LAYOUT_MESSAGE.ERROR)
                 }
             }
         })

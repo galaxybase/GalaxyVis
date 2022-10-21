@@ -18,6 +18,23 @@
 
 它默认使用 **WebGL** 来呈现，这使得它擅长在网页中呈现中等到较大的图形（数万个节点和边或更多）。如当前环境不支持 **WebGL** 绘图协议，则自动选择 **Canvas** 来呈现图形。
 
+<img src="https://galaxyvis.com/assets/example.png" height="400"/>
+
+基于 GalaxyVis，用户可以快速搭建自己的 **图相关** 应用。
+
+如果您还没有使用过 GalaxyVis， 建议通过 [快速入门](https://galaxyvis.com/Quickstart) 体验 GalaxyVis 的魅力。
+
+<img src="https://galaxyvis.com/assets/布局.gif" height="105"/>
+<img src="https://galaxyvis.com/assets/增量布局.gif" height="105"/>
+<img src="https://galaxyvis.com/assets/地图.gif" height="105"/>
+
+<br >
+
+<img src="https://galaxyvis.com/assets/多选-合并点.gif" height="105"/>
+<img src="https://galaxyvis.com/assets/一度高亮.gif" height="105"/>
+
+>  强大的布局、功能、动画和交互。
+
 ## 特征
 作为一款专业的图可视化框架，GalaxyVis 具有以下特征：
 

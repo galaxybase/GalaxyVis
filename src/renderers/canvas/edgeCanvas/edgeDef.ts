@@ -79,6 +79,7 @@ export default function canvasEdgeDef(
     if (shape?.style == 'dash') {
         context.setLineDash([5 * scale])
     }
+
     color = mixColor(graphId, color, opacity)
     context.strokeStyle = color
     context.lineWidth = width
@@ -165,40 +166,35 @@ export default function canvasEdgeDef(
     if (useHalo) return
 
     context.setLineDash([])
+    // 计算线的中心位置用于计算文字位置
+    let bezierMid = bezier2(
+            0.5,
+            { x: sourceX, y: sourceY },
+            { x: originalNode.x, y: originalNode.y },
+            { x: targetX, y: targetY },
+        ),
+        dirtyData = -1
 
-    let textMod = {}
-    if (text.content && text.content != '') {
-        // 计算线的中心位置用于计算文字位置
-        let bezierMid = bezier2(
-                0.5,
-                { x: sourceX, y: sourceY },
-                { x: originalNode.x, y: originalNode.y },
-                { x: targetX, y: targetY },
-            ),
-            dirtyData = -1
+    if ((targetY >= sourceY && sourceX >= targetX) || (sourceY >= targetY && sourceX > targetX)) {
+        ;[sourceY, targetY] = [targetY, sourceY]
+        ;[sourceX, targetX] = [targetX, sourceX]
+        dirtyData = 1
+    }
 
-        if (
-            (targetY >= sourceY && sourceX >= targetX) ||
-            (sourceY >= targetY && sourceX > targetX)
-        ) {
-            ;[sourceY, targetY] = [targetY, sourceY]
-            ;[sourceX, targetX] = [targetX, sourceX]
-            dirtyData = 1
-        }
-        let change =
-                num == 0
-                    ? dirtyData
-                    : Math.sign(
-                          (targetX - sourceX) * (originalNode.y - sourceY) -
-                              (targetY - sourceY) * (originalNode.x - sourceX),
-                      ),
-            r =
-                lineWidth * scale * 40 +
-                scale * Math.max(Math.floor(((text?.fontSize as number) / 10) * 1e3) / 1e3, 1),
-            c2 = numOfLine != 0 ? (Math.pow(-1, num) * 3) / XYdistance : -3 / XYdistance
-        const Direction = text?.position === 'bottom' ? -1 : 1
-        // 返回文字位置和旋转角度
-        textMod = {
+    let change =
+            num == 0
+                ? dirtyData
+                : Math.sign(
+                      (targetX - sourceX) * (originalNode.y - sourceY) -
+                          (targetY - sourceY) * (originalNode.x - sourceX),
+                  ),
+        r =
+            lineWidth * scale * 40 +
+            scale * Math.max(Math.floor(((text?.fontSize as number) / 10) * 1e3) / 1e3, 1),
+        c2 = numOfLine != 0 ? (Math.pow(-1, num) * 3) / XYdistance : -3 / XYdistance
+    const Direction = text?.position === 'bottom' ? -1 : 1
+    // 返回文字位置和旋转角度
+    let textMod = {
             x:
                 text?.position === 'center'
                     ? bezierMid.x
@@ -208,18 +204,15 @@ export default function canvasEdgeDef(
                     ? bezierMid.y
                     : bezierMid.y + moveY * c2 * r * change * Direction,
             ANGLE: Math.ceil(Math.atan2(targetY - sourceY, targetX - sourceX) * 1e5) / 1e5,
-            type: "def"
-        }
-    }
-
-    let point = getPoint(bezier, width)
+        },
+        point = getPoint(bezier, width + 2)
     bezier = null
     if (num == 0) {
         if (originalNode.y == sourceY && originalNode.y == targetY) {
             sourceY += width / 2
             targetY -= width / 2
         } else if (originalNode.x == sourceX && originalNode.x == targetX) {
-            sourceX -= width / 2
+            sourceX += width / 2
             targetX -= width / 2
         }
     }

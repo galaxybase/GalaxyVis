@@ -43,7 +43,7 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
     process(): void {
         // 获取点列表
         const graphId = this.graph.id
-        let edgeList = basicData[graphId].edgeList
+        let edgeList = basicData[graphId]?.edgeList || new Map()
         let baseTypeHash = this.graph.getEdgeType().baseTypeHash
         this.initCollection()
         let collection = edgeHaloCollection[graphId]

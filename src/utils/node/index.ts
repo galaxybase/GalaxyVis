@@ -129,7 +129,6 @@ export const nodeGetAdjacent = (that: any, options?: AdjacencyOptions) => {
     let inTable: Set<any> = new Set()
     let outTable: Set<any> = new Set()
     try {
-        if(!direction) direction = "both"
         Nodes?.forEach((item: any) => {
             //@ts-ignore
             let edge = basicData[that.id].edgeList.get(item)

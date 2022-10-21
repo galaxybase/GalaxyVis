@@ -224,7 +224,6 @@ class BoundsNode extends Node {
         if (this.nodes.length) {
             var index = this._findIndex(item)
             var node = this.nodes[index]
-
             if (
                 item.x - item.width / 2 >= node._bounds.x &&
                 item.x + item.width / 2 <= node._bounds.x + node._bounds.width &&
@@ -234,22 +233,22 @@ class BoundsNode extends Node {
                 out = out.concat(this.nodes[index].retrieve(item))
             } else {
                 //该项的一部分是重叠的多个子节点。对于每个重叠节点，重新搜索所有包含的对象。
-                if (item.x <= this.nodes[this.TOP_RIGHT]._bounds.x) {
-                    if (item.y <= this.nodes[this.BOTTOM_LEFT]._bounds.y) {
+                if (item.x - item.width / 2 <= this.nodes[this.TOP_RIGHT]._bounds.x) {
+                    if (item.y - item.height / 2 <= this.nodes[this.BOTTOM_LEFT]._bounds.y) {
                         out = out.concat(this.nodes[this.TOP_LEFT].getAllContent())
                     }
 
-                    if (item.y + item.height > this.nodes[this.BOTTOM_LEFT]._bounds.y) {
+                    if (item.y + item.height / 2 >= this.nodes[this.BOTTOM_LEFT]._bounds.y) {
                         out = out.concat(this.nodes[this.BOTTOM_LEFT].getAllContent())
                     }
                 }
 
-                if (item.x + item.width > this.nodes[this.TOP_RIGHT]._bounds.x) {
-                    if (item.y <= this.nodes[this.BOTTOM_RIGHT]._bounds.y) {
+                if (item.x + item.width / 2 >= this.nodes[this.TOP_RIGHT]._bounds.x) {
+                    if (item.y - item.height / 2 <= this.nodes[this.BOTTOM_RIGHT]._bounds.y) {
                         out = out.concat(this.nodes[this.TOP_RIGHT].getAllContent())
                     }
 
-                    if (item.y + item.height > this.nodes[this.BOTTOM_RIGHT]._bounds.y) {
+                    if (item.y + item.height / 2 >= this.nodes[this.BOTTOM_RIGHT]._bounds.y) {
                         out = out.concat(this.nodes[this.BOTTOM_RIGHT].getAllContent())
                     }
                 }
@@ -266,7 +265,7 @@ class BoundsNode extends Node {
         if (this.nodes.length) {
             var i
             for (i = 0; i < this.nodes.length; i++) {
-                this.nodes[i] && this.nodes[i].getAllContent()
+                this.nodes[i] && (out = out.concat(this.nodes[i].getAllContent()))
             }
         }
         out = out.concat(this._stuckChildren)
@@ -287,7 +286,7 @@ class BoundsNode extends Node {
 
         var i
         for (i = 0; i < len; i++) {
-            this.nodes[i]?.clear()
+            this.nodes[i] && this.nodes[i].clear()
         }
 
         this.nodes.length = 0

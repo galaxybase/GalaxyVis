@@ -27,7 +27,7 @@ export interface NodeLabelInformation<T> {
     fontSizes: T
 }
 
-export interface EdgeLabelInformation<T> extends NodeLabelInformation<any> {}
+export interface EdgeLabelInformation<T> extends NodeLabelInformation<any> { }
 
 export interface CoordBezie {
     x: number
@@ -120,21 +120,21 @@ export interface ClickEve {
     y: number
 }
 
-export interface DoubleClickEve extends ClickEve {}
+export interface DoubleClickEve extends ClickEve { }
 
-export interface DragStartEve extends ClickEve {}
+export interface DragStartEve extends ClickEve { }
 
 export interface AddNodesEve {
     nodes: any[] //点
 }
 
-export interface RemoveNodesEve extends AddNodesEve {}
+export interface RemoveNodesEve extends AddNodesEve { }
 
 export interface AddEdgesEve {
     edges: any[] //边
 }
 
-export interface RemoveEdgesEve extends AddEdgesEve {}
+export interface RemoveEdgesEve extends AddEdgesEve { }
 
 export interface MouseOverEve {
     domEvent: Event //返回整个MouseEvent
@@ -144,7 +144,7 @@ export interface MouseOverEve {
     y?: number
 }
 
-export interface MouseOutEve extends MouseOverEve {}
+export interface MouseOutEve extends MouseOverEve { }
 
 export interface NodeDragProgressEve {
     dx: number
@@ -156,13 +156,13 @@ export interface NodesSelectedEve {
     nodes: any
 }
 
-export interface NodesUnselectedEve extends NodesSelectedEve {}
+export interface NodesUnselectedEve extends NodesSelectedEve { }
 
 export interface EdgesSelectedEve {
     edges: any
 }
 
-export interface EdgesUnselectedEve extends EdgesSelectedEve {}
+export interface EdgesUnselectedEve extends EdgesSelectedEve { }
 
 export interface nodeOptions {
     duration?: number //动画时间 默认为0
@@ -183,6 +183,7 @@ export interface globalPropType {
     standardRadius: number //缩放的标准半径r
     cameraPosition: number[] //相机初始位置
     atlas: number //纹理最大集
+    fastAtlas: number
     textSet: Set<string> // 文字集
     iconMap: Map<string | number, any> // icon集
     globalScale: number //默认缩放
@@ -256,7 +257,7 @@ export interface ImageExportOptions extends baseExportOptions {
     }
 }
 
-export interface SvgExportOptions extends baseExportOptions {}
+export interface SvgExportOptions extends baseExportOptions { }
 
 export interface JsonExportOptions extends baseExportOptions {
     nodeData?: Function //给定输入节点数据
@@ -265,6 +266,8 @@ export interface JsonExportOptions extends baseExportOptions {
 
 export interface CsvExportOptions extends JsonExportOptions {
     what?: string //指示是否到节点或者边
+    edges?: string[]  //指定的边列表
+    nodes?: string[] //指定的点列表
 }
 
 export interface XlsxExportOptions extends JsonExportOptions {
@@ -440,8 +443,8 @@ export interface GeoModeOptions {
         subdomains?: string //用来搜索瓦片的url格式 [= "abc"]
         url?: string //用来搜索瓦片的url格式
     }
-    latitudePath?: string //纬度
-    longitudePath?: string //经度
+    latitudePath?: string | Function //纬度
+    longitudePath?: string | Function //经度
     crs?: any //crs
 }
 
@@ -453,12 +456,17 @@ export interface NodeCollection {
 
 export interface EdgeCollection {
     [key: string]: {
+        drawNum: any
+        spInformation: Set<string>
+        informationNewEdge: Map<string, any> | null
         color: any
         width: any
         col14row2: any
+        plotTwoDrawNum: number
         plotsTwoColor: any
         plotsTwoWidth: any
         plotsTwoC42: any
+        plotsInformation: Set<string>
     }
 }
 
@@ -476,7 +484,7 @@ export interface EdgeHaloCollection {
 
 export interface NodeHaloCollection {
     [key: string]: {
-        floatData: number[] | Float32Array
+        floatData: any
     }
 }
 
@@ -490,4 +498,13 @@ export interface EdgeLabelCollection {
     [key: string]: {
         labelFloat32Array: Float32Array,
     }
+}
+
+export const LAYOUT_MESSAGE = {
+    // run layout
+    START: 'layoutStart',
+    // layout ended with success
+    END: 'layoutEnd',
+    // layout error
+    ERROR: 'layoutError',
 }

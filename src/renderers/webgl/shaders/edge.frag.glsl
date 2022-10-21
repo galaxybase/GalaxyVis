@@ -40,23 +40,23 @@ void main(){
     if(opacity == 0.0) { gl_FragColor = vec4(0.0); return;}
     
     float c = background;
-    vec3 backgroundColor;
-    backgroundColor.b=mod(c,256.);c=floor(c/256.);
-    backgroundColor.g=mod(c,256.);c=floor(c/256.);
-    backgroundColor.r=mod(c,256.);c=floor(c/256.);backgroundColor/=255.;
-
+    vec4 backgroundColor;
+    backgroundColor.b = mod(c,256.);c=floor(c/256.);
+    backgroundColor.g = mod(c,256.);c=floor(c/256.);
+    backgroundColor.r = mod(c,256.);c=floor(c/256.);backgroundColor/=255.;
+    backgroundColor.a = 1.0;
     int isArray = int(floor(u_arrow + 0.5));
-
+    // float fwid = fwidth(0.01);
     if(isArray == 0){
 
         // float d = sdBox(vec2(.5)-u_fragCoord,vec2(.5,.0));
 
         vec4 col = u_color;
-        col = mix( vec4(backgroundColor,1.0),col, opacity);
+        col = mix(backgroundColor,col, opacity);
         
         // vec4 outColor = col;
 
-        // col = mix( vec4(vec3(1.0),0.0),col,1.0-smoothstep(0.1,.3,abs(d)) );
+        // col = mix( vec4(1.0),col,1.0-smoothstep(0.0,1.0,abs(d)) );
 
         // col = mix( vec4(0.27,0.74,.97,1.),col,1.0-smoothstep(0.2,.4,abs(d)) );
 
@@ -81,11 +81,11 @@ void main(){
 
         // col = mix(col, vec4(0.27,0.74,.97,1.), 1.0-smoothstep(0.001, .1,abs(d2)) );
 
-        // if((col.r+col.g+col.b)!=3.){
-        col = mix( vec4(backgroundColor,1.0),col, opacity);
-        gl_FragColor=col;
-        // }
-        // else
-        //     gl_FragColor=vec4(0.);
+        if((col.r+col.g+col.b)!=3.){
+            col = mix(backgroundColor,col, opacity);
+            gl_FragColor=col;
+        }
+        else
+            gl_FragColor=vec4(0.);
     }
 }

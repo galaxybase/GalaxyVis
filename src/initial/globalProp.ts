@@ -5,6 +5,7 @@ export const globalProp: globalPropType = {
     standardRadius: 10, //缩放的标准半径r
     cameraPosition: [0, 0, 3], //相机初始位置
     atlas: 32, //纹理最大集
+    fastAtlas: 8,
     textSet: new Set(), //文字Set
     iconMap: new Map([
         [

@@ -1,20 +1,16 @@
-import { AnimateType } from '../../types'
-import { animateNodes } from '../../utils/graphAnimate'
+import { AnimateType, LAYOUT_MESSAGE } from '../../types'
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { unionEdges } from '../../utils/layouts/common'
 import { floorBfs } from '../../utils/layouts/bfsTree'
 import { EventType } from '../../utils/events'
 import concentricLayout from './concentric/concentric'
+import { animation } from '../animation'
+import BaseLayout from '../baseLayout'
 
-class ConcentricLayout {
-    private galaxyvis: any
-    public options: AnimateType
-    public data: any
-
+class ConcentricLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
-        this.galaxyvis = galaxyvis
-        this.options = options
+        super(galaxyvis, options)
     }
 
     /**
@@ -48,16 +44,16 @@ class ConcentricLayout {
             .concat()
 
         this.galaxyvis.events.emit(
-            'layoutStart',
+            LAYOUT_MESSAGE.START,
             EventType.layoutStart({
                 ids: layoutsNodes,
                 name: 'concentric',
-                type: 'layoutStart',
+                type: LAYOUT_MESSAGE.START,
             }),
         )
 
         if (!this.options.centralNode && nodesBak.length) {
-            console.error('centralNode is empty. will use the first node')
+            console.warn('centralNode is empty. will use the first node')
             this.options.centralNode = nodesBak[0].id
         }
 
@@ -84,6 +80,14 @@ class ConcentricLayout {
      */
     execute(layoutsNodes: any[]) {
         this.data = concentricLayout(layoutsNodes, this.options)
+        this.ids = []
+        this.positions = []
+        if (this.options?.incremental) {
+            this.ids = Object.keys(this.data)
+            for (let i in this.data) {
+                this.positions.push({ ...this.data[i], id: i })
+            }
+        }
     }
 
     /**
@@ -92,6 +96,12 @@ class ConcentricLayout {
      */
     layout() {
         return new Promise(async (resolve, reject) => {
+            
+            if(this.galaxyvis.geo.enabled()){
+                console.warn("Geo mode does not allow the use of layouts")
+                return resolve(void 0)
+            }
+
             let { linksBak, nodesBak, layoutsNodes: layoutsNode } = await this.init()
 
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
@@ -108,67 +118,26 @@ class ConcentricLayout {
                 })
 
                 worker.onmessage = function (event: any) {
-                    if (event.data.type == 'layoutEnd') {
+                    if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-                        animateNodes(
-                            that.galaxyvis,
-                            that.data,
-                            {
-                                duration: that.options.duration,
-                                easing: that.options.easing,
-                            },
-                            () => {
-                                that.galaxyvis.events.emit(
-                                    'layoutEnd',
-                                    EventType.layoutEnd({
-                                        ids: layoutsNode,
-                                        name: 'concentric',
-                                        type: 'layoutEnd',
-                                        postions: layoutsNode.map((item: string | number) => {
-                                            return that.data[item]
-                                        }),
-                                    }),
-                                )
-                                worker.terminate()
-                                resolve(true)
-                            },
-                            that.options?.incremental ? false : true,
-                        )
+                        animation(that, event, layoutsNode, 'concentric').then((data) => {
+                            worker.terminate()
+                            resolve(data)
+                        })
                     } else {
                         worker.terminate()
-                        reject('fail')
+                        reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
-                // worker.addEventListener('message', function (event: any) {})
             } else {
                 try {
                     let layoutsNodes = this.initTree(nodesBak, linksBak)
                     this.execute(layoutsNodes)
-                    animateNodes(
-                        this.galaxyvis,
-                        this.data,
-                        {
-                            duration: this.options.duration,
-                            easing: this.options.easing,
-                        },
-                        () => {
-                            this.galaxyvis.events.emit(
-                                'layoutEnd',
-                                EventType.layoutEnd({
-                                    ids: layoutsNode,
-                                    name: 'concentric',
-                                    type: 'layoutEnd',
-                                    postions: layoutsNode.map((item: any) => {
-                                        return this.data[item]
-                                    }),
-                                }),
-                            )
-                            resolve(true)
-                        },
-                        this.options?.incremental ? false : true,
-                    )
+                    animation(this, null, layoutsNode, 'concentric').then((data) => {
+                        resolve(data)
+                    })
                 } catch (err) {
-                    reject(err)
+                    reject(LAYOUT_MESSAGE.ERROR)
                 }
             }
         })

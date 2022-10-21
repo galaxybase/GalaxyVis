@@ -42,6 +42,13 @@ export default class Layout<T, K> {
      * @returns
      */
     public force = (opts: AnimateType) => {
+        const id = this.galaxyvis.id;
+        if (
+            opts?.nodes?.length > 5e3 &&
+            opts?.incremental
+        ) {
+            opts.nodes = []
+        }
         return new ForceLayout(this.galaxyvis, opts).layout()
     }
     /**

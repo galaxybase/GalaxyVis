@@ -1,25 +1,17 @@
-import { AnimateType } from '../../types'
-import { animateNodes } from '../../utils/graphAnimate'
+import { AnimateType, LAYOUT_MESSAGE } from '../../types'
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { EventType } from '../../utils/events'
 import { unionEdges } from '../../utils/layouts/common'
 import { BFSTree } from '../../utils/layouts/bfsTree'
-import { incrementalLayout } from '../incremental'
 import tree from './tree'
 import hierarchy from './hierarchy'
-import NodeList from '../../classes/nodeList'
+import { animation } from '../animation'
+import BaseLayout from '../baseLayout'
 
-class TreeLayout {
-    private galaxyvis: any
-    public options: AnimateType
-    public data: any
-    private ids: any
-    private positions: any
-
+class TreeLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
-        this.galaxyvis = galaxyvis
-        this.options = options
+        super(galaxyvis, options)
     }
 
     /**
@@ -52,11 +44,11 @@ class TreeLayout {
             })
             .concat()
         this.galaxyvis.events.emit(
-            'layoutStart',
+            LAYOUT_MESSAGE.START,
             EventType.layoutStart({
                 ids: layoutsNodes,
                 name: 'tree',
-                type: 'layoutStart',
+                type: LAYOUT_MESSAGE.START,
             }),
         )
         return {
@@ -128,6 +120,12 @@ class TreeLayout {
      */
     layout() {
         return new Promise(async (resolve, reject) => {
+
+            if(this.galaxyvis.geo.enabled()){
+                console.warn("Geo mode does not allow the use of layouts")
+                return resolve(void 0)
+            }
+
             let { linksBak, nodesBak, layoutsNodes: layoutsNode } = await this.init()
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
                 let allNodes = nodesBak
@@ -147,85 +145,26 @@ class TreeLayout {
                 })
 
                 worker.onmessage = function (event: any) {
-                    if (event.data.type == 'layoutEnd') {
+                    if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-
-                        if (that.options?.incremental)
-                            that.data = incrementalLayout(
-                                that.galaxyvis.id,
-                                event.data.positions,
-                                new NodeList(that.galaxyvis, event.data.ids),
-                                that.options,
-                            )
-
-                        animateNodes(
-                            that.galaxyvis,
-                            that.data,
-                            {
-                                duration: that.options.duration,
-                                easing: that.options.easing,
-                            },
-                            () => {
-                                that.galaxyvis.events.emit(
-                                    'layoutEnd',
-                                    EventType.layoutEnd({
-                                        ids: layoutsNode,
-                                        name: 'tree',
-                                        type: 'layoutEnd',
-                                        postions: layoutsNode.map((item: string | number) => {
-                                            return that.data[item]
-                                        }),
-                                    }),
-                                )
-                                worker.terminate()
-                                resolve(true)
-                            },
-                            that.options?.incremental ? false : true,
-                        )
+                        animation(that, event, layoutsNode, 'tree').then((data) => {
+                            worker.terminate()
+                            resolve(data)
+                        })
                     } else {
                         worker.terminate()
-                        reject('fail')
+                        reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
-                // worker.addEventListener('message', function (event: any) {})
             } else {
                 try {
                     let layoutsNodes = this.initTree(nodesBak, linksBak)
                     this.execute(layoutsNodes)
-
-                    if (this.options?.incremental)
-                        this.data = incrementalLayout(
-                            this.galaxyvis.id,
-                            this.positions,
-                            new NodeList(this.galaxyvis, this.ids),
-                            this.options,
-                        )
-
-                    animateNodes(
-                        this.galaxyvis,
-                        this.data,
-                        {
-                            duration: this.options.duration,
-                            easing: this.options.easing,
-                        },
-                        () => {
-                            this.galaxyvis.events.emit(
-                                'layoutEnd',
-                                EventType.layoutEnd({
-                                    ids: layoutsNode,
-                                    name: 'tree',
-                                    type: 'layoutEnd',
-                                    postions: layoutsNode.map((item: any) => {
-                                        return this.data[item]
-                                    }),
-                                }),
-                            )
-                            resolve(true)
-                        },
-                        this.options?.incremental ? false : true,
-                    )
+                    animation(this, null, layoutsNode, 'tree').then((data) => {
+                        resolve(data)
+                    })
                 } catch (err) {
-                    reject(err)
+                    reject(LAYOUT_MESSAGE.ERROR)
                 }
             }
         })

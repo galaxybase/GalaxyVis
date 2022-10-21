@@ -90,10 +90,10 @@ export default class nodeCanvas {
     // 绘制点
     drawNode = async (boolean?: boolean, viewChange?: boolean) => {
         const graph = this.graph
-        const id = graph.id
+        const graphId = graph.id
         let ratio = this.ratio = graph.camera.ratio
-        let orderNodes = [...globalInfo[id].nodeOrder]
-        let selectedTable = basicData[id].selectedTable
+        let orderNodes = [...globalInfo[graphId].nodeOrder]
+        let selectedTable = basicData[graphId].selectedTable
         this.context = graph.ctx
         this.thumbnail = graph.thumbnail
         this.scale = (globalProp.globalScale / ratio) * 2.0
@@ -112,7 +112,7 @@ export default class nodeCanvas {
         if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
             if (selectedTable.size) {
                 // @ts-ignore
-                this.frameCanvas = globalInfo[id].canvasBox.cloneNode(true)
+                this.frameCanvas = globalInfo[graphId].canvasBox.cloneNode(true)
                 this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
                 this.context = this.frameCtx;
             }
@@ -120,23 +120,23 @@ export default class nodeCanvas {
             this.oldSelectedTable = clone(selectedTable)
         }
         if (selectedTable.size) {
-            let nodeList = basicData[id].nodeList
+            let nodeList = basicData[graphId].nodeList
             for (let key in this.quad) {
                 if (nodeList.get(key)?.getAttribute('isVisible'))
                     graph.camera.quad.insert(this.quad[key])
             }
             graph.ctx.drawImage(this.frameCanvas, 0, 0)
             this.context = graph.ctx;
-            this.plottingNodes([...selectedTable], this.context, false, boolean)
+            await this.plottingNodes([...selectedTable], this.context, false, boolean)
         }
 
     }
 
-    plottingNodes = (orderNodes: any[], context: CanvasRenderingContext2D, used: boolean, boolean?: boolean) => {
+    plottingNodes = async (orderNodes: any[], context: CanvasRenderingContext2D, used: boolean, boolean?: boolean) => {
         const graph = this.graph;
-        const id = graph.id
-        let nodeList = basicData[id].nodeList
-        let selectedTable = basicData[id].selectedTable
+        const graphId = graph.id
+        let nodeList = basicData[graphId].nodeList
+        let selectedTable = basicData[graphId].selectedTable
         for (let keys in orderNodes) {
             let key = orderNodes[keys]
             // 该点是否存在
@@ -149,21 +149,21 @@ export default class nodeCanvas {
                 if (
                     !data.isVisible ||
                     data.opacity == 0.0 ||
-                    !isInSceen(id, 'canvas', this.scale, this.position, data, 1)
+                    !isInSceen(graphId, 'canvas', this.scale, this.position, data, 1)
                 )
                     continue
                 // 获取形状类型
                 let renderShape = data.shape
                 // 执行策略模式
                 let that = this;
-                let nodeBound = this.strategies[renderShape]({
+                let nodeBound = await this.strategies[renderShape]({
                     context,
                     data,
                     ratio: that.ratio,
                     position: that.position,
                 })
                 if (data.badges) {
-                    canvasNodeBadges(id, context, data, this.ratio, this.position, this.thumbnail)
+                    canvasNodeBadges(graphId, context, data, this.ratio, this.position, this.thumbnail)
                 }
                 // 判断是否需要向四叉树加入属性
                 if (boolean) {

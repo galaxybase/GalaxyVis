@@ -204,6 +204,22 @@ export const getY = function (e: MouseEvent | WheelEvent): number {
     // @ts-ignore
     return (e.offsetY !== undefined && e.offsetY) || (e.clientY !== undefined && e.clientY)
 }
+
+/**
+ * 求两个向量之间的夹角
+ * @param x 
+ * @param y 
+ * @returns 
+ */
+export const vectorAngle = (x: number[], y: number[], z: number[]) => {
+    let mX = Math.sqrt(x.reduce((acc: number, n: number) => acc + Math.pow(n, 2), 0));
+    let mY = Math.sqrt(y.reduce((acc: number, n: number) => acc + Math.pow(n, 2), 0));
+    let ans = Math.acos(x.reduce((acc: number, n: number, i: any) => acc + n * y[i], 0) / (mX * mY));
+    // 叉乘计算方向
+    let direction = ((x[0] - z[0]) * (y[1] - z[1])) - ((x[1] - z[1]) * (y[0] - z[0])) < 0 ? 1 : -1
+    return isNaN(ans) ? 0 : ans * direction
+};
+
 /**
  * hashNumber 计算两点的唯一hash值
  * @param {*} e 点A的下标num
@@ -721,9 +737,9 @@ export const isDom = (obj: any) => {
         typeof HTMLElement === 'object'
             ? obj instanceof HTMLElement
             : obj &&
-              typeof obj === 'object' &&
-              obj.nodeType === 1 &&
-              typeof obj.nodeName === 'string'
+            typeof obj === 'object' &&
+            obj.nodeType === 1 &&
+            typeof obj.nodeName === 'string'
     return isDOM
 }
 /**
@@ -740,7 +756,7 @@ export const isWebGLSupported = function () {
                 canvas.getContext('webgl', originInitial.options) ||
                 canvas.getContext('experimental-webgl', originInitial.options)
             )
-        } catch (e) {}
+        } catch (e) { }
     }
     return false
 }
@@ -783,12 +799,12 @@ export const transformCanvasCoord = (
     scale: number,
     thumbnail: boolean = false,
 ) => {
-    ;(x += position[0]), (y += position[1])
+    ; (x += position[0]), (y += position[1])
     x *= scale / 2.0
     y *= scale / 2.0
     let width = thumbnail
-            ? globalInfo[graphId].thumbnail?.width
-            : globalInfo[graphId].BoxCanvas.getWidth,
+        ? globalInfo[graphId].thumbnail?.width
+        : globalInfo[graphId].BoxCanvas.getWidth,
         height = thumbnail
             ? globalInfo[graphId].thumbnail?.height
             : globalInfo[graphId].BoxCanvas.getHeight
@@ -992,7 +1008,7 @@ export const isInSceen = (
         let { x, y, radius: size } = data
         // 根据相机位置更改点的初始位置
         if (renderType === 'canvas') {
-            ;(x += position[0]), (y += position[1])
+            ; (x += position[0]), (y += position[1])
             x *= scale / 2.0
             y *= scale / 2.0
             x += width / 2
@@ -1014,8 +1030,8 @@ export const isInSceen = (
             size = Math.ceil(
                 (size / basicData[graphId].transform) * Math.max(unitWidth, unitHeight) * 2,
             )
-            // @ts-ignore
-            ;(offset = null), (data = null)
+                // @ts-ignore
+                ; (offset = null), (data = null)
         }
         if (x >= -size && x <= width + size && y >= -size && y <= height + size) {
             return true
@@ -1060,7 +1076,7 @@ export function mousedownFunction(this: any, event: any) {
     this.camera.processMouseDown(event)
 }
 
-export function doubleClickFunction(this: any, enent: any){
+export function doubleClickFunction(this: any) {
     this.mouseCaptor!.MouseDbClickListener()
 }
 

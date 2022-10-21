@@ -49,7 +49,12 @@ export const stylesAddRule = (galaxyvis: any, options: RuleOptions) => {
             item.addClass(ruleName, 2, false)
         }
     })
-    galaxyvis.render()
+
+    if (ruleName && ruleName !== "geo-class") {
+        galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+    } else {
+        galaxyvis.render()
+    }
     return new StyleRule(galaxyvis, ruleName, options, stylesAddRule, 2)
 }
 /**
@@ -59,6 +64,7 @@ export const stylesAddRule = (galaxyvis: any, options: RuleOptions) => {
  */
 export const stylesCreateClass = (galaxyvis: any, options: ClassOptions, useRule = false) => {
     let { name, edgeAttributes, nodeAttributes } = options
+    !name && (options.name = name = `class_${genID(8)}`)
     classList[name] = { edgeAttributes, nodeAttributes }
     if (!useRule) {
         let nodeList = basicData[galaxyvis.id].nodeList
@@ -69,7 +75,12 @@ export const stylesCreateClass = (galaxyvis: any, options: ClassOptions, useRule
         edgeList.forEach((item: any) => {
             item.addClass(name, 1, false)
         })
-        galaxyvis.render()
+
+        if (name && name !== "geo-class") {
+            galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+        } else {
+            galaxyvis.render()
+        }
     } else {
         return
     }

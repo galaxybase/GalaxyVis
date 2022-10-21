@@ -50,7 +50,7 @@ export const incrementalLayout = (
 
     if (typeof incrementalNode === 'string') {
         let node = basicData[id].nodeList.get(incrementalNode)
-        if(!node) {
+        if (!node) {
             return {}
         }
         let { x, y } = node.getPosition();
@@ -69,8 +69,9 @@ export const incrementalLayout = (
         incrementalNode,
     ) //获取包围盒A g为新增的点的坐标包围盒
 
-    var p,
-        mindisk = SmallEnclDisk(
+    var p, mindisk
+    try {
+        mindisk = (incrementalNodes && incrementalNodes.size > 3000) ? null : SmallEnclDisk(
             positions.map(function (t: any) {
                 return t.x + staticOffsetX
             }),
@@ -78,8 +79,11 @@ export const incrementalLayout = (
                 return t.y + staticOffsetY
             }),
             incrementalNodes.getAttribute('radius').map(Number),
-        ), //mindisk: mindisk算法生成的重心
-        mindiskx = mindisk ? mindisk[0] : staticOffsetX, //重心x
+        ) //mindisk: mindisk算法生成的重心
+    } catch (err) {
+        console.warn("Too many incremental nodes")
+    }
+    var mindiskx = mindisk ? mindisk[0] : staticOffsetX, //重心x
         mindisky = mindisk ? mindisk[1] : staticOffsetY, //重心y
         mindiskr = mindisk ? mindisk[2] + margin : margin, //重心r
         offsetX = 0, //偏移量x
@@ -103,20 +107,20 @@ export const incrementalLayout = (
                 // @ts-ignore
                 var offset = E
                     ? unitary(originBoundBox.cx, originBoundBox.cy, E.x, E.y, (p + mindiskr) / p)
-                    : { x: 0, y: 0 }
+                    : { x: mindiskr, y: mindiskr }
                 offsetX = offset.x - mindiskx
                 offsetY = offset.y - mindisky
             }
         } else {
             var convex = Trigonometric.from(
-                    originNodesPositions,
-                    function (t) {
-                        return t[0]
-                    },
-                    function (t) {
-                        return t[1]
-                    },
-                ),
+                originNodesPositions,
+                function (t) {
+                    return t[0]
+                },
+                function (t) {
+                    return t[1]
+                },
+            ),
                 triangles = returnArray(convex.triangles, originNodesPositions),
                 hull = returnArray(convex.hull, originNodesPositions),
                 empty = largestEmptyCircle(originNodes.getPosition(), 10, mindiskr, triangles, hull)
@@ -126,20 +130,20 @@ export const incrementalLayout = (
             if (empty.length > 0) {
                 for (
                     var i = Math.pow(mindiskx - E[0], 2) + Math.pow(mindisky - E[1], 2),
-                        k = 0,
-                        L = empty;
+                    k = 0,
+                    L = empty;
                     k < L.length;
                     k++
                 ) {
-                    var N = L[k]
-                    ;(offsetX = mindiskx - N[0]),
-                        (offsetY = mindisky - N[1]),
+                    var N = L[k];
+                    offsetX = mindiskx - N[0],
+                        offsetY = mindisky - N[1],
                         (p = offsetX * offsetX + offsetY * offsetY) < i &&
-                            ((i = p), (E = N.slice(0, 2)))
+                        ((i = p), (E = N.slice(0, 2)))
                 }
-                ;(offsetX = E[0] - mindiskx), (offsetY = E[1] - mindisky)
+                offsetX = E[0] - mindiskx, offsetY = E[1] - mindisky
             } else
-                (offsetX = E[0] - incrementalBoundBox.cx), (offsetY = E[1] - incrementalBoundBox.cy)
+                offsetX = E[0] - incrementalBoundBox.cx, offsetY = E[1] - incrementalBoundBox.cy
         }
     }
 

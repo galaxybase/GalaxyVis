@@ -88,7 +88,6 @@ class CaptorsMouse {
      * @param e 鼠标
      */
     public MouseMoveListener(e: MouseEvent) {
-        const graphId = this.scene.id
         let { globalScale } = globalProp,
             pointX: number,
             pointY: number,
@@ -148,7 +147,7 @@ class CaptorsMouse {
                     })
                 }
                 // 当hover的元素跟原来的不一样时
-                if (this.oldHoverTarget && (id !== this.oldHoverTarget.getId() || this.oldHoverTarget.isNode() != isNode)) {
+                if (this.oldHoverTarget && id !== this.oldHoverTarget.getId()) {
                     let odlIsNode = this.oldHoverTarget.isNode(),
                         oldId = this.oldHoverTarget.getId()
                     if (odlIsNode) {
@@ -162,11 +161,8 @@ class CaptorsMouse {
                     } else {
                         this.MouseAddOrRemoveEdgeHoverStyle(id, true)
                     }
+
                     this.oldHoverTarget = this.hoverTatget
-                    if (basicData[graphId].selectedTable.has(id)) {
-                        basicData[graphId].selectedTable.delete(id)
-                        basicData[graphId].selectedTable.add(id)
-                    }
                     this.scene.selectMovefresh(false)
                 } else {
                     // 当选中了点的时候
@@ -192,14 +188,14 @@ class CaptorsMouse {
                         id = this.oldHoverTarget.getId()
 
                     if (isNode) {
-                        basicData[graphId].selectedTable = new Set(
-                            [...basicData[graphId].selectedNodes].concat(
+                        basicData[this.scene.id].selectedTable = new Set(
+                            [...basicData[this.scene.id].selectedNodes].concat(
                                 this.oldHoverTarget.getId(),
                             ),
                         )
                     } else {
-                        basicData[graphId].selectedTable = new Set(
-                            [...basicData[graphId].selectedNodes]
+                        basicData[this.scene.id].selectedTable = new Set(
+                            [...basicData[this.scene.id].selectedNodes]
                                 .concat(this.oldHoverTarget.value.source)
                                 .concat(this.oldHoverTarget.value.target),
                         )
@@ -228,8 +224,12 @@ class CaptorsMouse {
             let id = this.hoverTatget.getId(),
                 // 当前拖动的点是否真正的被选中
                 hasRealSelect =
-                    basicData[graphId].selectedNodes.has(id) &&
-                    basicData[graphId].selectedEdges.size === 0
+                    basicData[this.scene.id].selectedNodes.has(id) &&
+                    basicData[this.scene.id].selectedEdges.size === 0
+            // 地图模式下的固定点不允许拖动地图       
+            if (!draggable && this.draggable && this.scene.geo.enabled()) {
+                return
+            }
             if (isNode && draggable && this.draggable) {
                 // 获取当前在画布上的坐标
                 pointX = getX(e)
@@ -237,10 +237,10 @@ class CaptorsMouse {
                 if (this.renderType === 'webgl') {
                     x =
                         ((pointX - this.startMouseX) * ratio * aspectRatio) /
-                        (width / basicData[graphId].transform)
+                        (width / basicData[this.scene.id].transform)
                     y =
                         ((pointY - this.startMouseY) * ratio) /
-                        (height / basicData[graphId].transform)
+                        (height / basicData[this.scene.id].transform)
                 } else {
                     let scale = globalScale / ratio
                     x = (pointX - this.startMouseX) / scale
@@ -250,7 +250,7 @@ class CaptorsMouse {
                 let dragNodes = []
                 if (hasRealSelect) {
                     // 遍历被选中的点 更改他的x，y坐标
-                    basicData[graphId].selectedNodes.forEach(item => {
+                    basicData[this.scene.id].selectedNodes.forEach(item => {
                         let node = this.scene.getNode(item)
                         let { x: realX, y: realY, draggable } = node.getAttribute()
                         if (draggable) {
@@ -260,7 +260,7 @@ class CaptorsMouse {
                             })
                         }
                     })
-                    dragNodes = [...basicData[graphId].selectedNodes].filter(item => {
+                    dragNodes = [...basicData[this.scene.id].selectedNodes].filter(item => {
                         return this.scene.getNode(item).getAttribute('draggable')
                     })
                 } else {
@@ -298,7 +298,6 @@ class CaptorsMouse {
                 this.scene.selectMovefresh(true)
                 return false
             }
-            if(isNode == false) return false
         }
         if (this.draggable) {
             this.throttled()
@@ -310,7 +309,6 @@ class CaptorsMouse {
      * 鼠标松开事件
      */
     public MouseOutListener(e: MouseEvent) {
-        const graphId = this.scene.id
         let { ctrlKey, button } = e
         let selected = false,
             hasSelected = false
@@ -326,7 +324,7 @@ class CaptorsMouse {
             } else if (ctrlKey && this.selectTarget) {
                 let isNode = this.selectTarget.isNode(),
                     id = this.selectTarget.getId(),
-                    { selectedNodes, selectedEdges } = basicData[graphId]
+                    { selectedNodes, selectedEdges } = basicData[this.scene.id]
                 if (isNode) {
                     if (selectedEdges.size === 0 && selectedNodes.has(id)) {
                         this.AddSelectNodes(id, false)
@@ -338,13 +336,13 @@ class CaptorsMouse {
                         this.AddSelectEdges(id, false)
                         hasSelected = true
                     }
-                    basicData[graphId].selectedEdges.size == 0 && this.ClearSelectNodes()
+                    basicData[this.scene.id].selectedEdges.size == 0 && this.ClearSelectNodes()
                 }
             }
             if (this.selectTarget && !hasSelected) {
                 let isNode = this.selectTarget.isNode(),
                     id = this.selectTarget.getId(),
-                    { selectedEdges } = basicData[graphId]
+                    { selectedEdges } = basicData[this.scene.id]
                 if (isNode) {
                     if (button === 2) {
                         this.ClearSelectEdges()
@@ -372,7 +370,7 @@ class CaptorsMouse {
         this.draggable = false
         this.firstDragStart = false
         let { selectedNodes, unSelectedNodes, selectedEdges, unSelectedEdges } =
-            basicData[graphId]
+            basicData[this.scene.id]
 
         nodeOrEdgeSelect(this.scene, unSelectedNodes, mouseRemoveClass, 'nodesUnselected')
 
@@ -388,6 +386,7 @@ class CaptorsMouse {
             !this.selectTarget.isNode() &&
             this.selectTarget.getId(),
         )
+
         nodeOrEdgeSelect(
             this.scene,
             selectedNodes,
@@ -396,8 +395,8 @@ class CaptorsMouse {
             selected && this.selectTarget && this.selectTarget.isNode() && this.selectTarget.getId(),
         )
 
-        basicData[graphId].unSelectedNodes = new Set()
-        basicData[graphId].unSelectedEdges = new Set()
+        basicData[this.scene.id].unSelectedNodes = new Set()
+        basicData[this.scene.id].unSelectedEdges = new Set()
 
         if (!this.selectTarget) {
             this.scene.render()
@@ -427,15 +426,14 @@ class CaptorsMouse {
      * @param isSelect 是否选中
      */
     public AddSelectNodes(nodeId: string, isSelect: boolean = true) {
-        const graphId = this.scene.id
         this.scene.getNode(nodeId)?.changeAttribute({
             isSelect,
         })
         if (isSelect) {
-            basicData[graphId].selectedNodes.add(nodeId)
+            basicData[this.scene.id].selectedNodes.add(nodeId)
         } else {
-            basicData[graphId].selectedNodes.delete(nodeId)
-            basicData[graphId].unSelectedNodes.add(nodeId)
+            basicData[this.scene.id].selectedNodes.delete(nodeId)
+            basicData[this.scene.id].unSelectedNodes.add(nodeId)
         }
     }
 
@@ -445,16 +443,15 @@ class CaptorsMouse {
      * @param isSelect 是否选中
      */
     public AddSelectEdges(edgeId: string, isSelect: boolean = true) {
-        const graphId = this.scene.id
         let edge = this.scene.getEdge(edgeId)
         edge?.changeAttribute({
             isSelect,
         })
         if (isSelect) {
-            basicData[graphId].selectedEdges.add(edgeId)
+            basicData[this.scene.id].selectedEdges.add(edgeId)
         } else {
-            basicData[graphId].selectedEdges.delete(edgeId)
-            basicData[graphId].unSelectedEdges.add(edgeId)
+            basicData[this.scene.id].selectedEdges.delete(edgeId)
+            basicData[this.scene.id].unSelectedEdges.add(edgeId)
         }
         let { source, target } = edge?.getAttribute()
         this.AddSelectNodes(source, isSelect)
@@ -466,31 +463,29 @@ class CaptorsMouse {
      * @param isEdge 是否时边触发的清空点选中
      */
     public ClearSelectNodes(isEdge: boolean = false) {
-        const graphId = this.scene.id
-        basicData[graphId].selectedNodes.forEach(item => {
+        basicData[this.scene.id].selectedNodes.forEach(item => {
             let node = this.scene.getNode(item)
             if (node?.getAttribute('isSelect')) {
-                !isEdge && basicData[graphId].unSelectedNodes.add(item)
+                !isEdge && basicData[this.scene.id].unSelectedNodes.add(item)
             }
             node?.changeAttribute({
                 isSelect: false,
             })
         })
-        basicData[graphId].selectedNodes = new Set()
+        basicData[this.scene.id].selectedNodes = new Set()
     }
 
     /**
      * 清空选中的边数据
      */
     public ClearSelectEdges() {
-        const graphId = this.scene.id
-        basicData[graphId].selectedEdges.forEach(key => {
+        basicData[this.scene.id].selectedEdges.forEach(key => {
             let edge = this.scene.getEdge(key)
 
             if (!edge) return;
 
             if (edge?.getAttribute('isSelect')) {
-                basicData[graphId].unSelectedEdges.add(key)
+                basicData[this.scene.id].unSelectedEdges.add(key)
             }
             edge?.changeAttribute({
                 isSelect: false,
@@ -501,22 +496,22 @@ class CaptorsMouse {
                 targetNode = this.scene.getNode(target)
 
             if (soureceNode?.getAttribute('isSelect')) {
-                basicData[graphId].unSelectedNodes.add(source)
+                basicData[this.scene.id].unSelectedNodes.add(source)
             }
             soureceNode.changeAttribute({
                 isSelect: false,
             })
 
             if (targetNode?.getAttribute('isSelect')) {
-                basicData[graphId].unSelectedNodes.add(target)
+                basicData[this.scene.id].unSelectedNodes.add(target)
             }
             targetNode.changeAttribute({
                 isSelect: false,
             })
-            basicData[graphId].selectedNodes.delete(source)
-            basicData[graphId].selectedNodes.delete(target)
+            basicData[this.scene.id].selectedNodes.delete(source)
+            basicData[this.scene.id].selectedNodes.delete(target)
         })
-        basicData[graphId].selectedEdges = new Set()
+        basicData[this.scene.id].selectedEdges = new Set()
     }
     /**
      * 给点添加或删除hover样式
@@ -524,16 +519,15 @@ class CaptorsMouse {
      * @params isAdd:boolean
      */
     private MouseAddOrRemoveNodeHoverStyle = (nodeId: string, isAdd: boolean) => {
-        const graphId = this.scene.id
-        if (!basicData[graphId].selectedNodes.has(nodeId)) {
+        if (!basicData[this.scene.id].selectedNodes.has(nodeId)) {
             this.scene.getNode(nodeId)?.changeAttribute({
                 isSelect: isAdd,
             })
         }
-        basicData[graphId].selectedTable.add(nodeId)
+        basicData[this.scene.id].selectedTable.add(nodeId)
         let funcName = isAdd ? 'addClass' : 'removeClass'
-        if (Object.keys(globalInfo[graphId].nodeHoverStyle).length) {
-            let { rule } = globalInfo[graphId].nodeHoverStyle
+        if (Object.keys(globalInfo[this.scene.id].nodeHoverStyle).length) {
+            let { rule } = globalInfo[this.scene.id].nodeHoverStyle
             this.scene.getNode(nodeId)?.[funcName](rule, 2, false)
         }
     }
@@ -543,30 +537,29 @@ class CaptorsMouse {
      * @params isAdd:boolean
      */
     private MouseAddOrRemoveEdgeHoverStyle = (edgeId: string, isAdd: boolean) => {
-        const graphId = this.scene.id
-        if (!basicData[graphId].selectedEdges.has(edgeId)) {
+        if (!basicData[this.scene.id].selectedEdges.has(edgeId)) {
             this.scene.getEdge(edgeId)?.changeAttribute({
                 isSelect: isAdd,
             })
         }
-        basicData[graphId].selectedEdgeTable.add(edgeId)
+        basicData[this.scene.id].selectedEdgeTable.add(edgeId)
         let funcName = isAdd ? 'addClass' : 'removeClass',
             edge = this.scene.getEdge(edgeId)
         if (!edge) return
         let { source, target } = edge.getAttribute()
-        if (Object.keys(globalInfo[graphId].edgeHoverStyle).length) {
-            let { rule } = globalInfo[graphId].edgeHoverStyle
+        if (Object.keys(globalInfo[this.scene.id].edgeHoverStyle).length) {
+            let { rule } = globalInfo[this.scene.id].edgeHoverStyle
             edge?.[funcName](rule, 2, false)
         }
         this.MouseAddOrRemoveNodeHoverStyle(source, isAdd)
         this.MouseAddOrRemoveNodeHoverStyle(target, isAdd)
     }
     /**
-     * 判断是否选中
-     * @param x
-     * @param y
-     * @returns
-     */
+        * 判断是否选中
+        * @param x
+        * @param y
+        * @returns
+        */
     private checkNode = (x: number, y: number) => {
         const graphId = this.scene.id
         let width = 0.1,
@@ -734,45 +727,53 @@ class CaptorsMouse {
             }
         }
 
-        // if (!edgeSel.id) {
-        //     let edgeBoundBox = basicData[graphId].edgeBoundBox
-        //     let position = this.camera.position
-        //     for (let [key, val] of edgeBoundBox) {
-        //         if (map.has(key)) continue;
-        //         let { xmax, xmin, ymax, ymin, points } = val
+        let quad = this.camera.quad.root
+        let edgeBoundBox = basicData[this.scene.id].edgeBoundBox
+        if (
+            edgeBoundBox.size &&
+            !edgeSel.id &&
+            !quad.children.length &&
+            !quad._stuckChildren.length &&
+            !quad.nodes.length
+        ) {
+            for (let [key, val] of edgeBoundBox) {
+                let { xmax, xmin, ymax, ymin, points } = val
 
-        //         xmax -= position[0]
-        //         xmin -= position[0]
-        //         ymax -= position[1]
-        //         ymin -= position[1]
+                xmax -= position[0]
+                xmin -= position[0]
+                ymax -= position[1]
+                ymin -= position[1]
 
-        //         if (basicData[graphId].edgeList.get(key)?.getAttribute('opacity') == 0.0) continue
-        //         if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
-        //             let boundPoints = []
-        //             for (let i = 0; i < points.length; i += 2) {
-        //                 boundPoints[i] = points[i] - position[0]
-        //                 boundPoints[i + 1] = points[i + 1] - position[1]
-        //             }
-        //             for (let i = 0; i < boundPoints.length; i += 2) {
-        //                 if (
-        //                     isInside(
-        //                         boundPoints[i],
-        //                         boundPoints[i + 1],
-        //                         boundPoints[i + 2],
-        //                         boundPoints[i + 3],
-        //                         boundPoints[i + 4],
-        //                         boundPoints[i + 5],
-        //                         x,
-        //                         y,
-        //                     )
-        //                 ) {
-        //                     edgeSel.id = key
-        //                     break
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+                if (basicData[this.scene.id].edgeList.get(key)?.getAttribute('opacity') == 0.0) continue
+                if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+                    let scale = (globalProp.globalScale / this.camera.ratio)
+                    let { attrNormal, width, attrMiter, points: attrPoint } = points
+                    let boundPoints: any[] = []
+                    for (let i = 0, j = 0; i < attrPoint.length; i += 2, j++) {
+                        boundPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]) - position[0];
+                        boundPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]) - position[1];
+                    }
+                    for (let i = 0; i < boundPoints.length; i += 2) {
+                        if (
+                            isInside(
+                                boundPoints[i],
+                                boundPoints[i + 1],
+                                boundPoints[i + 2],
+                                boundPoints[i + 3],
+                                boundPoints[i + 4],
+                                boundPoints[i + 5],
+                                x,
+                                y,
+                            )
+                        ) {
+                            edgeSel.id = key
+                            break
+                        }
+                    }
+                }
+            }
+            return edgeSel.id
+        }
 
         return edgeSel.id
     }
@@ -941,7 +942,7 @@ class CaptorsMouse {
         let radius = width / 2
         switch (Number(typeShape[shape])) {
             case 1:
-                radius = width / 2
+                // radius = width / 2
                 // 圆
                 if (disPoint(x, y, pointX, pointY) <= radius) {
                     flag = true
@@ -1041,15 +1042,22 @@ class CaptorsMouse {
                     }
                 }
             } else {
-                for (let i = 0; i < points.length; i += 2) {
+                let scale = (globalProp.globalScale / this.camera.ratio)
+                let { attrNormal, width, attrMiter, points: attrPoint } = points
+                let newPoints: any[] = []
+                for (let i = 0, j = 0; i < attrPoint.length; i += 2, j++) {
+                    newPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]);
+                    newPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]);
+                }
+                for (let i = 0; i < newPoints.length; i += 2) {
                     if (
                         isInside(
-                            points[i] - position[0],
-                            points[i + 1] - position[1],
-                            points[i + 2] - position[0],
-                            points[i + 3] - position[1],
-                            points[i + 4] - position[0],
-                            points[i + 5] - position[1],
+                            newPoints[i] - position[0],
+                            newPoints[i + 1] - position[1],
+                            newPoints[i + 2] - position[0],
+                            newPoints[i + 3] - position[1],
+                            newPoints[i + 4] - position[0],
+                            newPoints[i + 5] - position[1],
                             pointX,
                             pointY,
                         )
@@ -1060,7 +1068,6 @@ class CaptorsMouse {
                 }
             }
         }
-
         return flag
     }
 }

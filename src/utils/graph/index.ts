@@ -70,6 +70,7 @@ export const graphAddNode = (that: any, nodeInfo: NodeAttributes) => {
             nodes: new NodeList(that, [node.getId()]),
         })
     transformatStrategies['nodeFilter'](that)
+    that.geo.enabled() && that.geo.layer.options.onUpdate(true)
     that.render()
     return node
 }
@@ -96,7 +97,7 @@ export const graphAddNodes = (
         that.events.emit('addNodes', {
             nodes: nodeList,
         })
-
+        that.geo.enabled() && update && that.geo.layer.options.onUpdate(true)
         update && that.render()
         resolve(nodeList)
     })
@@ -161,6 +162,7 @@ export const graphAddEdge = (that: any, edgeInfo: edgeAttributes) => {
     transformatStrategies['nodeFilter'](that)
     transformatStrategies['edgeFilter'](that)
     transformatStrategies['mergeEdge'](that)
+    that.geo.enabled() && that.geo.layer.options.onUpdate(true)
     that.render()
     return edge
 }
@@ -186,7 +188,7 @@ export const graphAddEdges = (
         transformatStrategies['nodeFilter'](that)
         transformatStrategies['edgeFilter'](that)
         transformatStrategies['mergeEdge'](that)
-
+        that.geo.enabled() && update && that.geo.layer.options.onUpdate(true)
         update && that.render()
         let edgeList = new EdgeList(that, temporaryEdges)
         that.events.emit('addEdges', {
@@ -399,7 +401,7 @@ export const graphGetNonSelectedEdges = (that: any) => {
  * @param nodeId
  * @param isReFlash
  */
-export const graphRemoveNode = (that: any, nodeId: string, isReFlash: boolean) => {
+export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: boolean) => {
     let relationTable = that.getRelationTable()
 
     let edgelist = relationTable[nodeId]
@@ -414,7 +416,7 @@ export const graphRemoveNode = (that: any, nodeId: string, isReFlash: boolean) =
         })
     }
 
-    node?.setSelected(false, isReFlash)
+    node?.setSelected(false)
     basicData[that.id].nodeList.delete(nodeId)
     originInfo[that.id].nodeList.delete(nodeId)
 
@@ -422,7 +424,7 @@ export const graphRemoveNode = (that: any, nodeId: string, isReFlash: boolean) =
         that.events.emit('removeNodes', {
             nodes: new NodeList(that, [nodeId]),
         })
-        that.render()
+        await that.render()
     }
 }
 /**
@@ -432,7 +434,7 @@ export const graphRemoveNode = (that: any, nodeId: string, isReFlash: boolean) =
  * @returns
  */
 export const graphRemoveNodes = (that: any, nodes: string[]) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             for (let index = 0, len = nodes.length; index < len; index++) {
                 that.removeNode(nodes[index], false)
@@ -441,7 +443,7 @@ export const graphRemoveNodes = (that: any, nodes: string[]) => {
             that.events.emit('removeNodes', {
                 nodes: nodeList,
             })
-            that.render()
+            await that.render()
             resolve(nodeList)
         } catch (err) {
             reject(err)
@@ -510,6 +512,7 @@ export const graphAddGraph = (that: any, RawGraph: { [key: string]: any[] }): Pr
         let nodelist, edgelist
         nodes && (nodelist = await that.addNodes(nodes, false))
         edges && (edgelist = await that.addEdges(edges, false))
+        that.geo.enabled() && that.geo.layer.options.onUpdate(true)
         that.render()
         resolve({
             nodes: nodelist,
@@ -547,6 +550,7 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
     if (destory) {
         globalInfo[graph.id].ruleList = new Map()
     }
+    graph.camera.updateTransform()
     graph.clear()
 }
 /**
@@ -557,6 +561,8 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
 export const graphDestory = (that: any) => {
     return new Promise((resolve: any, reject: any) => {
         try {
+            that.geo.enabled() && that.geo.disable()
+
             if (thumbnailInfo[that.id] && that.thumbnail) {
                 thumbnailInfo[that.id] && delete thumbnailInfo[that.id]
                 resolve(true)

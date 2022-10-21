@@ -775,10 +775,6 @@ const operationUnion = (
         attrMiter[ry + 1] = miter
     }
 
-    for (let i = 0, j = 0; i < points.length; i += 2, j++) {
-        points[i] += attrNormal[i] * (width + 0.01) * attrMiter[j]
-        points[i + 1] += attrNormal[i + 1] * (width + 0.01) * attrMiter[j]
-    }
     let MatArray: any = [],
         MatArray2: any = [],
         sy = width * 0.5,
@@ -805,16 +801,13 @@ const operationUnion = (
 
     MatArray2.push(0, 0, 0, 0, 0)
 
-    // @ts-ignore
-    normalizePath = null
-    oldPoint = null
-    // @ts-ignore
-    attrNormal = null
-    // @ts-ignore
-    attrMiter = null
-
     return {
-        points,
+        points: {
+            attrNormal,
+            width,
+            attrMiter,
+            points
+        },
         color,
         MatArray,
         MatArray2,
