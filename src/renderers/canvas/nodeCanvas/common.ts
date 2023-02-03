@@ -131,11 +131,14 @@ export const drawIcon = async (
     // 加载字体
     let checkFont = `12px ${font}`
     //@ts-ignore
-    if (!document.fonts.check(checkFont)) {
+    if (document.fonts && !document.fonts.check(checkFont)) {
         // @ts-ignore
         await document.fonts.load(checkFont)
     }
-
+    // @ts-ignore
+    if(!document.fonts){
+        return
+    }
     context.save()
     context.fillStyle = fgColor
     context.font = '' + fontSize + 'px ' + font
@@ -148,9 +151,20 @@ export const drawIcon = async (
             return
         }
     } catch { }
+    
+    let textHeight = 0;
+    if (context.measureText(text)?.actualBoundingBoxAscent) {
+        let { actualBoundingBoxAscent, actualBoundingBoxDescent } = context.measureText(text)
+        textHeight = (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2;
+        if(!textHeight || isNaN(textHeight)){
+            textHeight = 0;
+            context.textBaseline = 'middle';
+        }
+    } else {
+        context.textBaseline = 'middle'
+    }
 
     context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.fillText(text, x, y)
+    context.fillText(text, x, y + textHeight)
     context.restore()
 }

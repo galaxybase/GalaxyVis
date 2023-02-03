@@ -1,4 +1,4 @@
-import { defaultsDeep, merge } from 'lodash'
+import { cloneDeep, defaultsDeep, find, indexOf, isString, merge } from 'lodash'
 import { genID, hashNumber } from '..'
 import { originInfo, originInitial } from '../../initial/originInitial'
 import { DEFAULT_SETTINGS } from '../../initial/settings'
@@ -80,7 +80,7 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
 
     edgeList.forEach((item: any, key: any) => {
         if (!criteria(item)) {
-            if ((!item.getAttribute('isFilter') && 
+            if ((!item.getAttribute('isFilter') &&
                 !item.getAttribute('usedMerge'))) {
                 let { source, target } = item.getAttribute()
                 nodeList.get(source).setSelected(false, false, true)
@@ -122,6 +122,8 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
         nodeGenerator, //点样式
         selector, //哪些点被选中
         groupIdFunction, //分组再细分
+        reserve, //保留边
+        createSelfLoop, //生成自环边
     } = opts
     let changedTable: string[] = [] //需要更改的数据
     try {
@@ -168,7 +170,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                     reject(err)
                 }
                 if (edgeAllAttribute?.attribute)
-                    edgeAllAttribute.attribute = nodeInitAttribute(
+                    edgeAllAttribute.attribute = edgeInitAttribute(
                         galaxyvis,
                         edgeAllAttribute.attribute,
                     )
@@ -266,132 +268,120 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                 { duration },
                 () => {
                     // 在回调函数里处理显示和隐藏效果
-                    let relationTable = galaxyvis.getRelationTable()
-
+                    let relationTable = galaxyvis.getRelationTable();
+                    let usedEdges = new Set()
                     groupNode.forEach((item: any, key: string) => {
                         let children = item.value.children
+                        let group = item
                         for (let index = 0, len = children.length; index < len; index++) {
                             let keys = children[index].key,
                                 edgelist = relationTable[keys]
                             // 处理合并点相关联的边
                             if (edgelist) {
                                 edgelist.forEach((item: any) => {
-                                    if (thisEdges.has(item)) {
-                                        thisEdges.get(item).changeAttribute({
+                                    if (
+                                        thisEdges.has(item) &&
+                                        !usedEdges.has(item) &&
+                                        thisEdges.get(item).getAttribute('isVisible')
+                                    ) {
+                                        usedEdges.add(item);
+                                        let edge = thisEdges.get(item)
+                                        edge.changeAttribute({
                                             isVisible: false,
                                             isSelect: false,
                                             useMergeEdge: true,
                                         })
-                                    }
-                                })
-                            }
-                            thisNodes.get(keys).changeAttribute({
-                                isVisible: false,
-                                // isSelect: false,
-                                useMergeNode: true,
-                            })
-                            thisNodes.get(keys).setSelected(false, false, true)
-                        }
-                        //处理子节点
-                        let hash = new Set()
-                        for (let index = 0, len = children.length; index < len; index++) {
-                            let keys = children[index].key,
-                                edgelist = relationTable[keys]
-                            if (edgelist) {
-                                edgelist.forEach((item: any) => {
-                                    let source = allEdgelist.get(item)?.getSource()
-                                    let target = allEdgelist.get(item)?.getTarget()
+                                        // 保留原始边
+                                        if (reserve) {
+                                            let id = `gen_group_${item}_edge_${genid}`;
 
-                                    if (source && target) {
-                                        let node = source.getAttribute('isVisible')
-                                            ? source.getId()
-                                            : target.getAttribute('isVisible')
-                                                ? target.getId()
-                                                : null, // 创建因为合并点所形成的合并边
-                                            n =
-                                                node &&
-                                                hashNumber(
-                                                    allNodelist.get(node).value.num,
-                                                    allNodelist.get(key).value.num,
-                                                ),
-                                            id = `gen_group_${item}_edge_${genid}` //创建唯一id
-                                        if (node && !hash.has(n)) {
-                                            hash.add(n)
-                                            let creatAttribute = {
-                                                attribute: {
-                                                    ...DEFAULT_SETTINGS.edgeAttribute,
-                                                    isVisible: true,
-                                                    source: node,
-                                                    target: key,
-                                                    isGroup: true,
-                                                    isMerge: true,
-                                                },
-                                                id,
-                                                source: node,
-                                                target: key,
-                                                data: {},
-                                                classList: [],
-                                                // 谁创建了这个边
-                                                createBy: key,
-                                                num: originInitial.graphIndex++,
-                                            }
-                                            creatAttribute = merge(creatAttribute, edgeAllAttribute)
-                                            // 添加到初始属性之中
-                                            originInfo[galaxyvis.id].edgeList.set(
-                                                id,
-                                                creatAttribute.attribute,
-                                            )
-                                            let groupEdge: any = new Edge(creatAttribute)
-                                            groupEdge.__proto__ = galaxyvis
-                                            globalInfo[galaxyvis.id].ruleList.forEach(
-                                                (key, item) => {
-                                                    groupEdge.addClass(item, 2, false)
-                                                },
-                                            )
-                                            allEdgelist.set(id, groupEdge)
-                                            // canvas绘制顺序
-                                            if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
-                                                globalInfo[galaxyvis.id].edgeOrder.add(id)
-                                            }
+                                            let target = isString(edge.value?.target) ? edge.value?.target : edge.getTarget()?.getId()
+                                            let source = isString(edge.value?.source) ? edge.value?.source : edge.getSource()?.getId()
 
-                                            if (allNodelist.get(node).value?.children?.length) {
-                                                let nodeChilds =
-                                                    allNodelist.get(node).value.children
-                                                for (
-                                                    let i = 0, len = nodeChilds.length;
-                                                    i < len;
-                                                    i++
-                                                ) {
-                                                    id = `gen_group_agin_${nodeChilds[i].key}_edge_${genid}` //创建唯一id
-                                                    let creatAttribute = {
-                                                        attribute: {
-                                                            ...DEFAULT_SETTINGS.edgeAttribute,
-                                                            isVisible: true,
-                                                            source: nodeChilds[i].key,
-                                                            target: key,
-                                                            isGroup: true,
-                                                            isMerge: true,
-                                                        },
+                                            // let source = edge.getSource()?.getId() || edge.value?.source?.getId(),
+                                            //     target = edge.getTarget()?.getId() || edge.value?.target?.getId();
+                                            let data = edge.getData();
+                                            let sourceNode, targetNode;
+
+                                            let checkSource = find(children, (child) => {
+                                                return child.key == source
+                                            })
+
+                                            let checkTarget = find(children, (child) => {
+                                                return child.key == target
+                                            })
+                                            // 2个都对上
+                                            let isCreate = true, whereIn = 0;
+                                            if (checkSource && checkTarget) {
+                                                // 是否创建自环边
+                                                if (createSelfLoop) {
+                                                    source = key;
+                                                    target = key;
+                                                } else {
+                                                    isCreate = false
+                                                }
+                                                sourceNode = group;
+                                                targetNode = group;
+                                            } else if (checkTarget) {
+                                                // 如果终点被合并 起始点 + 合并点
+                                                target = key;
+                                                sourceNode = thisNodes.get(source);
+                                                targetNode = group;
+                                                whereIn = 1;
+                                            } else if (checkSource) {
+                                                // 如果起始点被合并 合并点 + 终点
+                                                source = key;
+                                                sourceNode = group;
+                                                targetNode = thisNodes.get(target);
+                                                whereIn = 2;
+                                            } else {
+                                                isCreate = false
+                                            }
+                                            if (isCreate) {
+                                                let edgeChildren: any[] = thisEdges.get(item)?.value?.children || [];
+
+                                                let func = (
+                                                    source: any, target: any, child: any[],
+                                                    add: boolean = true, ids?: any, attributes?: any, datas?: any
+                                                ) => {
+                                                    let genid = genID(4)
+                                                    let id = ids ? ids : `${key}_edge_${genid}`;
+                                                    let cloneEdge = cloneDeep(
+                                                        attributes ? attributes :
+                                                            edge.getAttribute()
+                                                    )
+
+                                                    let cloneEdgeAttr = {
+                                                        ...cloneEdge,
+                                                        isVisible: false,
+                                                        source,
+                                                        target,
+                                                    }
+
+                                                    let nowcreatAttribute = {
+                                                        attribute: cloneEdgeAttr,
                                                         id,
-                                                        source: nodeChilds[i].key,
-                                                        target: key,
-                                                        data: {},
+                                                        source,
+                                                        target,
+                                                        data,
                                                         classList: [],
                                                         // 谁创建了这个边
                                                         createBy: key,
+                                                        children: child,
                                                         num: originInitial.graphIndex++,
                                                     }
-                                                    creatAttribute = merge(
-                                                        creatAttribute,
-                                                        edgeAllAttribute,
-                                                    )
-                                                    // 添加到初始属性之中
+
                                                     originInfo[galaxyvis.id].edgeList.set(
                                                         id,
-                                                        creatAttribute.attribute,
+                                                        cloneEdgeAttr,
                                                     )
-                                                    let groupEdge: any = new Edge(creatAttribute)
+                                                    let groupEdge: any = new Edge(nowcreatAttribute)
                                                     groupEdge.__proto__ = galaxyvis
+
+                                                    if (datas) {
+                                                        groupEdge.value.data = datas
+                                                    }
+
                                                     globalInfo[galaxyvis.id].ruleList.forEach(
                                                         (key, item) => {
                                                             groupEdge.addClass(item, 2, false)
@@ -399,18 +389,246 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                     )
                                                     allEdgelist.set(id, groupEdge)
                                                     // canvas绘制顺序
-                                                    if (
-                                                        !globalInfo[galaxyvis.id].edgeOrder.has(id)
-                                                    ) {
+                                                    if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
                                                         globalInfo[galaxyvis.id].edgeOrder.add(id)
                                                     }
+                                                    add && edgeChildren.push(id) && (edgeChildren = [...new Set(edgeChildren)])
                                                 }
+
+                                                if (whereIn == 1 && sourceNode?.value.children?.length) {
+                                                    let sourceChildren = sourceNode.value.children;
+                                                    for (let i = 0; i < sourceChildren.length; i++) {
+                                                        let sourceNode = sourceChildren[i].key;
+                                                        let originEdgeId = edge.value.createBy;
+                                                        let originEdge = allEdgelist.get(originEdgeId);
+                                                        if (originEdge) {
+                                                            let originSourceNode = originEdge.getSource()?.getId();
+
+                                                            if (originSourceNode == sourceNode) {
+                                                                func(sourceNode, key, [], false)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if (whereIn == 2 && targetNode?.value.children?.length) {
+                                                    let targetChildren = targetNode.value.children;
+                                                    for (let i = 0; i < targetChildren.length; i++) {
+                                                        let targetNode = targetChildren[i].key;
+                                                        let originEdgeId = edge.value.createBy;
+                                                        let originEdge = allEdgelist.get(originEdgeId);
+                                                        if (originEdge) {
+                                                            let originTargetNode = originEdge.getTarget()?.getId();
+
+                                                            if (originTargetNode == targetNode) {
+                                                                func(key, targetNode, [], false)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if (edgeChildren.length) {
+                                                    let edgeChildrenLen = cloneDeep(edgeChildren.length);
+                                                    for (let i = 0; i < edgeChildrenLen; i++) {
+                                                        let edgechild = allEdgelist.get(edgeChildren[i]);
+                                                        let source = edgechild.getSource()?.getId() || edgechild.value?.source?.getId(),
+                                                            target = edgechild.getTarget()?.getId() || edgechild.value?.target?.getId();
+                                                        let checkSource = find(children, (child) => {
+                                                            return child.key == source
+                                                        })
+
+                                                        let checkTarget = find(children, (child) => {
+                                                            return child.key == target
+                                                        })
+                                                        let child = edgechild.value.children || []
+                                                        let childData = edgechild.getData()
+
+                                                        if (checkSource) {
+                                                            func(key, target, child, true, edgechild.getId(), cloneDeep(edgechild.getAttribute()), childData)
+                                                        } else if (checkTarget) {
+                                                            func(source, key, child, true, edgechild.getId(), cloneDeep(edgechild.getAttribute()), childData)
+                                                        }
+                                                    }
+                                                }
+
+                                                let creatAttribute = {
+                                                    attribute: {
+                                                        ...edge.getAttribute(),
+                                                        isVisible: true,
+                                                        source,
+                                                        target,
+                                                        isGroup: true,
+                                                        isMerge: true,
+                                                        useMergeEdge: undefined
+                                                    },
+                                                    id,
+                                                    source,
+                                                    target,
+                                                    data,
+                                                    classList: [],
+                                                    // 谁创建了这个边
+                                                    createBy: edge.getId(),
+                                                    children: edgeChildren, //子集
+                                                    num: originInitial.graphIndex++,
+                                                }
+                                                originInfo[galaxyvis.id].edgeList.set(
+                                                    id,
+                                                    creatAttribute.attribute,
+                                                )
+                                                let groupEdge: any = new Edge(creatAttribute)
+                                                groupEdge.__proto__ = galaxyvis
+                                                globalInfo[galaxyvis.id].ruleList.forEach(
+                                                    (key, item) => {
+                                                        groupEdge.addClass(item, 2, false)
+                                                    },
+                                                )
+                                                allEdgelist.set(id, groupEdge)
+                                                // canvas绘制顺序
+                                                if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
+                                                    globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                }
+
+                                                try {
+                                                    if (globalInfo[galaxyvis.id].mergeEdgesTransformat) {
+                                                        let { transformat, options } = globalInfo[galaxyvis.id].mergeEdgesTransformat
+                                                        transformat.destroy(true, 0, false).then(async () => {
+                                                            await galaxyvis.transformations.addEdgeGrouping(options, false)
+                                                        })
+                                                    }
+                                                } catch { }
+
                                             }
                                         }
                                     }
                                 })
                             }
+                            thisNodes.get(keys).changeAttribute({
+                                isVisible: false,
+                                useMergeNode: true,
+                            })
+                            thisNodes.get(keys).setSelected(false, false, true)
                         }
+                        if (!reserve) {
+                            //处理子节点
+                            let hash = new Set()
+                            for (let index = 0, len = children.length; index < len; index++) {
+                                let keys = children[index].key,
+                                    edgelist = relationTable[keys]
+                                if (edgelist) {
+                                    edgelist.forEach((item: any) => {
+                                        let source = allEdgelist.get(item)?.getSource()
+                                        let target = allEdgelist.get(item)?.getTarget()
+                                        if (source && target) {
+                                            let node = source.getAttribute('isVisible')
+                                                ? source.getId()
+                                                : target.getAttribute('isVisible')
+                                                    ? target.getId()
+                                                    : null, // 创建因为合并点所形成的合并边
+                                                n =
+                                                    node &&
+                                                    hashNumber(
+                                                        allNodelist.get(node).value.num,
+                                                        allNodelist.get(key).value.num,
+                                                    ),
+                                                id = `gen_group_${item}_edge_${genid}` //创建唯一id
+                                            if (node && !hash.has(n)) {
+                                                hash.add(n)
+                                                let creatAttribute = {
+                                                    attribute: {
+                                                        ...DEFAULT_SETTINGS.edgeAttribute,
+                                                        isVisible: true,
+                                                        source: node,
+                                                        target: key,
+                                                        isGroup: true,
+                                                        isMerge: true,
+                                                    },
+                                                    id,
+                                                    source: node,
+                                                    target: key,
+                                                    data: {},
+                                                    classList: [],
+                                                    // 谁创建了这个边
+                                                    createBy: key,
+                                                    num: originInitial.graphIndex++,
+                                                }
+                                                creatAttribute = merge(creatAttribute, edgeAllAttribute)
+                                                // 添加到初始属性之中
+                                                originInfo[galaxyvis.id].edgeList.set(
+                                                    id,
+                                                    creatAttribute.attribute,
+                                                )
+                                                let groupEdge: any = new Edge(creatAttribute)
+                                                groupEdge.__proto__ = galaxyvis
+                                                globalInfo[galaxyvis.id].ruleList.forEach(
+                                                    (key, item) => {
+                                                        groupEdge.addClass(item, 2, false)
+                                                    },
+                                                )
+                                                allEdgelist.set(id, groupEdge)
+                                                // canvas绘制顺序
+                                                if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
+                                                    globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                }
+
+                                                if (allNodelist.get(node).value?.children?.length) {
+                                                    let nodeChilds =
+                                                        allNodelist.get(node).value.children
+                                                    for (
+                                                        let i = 0, len = nodeChilds.length;
+                                                        i < len;
+                                                        i++
+                                                    ) {
+                                                        id = `gen_group_agin_${nodeChilds[i].key}_edge_${genid}` //创建唯一id
+                                                        let creatAttribute = {
+                                                            attribute: {
+                                                                ...DEFAULT_SETTINGS.edgeAttribute,
+                                                                isVisible: true,
+                                                                source: nodeChilds[i].key,
+                                                                target: key,
+                                                                isGroup: true,
+                                                                isMerge: true,
+                                                            },
+                                                            id,
+                                                            source: nodeChilds[i].key,
+                                                            target: key,
+                                                            data: {},
+                                                            classList: [],
+                                                            // 谁创建了这个边
+                                                            createBy: key,
+                                                            num: originInitial.graphIndex++,
+                                                        }
+                                                        creatAttribute = merge(
+                                                            creatAttribute,
+                                                            edgeAllAttribute,
+                                                        )
+                                                        // 添加到初始属性之中
+                                                        originInfo[galaxyvis.id].edgeList.set(
+                                                            id,
+                                                            creatAttribute.attribute,
+                                                        )
+                                                        let groupEdge: any = new Edge(creatAttribute)
+                                                        groupEdge.__proto__ = galaxyvis
+                                                        globalInfo[galaxyvis.id].ruleList.forEach(
+                                                            (key, item) => {
+                                                                groupEdge.addClass(item, 2, false)
+                                                            },
+                                                        )
+                                                        allEdgelist.set(id, groupEdge)
+                                                        // canvas绘制顺序
+                                                        if (
+                                                            !globalInfo[galaxyvis.id].edgeOrder.has(id)
+                                                        ) {
+                                                            globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+
                         item.changeAttribute({ isVisible: true })
                     })
 
@@ -440,7 +658,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
  * @returns
  */
 export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true, isMerge = false): Promise<any> => {
-    let { generator } = opts
+    let { generator, selector } = opts
     try {
         return new Promise((resolve, reject) => {
             // 获取两边之间的类型
@@ -463,11 +681,12 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                             for (let i = 0, len = newTotal.length; i < len; i++) {
                                 let edgeId = newTotal[i]
                                 let this_edge = edgeList.get(edgeId)
-                                if(this_edge.getAttribute('isGroupEdge')) continue;
+                                if (this_edge.getAttribute('isGroupEdge')) continue;
+                                if (selector && !selector(this_edge)) continue;
                                 groupEdges.push(edgeId)
                                 if (i == 0 || (!target && !source)) {
-                                    target = this_edge.value.target
-                                    source = this_edge.value.source
+                                    target = isString(this_edge.value.target) ? this_edge.value.target : this_edge.value.target.getId()
+                                    source = isString(this_edge.value.source) ? this_edge.value.source : this_edge.value.source.getId()
                                 }
                                 // 当前边可见设置为false
                                 this_edge.changeAttribute({
@@ -475,7 +694,6 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                                     isSelect: false,
                                     usedMerge: true,
                                 })
-
                                 let sourceNode = nodeList.get(source),
                                     targetNode = nodeList.get(target);
                                 if (
@@ -493,7 +711,6 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                                 this_edge.setSelected(false, false, true)
                                 basicData[galaxyvis.id].selectedEdgeTable.delete(edgeId)
                                 basicData[galaxyvis.id].selectedEdges.delete(edgeId)
-
                                 // 添加到子集中
                                 children.push(newTotal[i])
                             }
@@ -513,37 +730,52 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                                         edgeAllAttribute.attribute,
                                     )
                             }
-                            // 创建唯一id
-                            let id = `gen_group_edge_${key}`,
-                                creatAttribute = {
-                                    attribute: {
-                                        ...DEFAULT_SETTINGS.edgeAttribute,
-                                        isVisible: true,
+                            if (children.length > 1) {
+                                // 创建唯一id
+                                let id = `gen_group_edge_${key}`,
+                                    creatAttribute = {
+                                        attribute: {
+                                            ...DEFAULT_SETTINGS.edgeAttribute,
+                                            isVisible: true,
+                                            source,
+                                            target,
+                                            isGroupEdge: true,
+                                            isMerge: true,
+                                        },
+                                        id,
                                         source,
                                         target,
-                                        isGroupEdge: true,
-                                        isMerge: true,
-                                    },
-                                    id,
-                                    source,
-                                    target,
-                                    data: {},
-                                    classList: [],
-                                    children,
-                                    num: originInitial.graphIndex++,
-                                }
-                            // 合并属性
-                            creatAttribute = merge(creatAttribute, edgeAllAttribute)
-                            // 初始化属性
-                            originInfo[galaxyvis.id].edgeList.set(id, creatAttribute.attribute)
-                            let groupEdge: any = new Edge(creatAttribute)
-                            groupEdge.__proto__ = galaxyvis
-                            globalInfo[galaxyvis.id].ruleList.forEach((key, item) => {
-                                groupEdge.addClass(item, 2, false)
-                            })
-                            edgeList.set(id, groupEdge)
-                            globalInfo[galaxyvis.id].edgeOrder.add(id)
-                            changedTable[changedTable.length] = id
+                                        data: {},
+                                        classList: [],
+                                        children,
+                                        num: originInitial.graphIndex++,
+                                    }
+                                // 合并属性
+                                creatAttribute = merge(creatAttribute, edgeAllAttribute)
+                                // 初始化属性
+                                originInfo[galaxyvis.id].edgeList.set(id, creatAttribute.attribute)
+                                let groupEdge: any = new Edge(creatAttribute)
+                                groupEdge.__proto__ = galaxyvis
+                                globalInfo[galaxyvis.id].ruleList.forEach((key, item) => {
+                                    groupEdge.addClass(item, 2, false)
+                                })
+                                edgeList.set(id, groupEdge)
+                                globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                changedTable[changedTable.length] = id
+                            } else if (children.length == 1) {
+                                let id = children[0];
+                                let this_edge = edgeList.get(id)
+                                let target = isString(this_edge.value.target) ? this_edge.value.target : this_edge.value.target.getId()
+                                let source = isString(this_edge.value.source) ? this_edge.value.source : this_edge.value.source.getId()
+                                let sourceNode = nodeList.get(source)?.getAttribute("isVisible"),
+                                    targetNode = nodeList.get(target)?.getAttribute("isVisible");
+                                if (sourceNode && targetNode)
+                                    this_edge.changeAttribute({
+                                        isVisible: true,
+                                        isSelect: false,
+                                        usedMerge: false,
+                                    })
+                            }
                         }
                     })
                 }

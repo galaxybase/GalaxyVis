@@ -41,7 +41,7 @@ export default function canvasNodeRhombus(
         size,
         backgroundColor,
         (borderSize / 0.4) * size,
-        ((borderSize / 2 + 0.015) / 0.4) * size,
+        borderSize ? ((borderSize / 2 + 0.015) / 0.4) * size : 0,
     )
 
     context.globalAlpha = opacity

@@ -1,5 +1,5 @@
 import { cloneDeep } from 'lodash'
-import { hashNumber, transformCanvasCoord } from '..'
+import { hashNumber, isIE, transformCanvasCoord } from '..'
 import { globalInfo, globalProp } from '../../initial/globalProp'
 import { getLines } from '../../renderers/canvas/labelCanvas/common'
 import {
@@ -11,6 +11,7 @@ import {
     imageSvgSetAttribute,
     nodeStrokePathSvg,
     startTrans,
+    svgInnerHTML,
     textBaseSvgSetAttribute,
 } from './common'
 import { svgEdgeDef, svgEdgeParallel, svgEdgeSelf } from './edge'
@@ -26,7 +27,10 @@ let svgContent: any = null;
 let svgRender: any
 let defsStyle: any
 
+var xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
+
 export const renderSVG = (graph: any, svg: any) => {
+    xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     svgRender = svg
     imageNumer = 0
     nodeRender = 0
@@ -51,23 +55,25 @@ export const renderSVG = (graph: any, svg: any) => {
         svgCanvas.height = height
         svgCanvas.width = width
         svgContent = svgCanvas.getContext('2d')
-    }else {
+    } else {
         svgContent = svgGraph?.ctx
     }
     // 获取相机缩放比
     scale = (globalProp.globalScale / ratio) * 2.0
     thumbnail = graph.thumbnail
+    // svg.setAttributeNS('http://www.w3.org/2000/xmlns/', xmlns, 'http://www.w3.org/2000/svg');
+    // svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
     // 点集合
-    let nodeGroup = document.createElementNS('xmlns', 'g')
+    let nodeGroup = document.createElementNS(xmlns, 'g')
     nodeGroup.setAttributeNS(null, 'id', 'cl-nodes')
     // 点halo集合
-    let nodeHaloGroup = document.createElementNS('xmlns', 'g')
+    let nodeHaloGroup = document.createElementNS(xmlns, 'g')
     nodeHaloGroup.setAttributeNS(null, 'id', 'cl-nodehalos')
     // 边集合
-    let edgeGroup = document.createElementNS('xmlns', 'g')
+    let edgeGroup = document.createElementNS(xmlns, 'g')
     edgeGroup.setAttributeNS(null, 'id', 'cl-edges')
     // 样式集合 + 切割环
-    defsStyle = document.createElementNS('xmlns', 'defs')
+    defsStyle = document.createElementNS(xmlns, 'defs')
     svg.appendChild(defsStyle)
 
     return new Promise((reslove, reject) => {
@@ -106,10 +112,10 @@ export const renderSVG = (graph: any, svg: any) => {
                                 null !== thisVal &&
                                     srcArray.push(
                                         "url('" +
-                                            thisVal.src +
-                                            "') format('" +
-                                            thisVal.format +
-                                            "')",
+                                        thisVal.src +
+                                        "') format('" +
+                                        thisVal.format +
+                                        "')",
                                     )
                             }
                             if (0 === srcArray.length) return originalRule
@@ -122,8 +128,9 @@ export const renderSVG = (graph: any, svg: any) => {
             .then(function (val) {
                 if (0 !== val.length) {
                     for (var i = 0; i < val.length; i++) {
-                        let style = document.createElementNS('xmlns', 'style')
-                        style.innerHTML = val[i]
+                        let style = document.createElementNS(xmlns, 'style')
+                        // style.innerHTML = val[i]
+                        svgInnerHTML(style, val[i])
                         defsStyle.appendChild(style)
                     }
                 }
@@ -152,11 +159,11 @@ export const renderSVG = (graph: any, svg: any) => {
 const renderNode = (graphId: any, nodeGroup: any) => {
     let nodesList = svgGraph.getFilterNode()
 
-    let clipG = document.createElementNS('xmlns', 'g')
+    let clipG = document.createElementNS(xmlns, 'g')
     defsStyle.appendChild(clipG)
 
     for (let [key, item] of nodesList) {
-        let node = document.createElementNS('xmlns', 'g')
+        let node = document.createElementNS(xmlns, 'g')
         node.setAttributeNS(null, 'data-node-id', key)
         // 获取点属性
         let attributes = item.getAttribute()
@@ -183,7 +190,7 @@ const renderNode = (graphId: any, nodeGroup: any) => {
         size = size * scale
         // 根据相机位置更改点的初始位置
         let coord = transformCanvasCoord(graphId, x, y, position, scale, thumbnail)
-        ;(x = coord.x), (y = coord.y)
+            ; (x = coord.x), (y = coord.y)
 
         let clipPath = clipPathSvg(
             key,
@@ -193,7 +200,7 @@ const renderNode = (graphId: any, nodeGroup: any) => {
 
         defsStyle.appendChild(clipPath)
 
-        let nodePath = document.createElementNS('xmlns', 'path')
+        let nodePath = document.createElementNS(xmlns, 'path')
         nodePath.setAttributeNS(null, 'd', drawNodeSvg(shape, x, y, size))
         nodePath.setAttributeNS(null, 'fill', color)
         nodePath.setAttributeNS(null, 'fill-opacity', '1')
@@ -239,71 +246,74 @@ const renderNode = (graphId: any, nodeGroup: any) => {
         node.appendChild(nodeStokePath)
         // 创建badges
         if (badges) {
-            let badgesG = document.createElementNS('xmlns', 'g')
-            let { postion, color: badgesColor, scale: badgesScale, text, stroke, image } = badges
-            badgesScale = badgesScale || 0.35
-            // 点大小
-            let radius = size * badgesScale
-            // 颜色
-            badgesColor = badgesColor == 'inherit' ? color : badgesColor ? badgesColor : '#fff'
-            // 旋转
-            let rotate = (Math.PI * 45) / 180
-            // 默认位置
-            postion = postion || 'bottomRight'
-            // 不同位置
-            let direction = globalProp.direction
-            // badges的中心坐标
-            let newX = x + direction[postion][0] * (size - 2) * Math.sin(rotate)
-            let newY = y + direction[postion][1] * (size - 2) * Math.cos(rotate)
-            // 外环
-            let { color: strokeColor, width: storkeWidth } = stroke
+            let badgesArray = Object.keys(badges)
+            for (let i = 0; i < badgesArray.length; i++) {
+                let badgesG = document.createElementNS(xmlns, 'g')
+                let { color: badgesColor, scale: badgesScale, text, stroke, image } = badges[badgesArray[i]];
+                badgesScale = badgesScale || 0.35
+                // 点大小
+                let radius = size * badgesScale
+                // 颜色
+                badgesColor = badgesColor == 'inherit' ? color : badgesColor ? badgesColor : '#fff'
+                // 旋转
+                let rotate = (Math.PI * 45) / 180
+                // 默认位置
+                let postion = badgesArray[i] || 'bottomRight'
+                // 不同位置
+                let direction = globalProp.direction
+                // badges的中心坐标
+                let newX = x + direction[postion][0] * (size - 2) * Math.sin(rotate)
+                let newY = y + direction[postion][1] * (size - 2) * Math.cos(rotate)
+                // 外环
+                let { color: strokeColor, width: storkeWidth } = stroke
 
-            let nodePath = document.createElementNS('xmlns', 'path')
-            nodePath.setAttributeNS(null, 'd', drawNodeSvg('circle', newX, newY, radius))
-            nodePath.setAttributeNS(null, 'fill', badgesColor)
-            nodePath.setAttributeNS(null, 'fill-opacity', '1')
-            badgesG.appendChild(nodePath)
-            // badges的图片加载
-            if (image) {
-                imageNumer++
-                let clipPath = clipPathSvg(
-                    key,
-                    drawNodeSvg('circle', newX, newY, radius + (storkeWidth * size) / 40),
-                    color,
-                )
+                let nodePath = document.createElementNS(xmlns, 'path')
+                nodePath.setAttributeNS(null, 'd', drawNodeSvg('circle', newX, newY, radius))
+                nodePath.setAttributeNS(null, 'fill', badgesColor)
+                nodePath.setAttributeNS(null, 'fill-opacity', '1')
+                badgesG.appendChild(nodePath)
+                // badges的图片加载
+                if (image) {
+                    imageNumer++
+                    let clipPath = clipPathSvg(
+                        key,
+                        drawNodeSvg('circle', newX, newY, radius + (storkeWidth * size) / 40),
+                        color,
+                    )
 
-                defsStyle.appendChild(clipPath)
+                    defsStyle.appendChild(clipPath)
 
-                let imageSvg = imageSvgSetAttribute(
-                    newX - (radius - (storkeWidth * size) / 40),
-                    newY - (radius - (storkeWidth * size) / 40),
-                    (radius - (storkeWidth * size) / 40) * 2,
-                    (radius - (storkeWidth * size) / 40) * 2,
-                )
+                    let imageSvg = imageSvgSetAttribute(
+                        newX - (radius - (storkeWidth * size) / 40),
+                        newY - (radius - (storkeWidth * size) / 40),
+                        (radius - (storkeWidth * size) / 40) * 2,
+                        (radius - (storkeWidth * size) / 40) * 2,
+                    )
 
-                var imageCreated = new Image()
-                imageCreated.setAttribute('crossOrigin', 'anonymous')
-                imageCreated.onload = () => {
-                    nodeRender++
-                    startTrans(image, function (base64: any) {
-                        imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', base64)
-                    })
-                    imageSvg.setAttributeNS(null, 'clip-path', 'url(#clip-path-badges-' + key + ')')
+                    var imageCreated = new Image()
+                    imageCreated.setAttribute('crossOrigin', 'anonymous')
+                    imageCreated.onload = () => {
+                        nodeRender++
+                        startTrans(image, function (base64: any) {
+                            imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', base64)
+                        })
+                        imageSvg.setAttributeNS(null, 'clip-path', 'url(#clip-path-badges-' + key + ')')
+                    }
+                    imageCreated.src = image
+                    badgesG.appendChild(imageSvg)
+                } else if (text?.content) {
+                    let g = iconSvgSetAttribute(text, radius - (storkeWidth * size) / 20, newX, newY)
+                    badgesG.appendChild(g)
                 }
-                imageCreated.src = image
-                badgesG.appendChild(imageSvg)
-            } else if (text?.content) {
-                let g = iconSvgSetAttribute(text, radius - (storkeWidth * size) / 20, newX, newY)
-                badgesG.appendChild(g)
-            }
 
-            let nodeStokePath = nodeStrokePathSvg(
-                drawNodeSvg('circle', newX, newY, radius),
-                (storkeWidth * size) / 20 + '',
-                strokeColor,
-            )
-            badgesG.appendChild(nodeStokePath)
-            node.appendChild(badgesG)
+                let nodeStokePath = nodeStrokePathSvg(
+                    drawNodeSvg('circle', newX, newY, radius),
+                    (storkeWidth * size) / 20 + '',
+                    strokeColor,
+                )
+                badgesG.appendChild(nodeStokePath)
+                node.appendChild(badgesG)
+            }
         }
 
         // 加载文字
@@ -358,7 +368,7 @@ const renderNode = (graphId: any, nodeGroup: any) => {
             var lines = getLines(textLabel, maxLength),
                 baseX = x + labelOffsetX + margin[0] * 100,
                 baseY = Math.round(y + labelOffsetY + margin[1] * 100)
-            if (textPosition == 'left' || textPosition == 'right'){ 
+            if (textPosition == 'left' || textPosition == 'right') {
                 let context = svgContent
                 context.textAlign = 'left'
                 context.font = `${textFontSize / 2}px ${fontFamily}`
@@ -366,10 +376,11 @@ const renderNode = (graphId: any, nodeGroup: any) => {
                 baseX = textPosition == 'left' ? baseX - width : baseX + width
             }
             for (var i = 0; i < lines.length; ++i) {
-                var textSvg = document.createElementNS('xmls', 'text')
+                var textSvg = document.createElementNS(xmlns, 'text')
                 textSvg.setAttributeNS(null, 'x', baseX)
                 textSvg.setAttributeNS(null, 'y', baseY + i * (textFontSize + 1) + '')
-                textSvg.innerHTML = lines[i]
+                // textSvg.innerHTML = lines[i]
+                svgInnerHTML(textSvg, lines[i])
 
                 textG.appendChild(textSvg)
             }
@@ -392,10 +403,10 @@ const renderNodeHalo = (graphId: any, nodeHaloGroup: any) => {
             let haloWidth = (Number(size) + width / 2) * scale
             // 根据相机位置更改点的初始位置
             let coord = transformCanvasCoord(graphId, x, y, position, scale, thumbnail)
-            ;(x = coord.x), (y = coord.y)
-            let g = document.createElementNS('xmlns', 'g')
+                ; (x = coord.x), (y = coord.y)
+            let g = document.createElementNS(xmlns, 'g')
             g.setAttributeNS(null, 'data-node-id', 'halo-node-' + key)
-            let nodePath = document.createElementNS('xmlns', 'path')
+            let nodePath = document.createElementNS(xmlns, 'path')
             nodePath.setAttributeNS(null, 'd', drawNodeSvg('circle', x, y, haloWidth))
             nodePath.setAttributeNS(null, 'fill', color)
             nodePath.setAttributeNS(null, 'fill-opacity', '1')
@@ -520,17 +531,23 @@ const renderEdge = (graphId: any, edgeGroup: any) => {
             hashSet = type == 'basic' ? baseTypeHash.get(hash) : typeHash.get(hash), //两点之间hash表
             size = hashSet?.num
         if (!size) continue
-        let lineNumber = [...hashSet.total].indexOf(key),
-            forward =
-                lineNumber == 0
-                    ? 1
-                    : size % 2 == 0
+        let lineNumber = [...hashSet.total].indexOf(key);
+
+        if (globalInfo[graphId].enabledNoStraightLine) {
+            size == 1 && size++
+            size % 2 !== 0 && lineNumber++
+        }
+
+        let forward =
+            lineNumber == 0
+                ? 1
+                : size % 2 == 0
                     ? lineNumber % 2 == 1 && sourceNumber != forwardSource
                         ? -1
                         : 1
                     : lineNumber % 2 == 0 && sourceNumber != forwardSource
-                    ? -1
-                    : 1,
+                        ? -1
+                        : 1,
             { x: targetX, y: targetY, radius: targetSize } = target_attribute,
             { x: sourceX, y: sourceY, radius: sourceSize } = souce_attribute
         // 这条边 如果起始点和终止点有一个不存在则直接跳过
@@ -547,7 +564,7 @@ const renderEdge = (graphId: any, edgeGroup: any) => {
         }
         forwadHashTable?.set(hash, { sourceNumber, targetNumber })
         if (halo.width != 0) {
-            let g = document.createElementNS('xmlns', 'g')
+            let g = document.createElementNS(xmlns, 'g')
             g.setAttributeNS(null, 'data-edge-id', key)
             halo.opacity = 1
             halo.shape = null
@@ -568,7 +585,7 @@ const renderEdge = (graphId: any, edgeGroup: any) => {
             )
             edgeGroup.appendChild(g)
         }
-        let g = document.createElementNS('xmlns', 'g')
+        let g = document.createElementNS(xmlns, 'g')
         g.setAttributeNS(null, 'data-edge-id', key)
         strategies[type](
             g,

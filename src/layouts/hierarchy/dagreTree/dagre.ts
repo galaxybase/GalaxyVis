@@ -6,6 +6,8 @@ function genericDagrelLayout(assign: any, nodes: any, edges: any, options: any) 
         nodesep,
         ranksep,
         rankdir, //TB, BT, LR, RL
+        align,  //UL, UR, DL, DR
+        ranker, //network-simplex tight-tree longest-path
     } = options
 
     const g = new dagre.graphlib.Graph()
@@ -15,14 +17,15 @@ function genericDagrelLayout(assign: any, nodes: any, edges: any, options: any) 
         rankdir: rankdir || 'TB',
         nodesep: nodesep || 50,
         ranksep: ranksep || 50,
+        align,
+        ranker: ranker || "network-simplex"
     })
-
     nodes.forEach((node: any) => {
-        const size = nodeSize || 40
+        const size = node?.size || nodeSize || 40
         const verti = nodesep || 50
         const hori = ranksep || 50
-        const width = size + 2 * hori
-        const height = size + 2 * verti
+        const width = node?.comboWidth || size + 2 * hori
+        const height = node?.comboHeight || size + 2 * verti
         g.setNode(node.id, { width, height })
     })
     edges.forEach((edge: any) => {
@@ -31,13 +34,14 @@ function genericDagrelLayout(assign: any, nodes: any, edges: any, options: any) 
         })
     })
     dagre.layout(g)
-
     let coord
     g.nodes().forEach((node: any) => {
         coord = g.node(node)
-        const i = nodes.findIndex((it: any) => it.id === node)
-        nodes[i].x = coord.x
-        nodes[i].y = coord.y
+        if(coord){
+            const i = nodes.findIndex((it: any) => it.id === node)
+            nodes[i].x = coord.x
+            nodes[i].y = coord.y
+        }
     })
 
     return nodes

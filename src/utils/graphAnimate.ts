@@ -5,6 +5,7 @@ import { ANIMATE_DEFAULTS, basicData } from '../initial/globalProp'
 import { isArray } from 'lodash'
 import easings from './easings'
 
+export let animateFram: number | null = null
 /**
  * 动画的过度效果
  * @param graph 指向整个galaxyvis
@@ -56,7 +57,7 @@ export function animateNodes(
         }
     }
 
-    let frame: number | null = null
+    animateFram = null
 
     const step = () => {
         
@@ -96,14 +97,14 @@ export function animateNodes(
         if (isInLayout) graph.textStatus = false
         graph.render()
         // 执行下一帧动画
-        frame = requestFrame(step)
+        animateFram = requestFrame(step)
     }
 
     step()
 
     return () => {
-        if (frame) {
-            cancelFrame(frame)
+        if (animateFram) {
+            cancelFrame(animateFram)
         }
     }
 }

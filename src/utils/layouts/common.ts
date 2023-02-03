@@ -78,6 +78,7 @@ export const unionEdges = (galaxyvis: any, layoutsNodes: any[], oneLine = true) 
     return {
         nodesData,
         layoutsEdges,
+        relationTable
     }
 }
 //局部布局

@@ -77,6 +77,7 @@ export abstract class AbstractSDFProgram extends AbstractProgram implements ISDF
         // const { arrsVer1, arrsVer2, arrsTex1, arrsTex2, others, fontSizes } = param
 
         gl.useProgram(this.program)
+        
         // 背景颜色
         gl.uniform1f(this.background, globalInfo[this.graph.id].backgroundColor.floatColor)
         // 向缓冲绑定点坐标

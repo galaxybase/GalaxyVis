@@ -135,6 +135,7 @@ export default class lableCanvas {
                 adjacentArray.push(ids[i])
             }
         }
+
         if (!selectedTable.size || !isSameSet(selectedTable, this.edgeOldSelectedTable) || viewChange) {
             if (selectedTable.size) {
                 // @ts-ignore

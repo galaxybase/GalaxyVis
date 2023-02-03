@@ -21,6 +21,7 @@ module.exports = [{
   name: "galaxyvis",
   mode: production ? "production" : "none",
   entry: "./src/index.ts",
+  target: ['web', 'es5'],
   output: {
     filename: production ? "galaxyvis.min.js" : "galaxyvis.js",
     path: path.join(__dirname, "build"),

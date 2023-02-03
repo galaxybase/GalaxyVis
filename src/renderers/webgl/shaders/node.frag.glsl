@@ -133,12 +133,15 @@ void main(void){
 
         float d = sdCircle(vec2(.5)-u_texcoord,0.45);
 
-        col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
-
-        if(0.0 != u_strokeWidth)
-            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
-
         col = mix( vec4(backgroundColor,1.0),col, opacity);
+
+        if(0.0 != u_strokeWidth){
+            col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
+            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
+        }else{
+            col = mix( col, vec4(vec3(col), 0.0), 1.0-smoothstep(0.0,fwdis,abs(d)) );
+        }
+
 
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(.0),1.0); 
@@ -149,12 +152,14 @@ void main(void){
     }else if(shape==2){
         vec4 col = InteriorColor;
         float d = sdBox(vec2(.5)-u_texcoord,vec2(0.45));
-
-        col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
-        if(0.0 != u_strokeWidth)
-            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
-
         col = mix( vec4(backgroundColor,1.0),col, opacity);
+        if(0.0 != u_strokeWidth){
+            col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
+            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
+        }else{
+            col = mix( col, vec4(vec3(col), 0.0), 1.0-smoothstep(0.0,fwdis,abs(d)) );
+        }
+
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(.0),1.0); 
         if(0.0 != u_strokeWidth)

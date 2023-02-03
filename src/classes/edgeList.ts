@@ -10,6 +10,7 @@ export default class EdgeList {
     private galaxyvis: any
     private ids: string[]
     private size: number = 0
+    public isEdgeList: boolean = true
     constructor(galaxyvis: any, ids: string[] | undefined) {
         this.galaxyvis = galaxyvis
         if (ids) {
@@ -157,10 +158,10 @@ export default class EdgeList {
      * @param  {...any} attribute
      * @returns
      */
-    public getAttribute = (attribute?: any) => {
+    public getAttribute = (attribute?: any, useHidden = false) => {
         let list: string[] = []
         this.ids?.forEach(id => {
-            list.push(this.galaxyvis.getEdge(id)?.getAttribute(attribute))
+            list.push(this.galaxyvis.getEdge(id, useHidden)?.getAttribute(attribute))
         })
         return list
     }
@@ -169,11 +170,12 @@ export default class EdgeList {
      * 设置属性
      * @param {*} attribute
      */
-    public setAttributes = (attribute: any) => {
+    public setAttributes = (attribute: any, useHidden = false) => {
         let promiseList: any[] = []
         this.ids?.forEach(id => {
-            promiseList.push(this.galaxyvis.getEdge(id)?.setAttributes(attribute))
+            promiseList.push(this.galaxyvis.getEdge(id, useHidden)?.setAttributes(attribute, this.isEdgeList))
         })
+        this.galaxyvis.render();
         return Promise.all(promiseList)
     }
 

@@ -1,0 +1,117 @@
+import Vector2 from "./Vector2";
+
+function genericForceDirectedLayout(assign: any, _nodes: any, _links: any, options: any) {
+    var nodes = _nodes;
+    var links = _links;
+
+    var attraction_multiplier = options?.attraction || 2;  //引力
+    var repulsion_multiplier = 0.5;
+    var EPSILON = 1 / 100000;
+    var attraction_constant = 1;
+    var repulsion_constant = 1;
+    var forceConstant = options?.force || 200; //斥力
+    var layout_iterations = 0;
+    var max_iterations = 100000;
+    var temperature = 0;
+    var scalar = 10;
+
+    var nodes_length = _nodes.length;
+    var links_length = _links.length;
+
+    var tickNum = options?.tickNum || 300
+
+    init();
+
+    function init() {
+        temperature = 10.0;
+        layout_iterations = 0;
+        attraction_constant = attraction_multiplier * forceConstant;
+        repulsion_constant = repulsion_multiplier * forceConstant;
+    }
+
+    while (temperature > (1 / 100000) && layout_iterations < tickNum) {
+        var i, j, delta, delta_length, force, change;
+
+        for (i = 0; i < nodes_length; i++) {
+            var node_v = nodes[i];
+            node_v.layout = node_v.layout || {};
+            if (i === 0) {
+                node_v.layout.offset = new Vector2();
+            }
+
+            node_v.layout.force = 0;
+            node_v.layout.tmp_pos = node_v.layout.tmp_pos || new Vector2().setVector(node_v);
+
+            for (j = i + 1; j < nodes_length; j++) {
+                var node_u = nodes[j];
+                if (i != j) {
+                    node_u.layout = node_u.layout || {};
+
+                    node_u.layout.tmp_pos = node_u.layout.tmp_pos || new Vector2().setVector(node_u);
+
+                    delta = node_v.layout.tmp_pos.clone().sub(node_u.layout.tmp_pos);
+                    delta_length = Math.max(EPSILON, Math.sqrt(delta.clone().multiply(delta).sum()));
+
+                    force = (repulsion_constant * repulsion_constant) / delta_length;
+
+                    node_v.layout.force += force;
+                    node_u.layout.force += force;
+
+                    if (i === 0) {
+                        node_u.layout.offset = new Vector2();
+                    }
+
+                    change = delta.clone().multiply(new Vector2().setScalar(force / delta_length));
+                    node_v.layout.offset.add(change);
+                    node_u.layout.offset.sub(change);
+                }
+            }
+        }
+
+        for (i = 0; i < links_length; i++) {
+            var link = links[i];
+            delta = link.source.layout.tmp_pos.clone().sub(link.target.layout.tmp_pos);
+            delta_length = Math.max(EPSILON, Math.sqrt(delta.clone().multiply(delta).sum()));
+
+            force = (delta_length * delta_length) / attraction_constant;
+
+            link.source.layout.force -= force;
+            link.target.layout.force += force;
+
+            change = delta.clone().multiply(new Vector2().setScalar(force / delta_length));
+            link.target.layout.offset.add(change);
+            link.source.layout.offset.sub(change);
+        }
+
+        for (i = 0; i < nodes_length; i++) {
+            var node = nodes[i];
+
+            delta_length = Math.max(EPSILON, Math.sqrt(node.layout.offset.clone().multiply(node.layout.offset).sum()));
+            node.layout.tmp_pos.add(node.layout.offset.clone().multiply(new Vector2().setScalar(Math.min(delta_length,
+                temperature) / delta_length)));
+
+            var tmpPosition = new Vector2(node.x, node.y, 0);
+            tmpPosition.sub(node.layout.tmp_pos).divide(new Vector2().setScalar(scalar));
+
+            node.x -= tmpPosition.x;
+            node.y -= tmpPosition.y;
+        }
+        temperature *= (1 - (layout_iterations / max_iterations));
+        layout_iterations++;
+    }
+
+    let layoutNodes: { [key: string]: any } = {}
+    for (let i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        layoutNodes[n.id] = {
+            x: n.x,
+            y: n.y,
+            id: n.id
+        }
+    }
+    return layoutNodes;
+}
+
+var forceDirectedLayout = genericForceDirectedLayout.bind(null, false)
+
+export default forceDirectedLayout

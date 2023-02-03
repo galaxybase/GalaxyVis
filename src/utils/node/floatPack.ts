@@ -83,22 +83,25 @@ export function packCircleVertex(props: any, camera: any) {
     ]
 
     if (badges) {
-        let { stroke, color, iconNum, iconType, size, x, y, iconColor } = badges
+        
+        for (let i = 0; i < badges.length; i++) {
+            let { stroke, color, iconNum, iconType, size, x, y, iconColor } = badges[i]
 
-        packedBuffer.push((stroke.width * nums) / 100, size, stroke.color, iconColor)
-
-        INT32[0] = (1 << 16) | (iconType << 8) | (5 & 0xfeffffff)
-        typesBuffer.push(INT32[0])
-
-        offsetsBuffer.push(x, y)
-
-        colorBuffer.push(color)
-
-        uvBuffer.push(
-            ((wid * iconNum) % (wid * atlas)) / (wid * atlas),
-            1 - (wid + wid * Math.floor(iconNum / atlas)) / (wid * atlas),
-            opacity,
-        )
+            packedBuffer.push((stroke.width * nums) / 100, size, stroke.color, iconColor)
+    
+            INT32[0] = (1 << 16) | (iconType << 8) | (5 & 0xfeffffff)
+            typesBuffer.push(INT32[0])
+    
+            offsetsBuffer.push(x, y)
+    
+            colorBuffer.push(color)
+    
+            uvBuffer.push(
+                ((wid * iconNum) % (wid * atlas)) / (wid * atlas),
+                1 - (wid + wid * Math.floor(iconNum / atlas)) / (wid * atlas),
+                opacity,
+            )
+        }
     }
 
     return {

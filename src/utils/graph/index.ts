@@ -1,9 +1,9 @@
 import Node from '../../classes/node'
 import Edge from '../../classes/edge'
-import { genID } from '..'
+import { cancelFrame, genID } from '..'
 import { basieciDataSetting, DEFAULT_SETTINGS, originInfoSetting } from '../../initial/settings'
 import { originInfo, originInitial } from '../../initial/originInitial'
-import { edgeAttributes, NodeAttributes } from '../../types'
+import { edgeAttributes, LAYOUT_MESSAGE, NodeAttributes } from '../../types'
 import {
     globalProp,
     basicData,
@@ -19,6 +19,9 @@ import { edgeInitAttribute } from '../edge'
 import { transformatAddEdgeFilter, transformatAddNodeFilter } from '../transformations'
 import { clearChars } from '../tinySdf/sdfDrawText'
 import { clone, cloneDeep } from 'lodash'
+import { cameraFram } from '../cameraAnimate'
+import { animateFram } from '../graphAnimate'
+import { cleartNodeList } from '../../layouts/hierarchy/tclass'
 
 const transformatStrategies = {
     nodeFilter: (that: any) => {
@@ -547,9 +550,29 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
     globalInfo[graph.id].filterNodesTransformat = new Map()
     globalInfo[graph.id].filterEdgesTransformat = new Map()
     globalInfo[graph.id].edgeType = null
+
+    if (graph.pulse) {
+        graph.pulseCanvas.clear();
+    }
+
     if (destory) {
         globalInfo[graph.id].ruleList = new Map()
     }
+
+    if (cameraFram) {
+        cancelFrame(cameraFram)
+    }
+
+    if (animateFram) {
+        cancelFrame(animateFram)
+        graph.textStatus = true;
+        graph.events.emit(
+            LAYOUT_MESSAGE.END,
+            () => { }
+        )
+    }
+
+    cleartNodeList()
     graph.camera.updateTransform()
     graph.clear()
 }
@@ -583,6 +606,11 @@ export const graphDestory = (that: any) => {
                 that.gl?.canvas.remove()
                 that.ctx?.canvas.remove()
                 that.PREctx?.canvas.remove()
+
+                if (that.pulse) {
+                    that.pulseCanvas.destory();
+                    that.pulseCanvas = null;
+                }
             }
             instancesGL[that.id] && delete instancesGL[that.id]
             thumbnailInfo[that.id] && delete thumbnailInfo[that.id]

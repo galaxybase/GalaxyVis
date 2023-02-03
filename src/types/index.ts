@@ -38,38 +38,210 @@ export type PlainObject<T = any> = { [k: string]: T }
 
 export type Listener = (...args: any[]) => void
 
-export interface AnimateType {
-    [x: string]: any
+export interface baseLayoutType {
     duration?: number // 动画时间
+    useAnimation?: boolean //是否有动画
     easing?: keyof typeof easings | ((k: number) => number) //动画渐变方式
     nodes?: any // 哪些点要操作
+    useWebWorker?: boolean //是否使用webworker
+    incremental?: boolean //增量
+    incrementalNode?: string //增量的初始点
+}
+
+export interface circleType extends baseLayoutType {
+    [x: string]: any
     center?: number[] // 中心
+    startRadius?: number //开始圆大小
+    endRadius?: number //结束圆大小
+    divisions?: number //分隔环数
+    radius?: number //圆的半径
+    scale?: number //缩放
+}
+
+export interface concentricType extends baseLayoutType {
+    [x: string]: any
+    centralNode?: any //中心点
+    circleHopRatio?: number //圆的大小
+}
+
+export interface forceType extends baseLayoutType {
+    [x: string]: any
     tickNum?: number //迭代次数
     strength?: number //力强度
     edgeStrength?: number //边力强度
     repulsion?: number //碰撞力,点大小
-    nodeSize?: number //点大小
-    cols?: number //列
-    columns?: number //列
-    rows?: number //行
-    sortBy?: any //排序顺序
-    centralNode?: any //中心点
-    circleHopRatio?: number //圆的大小
     distance?: number //两点之间的距离
     forceY?: number //y轴方向力
     forceX?: number //x轴方向力
+}
+
+export interface gridType extends baseLayoutType {
+    [x: string]: any
+    cols?: number //列
+    rows?: number //行
+    sortBy?: any //排序顺序
+    width?: number //宽
+    height?: number //高
+}
+
+export interface treeType extends baseLayoutType {
+    [x: string]: any
     treeWidth?: number //树型布局宽度
     treeHeight?: number //树型布局高度
-    useWebWorker?: boolean //是否使用webworker
-    startRadius?: number //开始圆大小
-    endRadius?: number //结束圆大小
+}
+
+export interface dagreType extends baseLayoutType {
+    [x: string]: any
+    nodeSize?: number //点大小
+    nodesep?: number //点的横向距离
+    ranksep?: number //点的高度距离
+    rankdir?: string //根节点位置
+    align?: string //节点对齐方向
+    ranker?: string //分层算法选择
+    layer?: string //指定层级
+    owner?: string //划分树
+    // nodesizeFunc?: Function //点Function
+}
+
+export interface radialType extends baseLayoutType {
+    [x: string]: any
     angleRatio?: number //从第一个节点到最后节点之间相隔多少个 2*PI
     unitRadius?: number //每一圈距离上一圈的距离
     strictRadial?: boolean //是否严格按照圈排绕
-    incremental?: boolean //增量
-    incrementalNode?: string //增量的初始点
-    width?: number //宽
-    height?: number //高
+    centralNode?: string // 中心点
+    distance?: number // 边长度
+    tickNum?: number// 迭代次数
+}
+
+export interface comboDagreType extends baseLayoutType {
+    [x: string]: any
+    nodes: any
+    comboDagre?: dagreType
+    nodeSize?: number //点大小
+    nodesep?: number //点的横向距离
+    ranksep?: number //点的高度距离
+    rankdir?: string //根节点位置
+    align?: string //节点对齐方向
+    ranker?: string //分层算法选择
+    owner?: string //划分树
+}
+
+export interface hiveType extends baseLayoutType {
+    [x: string]: any
+    radius?: number // 点大小
+    margin?: number // 边距
+    nlines?: number // 分支数
+}
+
+export interface dualCirlceType extends baseLayoutType {
+    [x: string]: any
+    position?: string //内环和外环
+    secondarynodecount?: number //核心数
+}
+
+export interface layerCircleType extends baseLayoutType {
+    [x: string]: any
+    layerDistance?: number //层间距
+    outCircleNodes?: number //点个数
+}
+
+export interface radiatreeType extends baseLayoutType {
+    [x: string]: any
+    distX?: number //水平距离
+    distY?: number //垂直距离
+}
+
+export interface bfaType extends baseLayoutType {
+    [x: string]: any
+    neighborAttraction?: number // 邻点引力
+    attraction?: number   // 引力
+    forceScale?: number  // 力缩放系数
+    tickNum?: number //迭代次数
+}
+
+export interface kkType extends baseLayoutType {
+    [x: string]: any
+}
+
+export interface hubsizeType extends baseLayoutType {
+    [x: string]: any
+    layerDistance?: number   // 层间距
+    nodeDistance?: number   // 点间距
+    treeSpacing?: number
+    direction?: string   // 排列方向 UD,DU,LR,RL
+    sortMethod?: string // 排列方式 hubsize， directed， selected
+}
+
+export interface ballloonType extends baseLayoutType {
+    [x: string]: any
+    radius?: number   //区域大小
+}
+
+export interface forceDirectedType extends baseLayoutType {
+    [x: string]: any
+    attraction?: number //引力
+    force?: number //斥力
+    tickNum?: number //迭代次数
+}
+
+export interface chronologicalType extends baseLayoutType {
+    [x: string]: any
+    chronologic?: {
+        edgeType: Function, // 边类型
+        edgeProperty: string, // 边属性
+        asc?: boolean,   //是否为升序
+    },
+}
+
+export interface frType extends baseLayoutType {
+    [x: string]: any
+    area?: number  //区域大小
+    gravity?: number //重力
+    tickNum?: number //迭代次数
+}
+
+export interface srpingType extends baseLayoutType {
+    [x: string]: any
+    repulsion?: number //区域大小
+    stretch?: number //边长度
+    force?: number //收敛系数
+    tickNum?: number //迭代次数
+}
+
+export interface gatherType extends baseLayoutType {
+    [x: string]: any
+    area?: number //间距
+    speed?: number //移动速度
+    tickNum?: number //迭代次数
+}
+
+export interface sphereType extends baseLayoutType {
+    [x: string]: any
+    radius?: number //半径
+    tickNum?: number //迭代次数
+}
+
+export interface fruchtermanReingoldType extends baseLayoutType {
+    [x: string]: any
+    tickNum?: number //迭代次数
+    gravity?: number //重力
+    k?: number //边长度
+    speed?: number //收敛速度
+}
+
+export interface topoCircleType extends baseLayoutType {
+    [x: string]: any
+    radius?: number //节点大小
+}
+
+export interface noverlapType extends baseLayoutType {
+    [x: string]: any
+    maxMove?: number //间距
+    tickNum?: number //迭代次数
+}
+
+export interface AnimateType extends baseLayoutType {
+    [x: string]: any
 }
 
 export interface Options {
@@ -80,7 +252,8 @@ export interface Options {
             maxValue?: string | number
             minValue?: string | number
             defaultValue?: string | number
-        }
+        },
+        pulse?: boolean,  //pulse交互模式
     }
     useLocalUpdate?: boolean //是否开启局部更新
     thumbnail?: boolean //缩略图
@@ -170,6 +343,8 @@ export interface nodeOptions {
     nodeGenerator?: Function //给group的点属性
     selector?: Function //筛选符合条件的点  没值的话是全部的点
     groupIdFunction?: Function //返回的group的id
+    reserve?: boolean  //预留边
+    createSelfLoop?: boolean  //创建自环边
 }
 
 export interface edgeOptions {
@@ -216,6 +391,7 @@ export interface globalInfoData {
         canvasBox: HTMLCanvasElement //整个canvas对象
         isSafari: boolean
         edgeType: any
+        enabledNoStraightLine: boolean
     }
 }
 
@@ -237,11 +413,13 @@ export interface RuleOptions {
 export interface AdjacencyOptions {
     direction?: string //("both"|"in"|"out")
     policy?: string //("include-sources"|"exclude-sources")
+    hasFilter?: boolean
 }
 
 export interface baseExportOptions {
     download?: boolean //是否下载
     filename?: string //文件名称
+    background?: string //背景颜色
 }
 
 export interface ImageExportOptions extends baseExportOptions {
@@ -262,6 +440,8 @@ export interface SvgExportOptions extends baseExportOptions { }
 export interface JsonExportOptions extends baseExportOptions {
     nodeData?: Function //给定输入节点数据
     edgeData?: Function //给定输入边数据
+    skipHeader?: boolean //是否自定义表头
+    customisedHeader?: {[key: string]: any} //自定义表头
 }
 
 export interface CsvExportOptions extends JsonExportOptions {
@@ -330,12 +510,21 @@ export interface NodeAttribute extends baseAttribute {
         width?: number //宽度
         color?: string //颜色
         selectedColor?: string //选中颜色
-    }
+    },
+    pulse?:{  //波动
+        range?: number[] // 波的范围
+        width?: number // 波的线宽
+        duration?: number // 整个波时间
+        interval?: number // 波与波之间的间距
+        startColor?: any // 颜色
+        scale?: number // 缩放级别
+        startRatio?: number // 波开始的地方
+    },
     shape?: string //点的形状
     draggable?: boolean //是否能拖动
-    icon?: iconTemplate
+    icon?: iconTemplate 
     image?: imageTemplate
-    badges?: any
+    badges?: any //badges
 }
 
 export interface edgeAttribute extends baseAttribute {
@@ -446,6 +635,7 @@ export interface GeoModeOptions {
     latitudePath?: string | Function //纬度
     longitudePath?: string | Function //经度
     crs?: any //crs
+    allowdDclick?: boolean //是否允许双击
 }
 
 export interface NodeCollection {

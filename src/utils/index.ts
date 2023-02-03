@@ -147,7 +147,7 @@ export const initIconOrImage = async (that: any, data: any) => {
             imageCanvasContext = imageCanvas.getContext('2d') as CanvasRenderingContext2D
         imageCanvas.height = 128
         imageCanvas.width = 128
-        imageCanvasContext.fillStyle = '#fff'
+        imageCanvasContext.fillStyle = 'rgba(255,255,255,0)'
         imageCanvasContext.fillRect(0, 0, 128, 128)
         // 图片信息
         var textureInfo = {
@@ -160,7 +160,8 @@ export const initIconOrImage = async (that: any, data: any) => {
         // 当加载完图片再重新render
         img.addEventListener('load', function () {
             try {
-                imageCanvasContext.drawImage(img, 0, 0, 128, 128)
+                let scaleNum = 128 * (data?.scale || 1) * 0.9;
+                imageCanvasContext.drawImage(img, (128 - scaleNum) / 2, (128 - scaleNum) / 2, scaleNum, scaleNum)
                 textureInfo.pixels = imageCanvasContext.getImageData(0, 0, 128, 128)
                 textureCtx?.putImageData(textureInfo.pixels, textureInfo.x, textureInfo.y)
                 if (Object.keys(instancesGL).length > 0) {
@@ -742,21 +743,51 @@ export const isDom = (obj: any) => {
             typeof obj.nodeName === 'string'
     return isDOM
 }
+
 /**
- * 判断是否支持webgl
+ * 判断浏览器是否为ie
+ * @returns 
+ */
+export const isIE = () => {
+    // @ts-ignore
+    if(!!window.ActiveXObject || "ActiveXObject" in window){
+      return true;
+    }else{
+      return false;
+　　 }
+}
+
+/**
+ * 判断是否支持webgl并开启硬件加速
  * @returns
  */
 export const isWebGLSupported = function () {
     var canvas,
         webgl = !!window.WebGLRenderingContext
+    // @ts-ignore
+    // Ie不允许开启webgl
+    if (isIE()) {
+        return false
+    }
     if (webgl) {
         canvas = document.createElement('canvas')
         try {
-            return !!(
+            const gl: any = (
                 canvas.getContext('webgl', originInitial.options) ||
                 canvas.getContext('experimental-webgl', originInitial.options)
             )
-        } catch (e) { }
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    return !/SwiftShader/gi.test(renderer);
+                }
+            }
+            return false
+        } catch (e) {
+            console.error(e)
+            return false
+        }
     }
     return false
 }
@@ -769,7 +800,7 @@ export const isWebGLSupported = function () {
 export const mixColor = (graphId: string, color: any, opacity: number) => {
     if (opacity === 1) return color
     if (!color) return `rgba(0,0,0,0)`
-    opacity *= opacity
+    // opacity *= opacity
     color = translateColor(color)
 
     let { r: r1, g: g1, b: b1, a: a1 } = translateColor(globalInfo[graphId].backgroundColor.color),
@@ -1061,8 +1092,10 @@ export const isInSceen = (
             isInSceen(graphId, renderType, scale, position, souceAttribute, 1) ||
             isInSceen(graphId, renderType, scale, position, targetAttribute, 1) ||
             edge.value.attribute.labelInSceen == true
-        )
+        ) {
+            edge.value.attribute.labelInSceen = true
             return true
+        }
         else return false
     }
 }

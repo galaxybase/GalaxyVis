@@ -1,4 +1,7 @@
+import { isIE } from '..'
 import { PlainObject } from '../../types'
+
+const xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
 
 var isSvg: PlainObject<any> = {
     'embedded-opentype': !0,
@@ -394,7 +397,7 @@ export const imageSvgSetAttribute = (
     width: string | number,
     height: string | number,
 ) => {
-    let imageSvg = document.createElementNS('xmlns', 'image')
+    let imageSvg = document.createElementNS(xmlns, 'image')
     imageSvg.setAttributeNS(null, 'x', x + '')
     imageSvg.setAttributeNS(null, 'y', y + '')
     imageSvg.setAttributeNS(null, 'width', width + '')
@@ -415,8 +418,8 @@ export const iconSvgSetAttribute = (icon: any, size: number, x: number, y: numbe
     }
     var fontSize = Math.round(fontSizeRatio * height)
 
-    var g = document.createElementNS('xmlns', 'g')
-    var textSvg = document.createElementNS('xmls', 'text')
+    var g = document.createElementNS(xmlns, 'g')
+    var textSvg = document.createElementNS(xmlns, 'text')
 
     g.setAttributeNS(null, 'font-family', font)
     g.setAttributeNS(null, 'font-size', fontSize + '')
@@ -439,7 +442,7 @@ export const textBaseSvgSetAttribute = (
     textColor: string,
     background: string,
 ) => {
-    let textG = document.createElementNS('xmlns', 'g')
+    let textG = document.createElementNS(xmlns, 'g')
     textG.setAttributeNS(null, 'font-family', fontFamily)
     textG.setAttributeNS(null, 'font-size', textFontSize)
     textG.setAttributeNS(null, 'font-style', style)
@@ -450,9 +453,9 @@ export const textBaseSvgSetAttribute = (
 }
 
 export const clipPathSvg = (key: string, pathSvg: string, color: string) => {
-    let clipPath = document.createElementNS('xmlns', 'clipPath')
+    let clipPath = document.createElementNS(xmlns, 'clipPath')
     clipPath.setAttributeNS(null, 'id', 'clip-path-' + key)
-    let path = document.createElementNS('xmlns', 'path')
+    let path = document.createElementNS(xmlns, 'path')
     // 生成切割环
     path.setAttributeNS(null, 'd', pathSvg)
     path.setAttributeNS(null, 'fill', color)
@@ -467,7 +470,7 @@ export const nodeStrokePathSvg = (
     storkeWidth: string,
     unSelectedColor: string,
 ) => {
-    let nodeStokePath = document.createElementNS('xmlns', 'path')
+    let nodeStokePath = document.createElementNS(xmlns, 'path')
     nodeStokePath.setAttributeNS(null, 'd', nodePath)
     nodeStokePath.setAttributeNS(null, 'fill', 'none')
     nodeStokePath.setAttributeNS(null, 'stroke-width', storkeWidth)
@@ -478,10 +481,29 @@ export const nodeStrokePathSvg = (
 }
 
 export const svgLinePath = (p: string, width: string | number, color: string) => {
-    let path = document.createElementNS('xmlns', 'path')
+    let path = document.createElementNS(xmlns, 'path')
     path.setAttributeNS(null, 'd', p)
     path.setAttributeNS(null, 'fill', 'none')
     path.setAttributeNS(null, 'stroke-width', width + '')
     path.setAttributeNS(null, 'stroke', color)
     return path
+}
+
+export const svgInnerHTML = (
+    node: Element,
+    html: string
+) => {
+    if (isIE()) {
+        let reusableSVGContainer = document.createElement('div');
+        reusableSVGContainer.innerHTML = '<svg>' + html + '</svg>';
+        const svgNode = reusableSVGContainer.firstChild;
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+        while (svgNode?.firstChild) {
+          node.appendChild(svgNode.firstChild);
+        }
+      } else {
+        node.innerHTML = html;
+      }
 }

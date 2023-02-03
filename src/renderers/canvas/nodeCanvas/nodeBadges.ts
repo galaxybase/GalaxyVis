@@ -20,63 +20,78 @@ export default function drawBadges(
     thumbnail: boolean,
 ): void {
     let camScale = (globalProp.globalScale / ratio) * 2.0,
-        { color: nodeColor, x, y, radius: size, badges, opacity } = data,
-        { postion, color, scale, text, stroke, image } = badges
+        { color: nodeColor, x, y, radius: size, badges, opacity } = data;
 
-    color = color == 'inherit' ? nodeColor : color ? color : '#fff'
-    color = mixColor(graphId, color, opacity)
-    scale = scale || 0.35
-    size = size * camScale
-    let radius = size * scale
-    let coord = transformCanvasCoord(graphId, x, y, position, camScale, thumbnail)
-    ;(x = coord.x), (y = coord.y)
-    let rotate = (Math.PI * 45) / 180
+    let badgesArray = Object.keys(badges)
 
-    postion = postion || 'bottomRight'
-    let direction = globalProp.direction,
-        newX = x + direction[postion][0] * (size - 2) * Math.sin(rotate),
-        newY = y + direction[postion][1] * (size - 2) * Math.cos(rotate)
-    drawMainPart(context, newX, newY, radius, color, null, false)
-    // 外环
-    let { color: strokeColor, width: storkeWidth } = stroke
-    strokeColor = mixColor(graphId, strokeColor, opacity)
-    drawBorder(context, newX, newY, radius, strokeColor, (storkeWidth * size) / 20)
-    context.globalAlpha = opacity
-    if (image) {
-        if (opacity != 1.0) {
-            drawMainPart(
-                context,
+    let coord = transformCanvasCoord(graphId, x, y, position, camScale, thumbnail);
+    let badgeSize = size * camScale
+    x = coord.x, y = coord.y;
+    for (let i = 0; i < badgesArray.length; i++) {
+
+        let {
+            color, scale, text, stroke, image
+        } = badges[badgesArray[i]];
+
+        color = color == 'inherit' ? nodeColor : color ? color : '#fff'
+        color = mixColor(graphId, color, opacity)
+        scale = scale || 0.35
+
+        let radius = badgeSize * scale * 0.9
+
+        let rotate = (Math.PI * 45) / 180
+
+        let postion = badgesArray[i] || 'bottomRight'
+        let direction = globalProp.direction,
+            newX = x + direction[postion][0] * (badgeSize - 2) * Math.sin(rotate),
+            newY = y + direction[postion][1] * (badgeSize - 2) * Math.cos(rotate);
+
+        context.save()
+        drawMainPart(context, newX, newY, radius, color, null, false)
+        // 外环
+        let { color: strokeColor, width: storkeWidth } = stroke
+        if (!strokeColor) strokeColor = "#fff"
+        storkeWidth = Number(storkeWidth) >= 0 ? storkeWidth / 100 : 0.02
+        strokeColor = mixColor(graphId, strokeColor, opacity)
+        drawBorder(context, newX, newY, radius + Math.ceil(0.08 * radius * 1e3) / 1e3, strokeColor, (storkeWidth / 0.4) * badgeSize)
+        context.globalAlpha = opacity
+        if (image) {
+            if (opacity != 1.0) {
+                drawMainPart(
+                    context,
+                    newX,
+                    newY,
+                    radius,
+                    globalInfo[graphId].backgroundColor.color,
+                    null,
+                    false,
+                )
+            }
+            drawImage(
+                {
+                    image: {
+                        url: image,
+                        scale: 1.0,
+                    },
+                },
                 newX,
                 newY,
-                radius,
-                globalInfo[graphId].backgroundColor.color,
-                null,
-                false,
+                radius - (storkeWidth * badgeSize) / 40,
+                context,
+                'anonymous',
+            )
+        } else if (text?.content) {
+            drawIcon(
+                {
+                    icon: text,
+                },
+                newX,
+                newY,
+                radius - (storkeWidth * badgeSize) / 20,
+                context,
             )
         }
-        drawImage(
-            {
-                image: {
-                    url: image,
-                    scale: 1.0,
-                },
-            },
-            newX,
-            newY,
-            radius - (storkeWidth * size) / 40,
-            context,
-            'anonymous',
-        )
-    } else if (text?.content) {
-        drawIcon(
-            {
-                icon: text,
-            },
-            newX,
-            newY,
-            radius - (storkeWidth * size) / 20,
-            context,
-        )
+        context.globalAlpha = 1.0;
+        context.restore()
     }
-    context.globalAlpha = 1.0
 }

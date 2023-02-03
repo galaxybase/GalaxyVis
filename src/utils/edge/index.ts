@@ -1,5 +1,5 @@
 import { defaultsDeep, merge, cloneDeep, clone } from 'lodash'
-import { basicData } from '../../initial/globalProp'
+import { basicData, globalProp } from '../../initial/globalProp'
 import { originInfo } from '../../initial/originInitial'
 import { TEPLATE } from '../../initial/settings'
 import { drawText } from '../tinySdf/sdfDrawText'
@@ -241,9 +241,11 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
     } else {
         // 自环边
         if (that.renderer === 'canvas') {
-            radius = lineNumber * 80 + radius * 10
+            let scale = (globalProp.globalScale / that.camera.ratio) * 2.0
+            radius = scale * ((lineNumber) * 40 + radius * 5)
         } else {
-            radius = lineNumber * 80 + radius * 10 + Math.max(0, lineNumber - 2) * 10
+            const transform = (basicData[that.id]?.transform || 223)
+            radius = ((lineNumber) * 60 + (radius + 2) * 6) * (transform / 150)
         }
         let { location } = that.getAttribute(),
             { controlCoordOne: pot1, controlCoordTwo: pot2 } = switchSelfLinePostion(

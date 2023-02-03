@@ -1,5 +1,6 @@
 import { basicData } from '../initial/globalProp'
 import { edgeAttributes } from '../types'
+import { hashNumber } from '../utils'
 import {
     edgeChangeAttribute,
     edgeGetMiddlePoint,
@@ -18,6 +19,7 @@ import {
     setAttribute,
     setData,
 } from '../utils/edgeAndNode'
+import EdgeList from './edgeList'
 
 /**
  * @class Edge 边类型
@@ -108,7 +110,7 @@ export default class Edge {
      * @param value 要改变的值
      * @returns {data}
      */
-    public setData = (param: string | Array<string>, value: any, isRender:boolean = true) => {
+    public setData = (param: string | Array<string>, value: any, isRender: boolean = true) => {
         return setData(this, false, param, value, isRender)
     }
 
@@ -154,8 +156,8 @@ export default class Edge {
      * @param {*} attribute 需要设置属性
      * @returns {Promise}
      */
-    public setAttributes = (attribute: any) => {
-        return setAttribute(this, attribute)
+    public setAttributes = (attribute: any, isEdgeList?: boolean) => {
+        return setAttribute(this, attribute, isEdgeList)
     }
 
     /**
@@ -192,5 +194,19 @@ export default class Edge {
      */
     public hasClass = (className: string) => {
         return hasClass(this, className)
+    }
+
+    public getParallelEdges = async () => {
+        // @ts-ignore
+        const { typeHash, baseTypeHash } = await this.getEdgeType()
+        let source = this.getSource()
+        let target = this.getTarget()
+        let sourceNumber = source.value.num;
+        let targetNumber = target.value.num;
+        let hash = hashNumber(sourceNumber, targetNumber);
+        // @ts-ignore
+        if(this.getAttribute('type') == "basic") return new EdgeList(this.__proto__, [...baseTypeHash.get(hash).total])
+        // @ts-ignore
+        else return new EdgeList(this.__proto__, [...typeHash.get(hash).total])
     }
 }

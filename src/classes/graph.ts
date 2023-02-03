@@ -37,6 +37,7 @@ import {
     graphFilterNodes,
     getRelationTable,
     graphGetOriginData,
+    getNodeTable,
 } from '../utils/graph/excess'
 import { edgeAttributes, NodeAttributes } from '../types'
 
@@ -172,6 +173,13 @@ export default class Graph {
      */
     getRelationTable = () => {
         return getRelationTable(this)
+    }
+    /**
+     * 获取Node关联表
+     * @returns
+     */
+    getNodeTable = () => {
+        return getNodeTable(this)
     }
     /**
      * 获取线的绘制的数据

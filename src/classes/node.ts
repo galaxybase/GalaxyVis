@@ -142,11 +142,11 @@ export default class Node {
 
     /**
      * 返回节点的相邻边列表。
-     * @param  hasFilter 是否含有过滤边
+     * @param  options
      * @returns
      */
-    public getAdjacentEdges = (hasFilter?: boolean) => {
-        return nodeGetAdjacentEdges(this, hasFilter)
+     public getAdjacentEdges = (options?: AdjacencyOptions) => {
+        return nodeGetAdjacentEdges(this, options)
     }
 
     /**
@@ -188,8 +188,8 @@ export default class Node {
      * 设置属性
      * @param {*} attribute
      */
-    public setAttributes = (attribute: any) => {
-        return nodeSetAttributes(this, attribute)
+    public setAttributes = (attribute: any, isNodeList?: boolean) => {
+        return nodeSetAttributes(this, attribute, isNodeList)
     }
     /**
      * 是否有这个class

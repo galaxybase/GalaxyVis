@@ -13,11 +13,11 @@ export const nodeOrEdgeSelect = (
 ) => {
     if (list.size) {
         let { selectedNodes, unSelectedNodes, selectedEdges, unSelectedEdges } =
-                basicData[scene.id],
+            basicData[scene.id],
             hasNodeEmit =
                 unSelectedNodes.size !== 1 ||
                 selectedNodes.size !== 1 ||
-                [...unSelectedNodes][0] !== [...selectedNodes][0] || 
+                [...unSelectedNodes][0] !== [...selectedNodes][0] ||
                 selectedEdges.size !== 0 || unSelectedEdges.size !== 0,
             hasEdgeEmit =
                 unSelectedEdges.size !== 1 ||
@@ -140,8 +140,9 @@ export const nodeOrEdgeAddOrRemoveClass = (list: any, style: any, ids: any, type
     if (Object.keys(style).length) {
         let { rule } = style
         for (let i = 0, len = ids.length; i < len; i++) {
-            let target = list.get(ids[i]),
-                ownClassList = target.value.classList,
+            let target = list.get(ids[i]);
+            if (!target) continue;
+            let ownClassList = target.value.classList,
                 classList = findIndex(ownClassList, ['className', rule])
             if (
                 (type === 'addClass' && classList == -1) ||

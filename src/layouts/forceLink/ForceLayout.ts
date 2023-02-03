@@ -17,6 +17,9 @@ import { animation } from '../animation'
 import BaseLayout from '../baseLayout'
 
 class ForceLayout extends BaseLayout {
+
+    private useAnimation: boolean = true
+
     constructor(galaxyvis: any, options: AnimateType) {
         super(galaxyvis, options)
     }
@@ -32,9 +35,13 @@ class ForceLayout extends BaseLayout {
             center: number[] = [],
             width,
             height
-        let { nodes } = this.options
+        let { nodes, useAnimation, withoutCenter } = this.options
         let layoutsNodes: any[] = []
         var layoutsEdges = [], nodesData = [];
+        
+        if (useAnimation == undefined) this.useAnimation = true
+        else this.useAnimation = useAnimation
+
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             let i = 0;
             let relationTable = this.galaxyvis.getEdgeType().relationTable
@@ -61,12 +68,19 @@ class ForceLayout extends BaseLayout {
             center = [width / 2, height / 2]
         } else {
             layoutsNodes = nodes
+            // layoutsNodes = nodes.filter((item: any) => {
+            //     return nodeList.has(item)
+            // })
+        
             let {
                 width: localWidth,
                 height: localHeight,
                 center: localCenter,
             } = localComputation(id, nodes);
             width = localWidth, height = localHeight, center = localCenter;
+            if(withoutCenter){
+                width = 0, height = 0, center = [0, 0]
+            }
             let unionInfo = unionEdges(this.galaxyvis, layoutsNodes, false)
             nodesData = unionInfo.nodesData;
             layoutsEdges = unionInfo.layoutsEdges
@@ -180,6 +194,11 @@ class ForceLayout extends BaseLayout {
 
             let initObj = this.init()
             let { nodesData, layoutsEdges, layoutsNodes, width, height, center } = initObj
+
+            // if(layoutsNodes.length <= 1){
+            //     return resolve({})
+            // }
+
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
                 // @ts-ignore
                 let worker = new LayoutWorker()
@@ -199,10 +218,11 @@ class ForceLayout extends BaseLayout {
                 worker.onmessage = function (event: any) {
                     if (event.data.type == LAYOUT_MESSAGE.END) {
                         that.data = event.data.data
-                        animation(that, event, layoutsNodes, 'force').then((data) => {
+                        that.useAnimation && animation(that, event, layoutsNodes, 'force').then((data) => {
                             worker.terminate()
                             resolve(data)
                         })
+                        !that.useAnimation && worker.terminate() && resolve(that.data)
                     } else {
                         worker.terminate()
                         reject(LAYOUT_MESSAGE.ERROR)
@@ -211,9 +231,10 @@ class ForceLayout extends BaseLayout {
             } else {
                 try {
                     this.execute(initObj)
-                    animation(this, null, layoutsNodes, 'force').then((data) => {
+                    this.useAnimation && animation(this, null, layoutsNodes, 'force').then((data) => {
                         resolve(data)
                     })
+                    !this.useAnimation && resolve(this.data)
                 } catch (err) {
                     reject(LAYOUT_MESSAGE.ERROR)
                 }

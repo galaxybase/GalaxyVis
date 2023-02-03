@@ -154,6 +154,7 @@ export default class edgeCanvas {
         let adjacentEdges = new NodeList(graph, [...selectedTable]).getAdjacentEdges()
         let ids = basicData[graphId].adjacentEdges = adjacentEdges.getId()
         let adjacentMaps = this.adjacentMaps = new Map()
+
         if (adjacentEdges instanceof EdgeList && ids.length > 0) {
             for (let i = 0, len = ids.length; i < len; i++) {
                 let key = ids[i]
@@ -209,8 +210,14 @@ export default class edgeCanvas {
 
             if (!size) continue
 
-            let lineNumber = [...hashSet.total].indexOf(key),
-                forward =
+            let lineNumber = [...hashSet.total].indexOf(key);
+
+            if (globalInfo[graphId].enabledNoStraightLine) {
+                size == 1 && size++
+                size % 2 !== 0 && lineNumber++
+            }
+
+            let forward =
                     lineNumber == 0
                         ? 1
                         : size % 2 == 0

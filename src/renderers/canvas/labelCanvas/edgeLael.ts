@@ -1,4 +1,4 @@
-import { globalProp } from '../../../initial/globalProp'
+import { basicData, globalProp } from '../../../initial/globalProp'
 import { mixColor } from '../../../utils'
 import { getLines } from './common'
 
@@ -21,7 +21,6 @@ export default function canvasLabelEdge(
     ratio: number,
 ): void {
     let scale = (globalProp.globalScale / ratio) * 2.0
-
     let { text, opacity } = data
 
     let {
@@ -42,7 +41,9 @@ export default function canvasLabelEdge(
     if (!textPos) {
         return
     }
-
+    if(!textPos.type){
+        textPos.type = "def"
+    }
     // 字体的偏移量
     let labelOffsetX,
         labelOffsetY,
@@ -50,21 +51,21 @@ export default function canvasLabelEdge(
     fontSize = Math.ceil(fontSize * (scale / 2))
 
     if (fontSize <= minVisibleSize) return
-
+    const transform = (basicData[graphId]?.transform || 223) * scale / 2
     labelOffsetX = 0
     labelOffsetY = fontSize / 3
     // 文字换行记录
     var lines = getLines(content, maxLength),
-        baseX = labelOffsetX + margin[0] * 100,
-        baseY = Math.round(labelOffsetY + margin[1] * 100)
+        baseX = labelOffsetX + margin[0] * transform,
+        baseY = Math.round(labelOffsetY + margin[1] * transform)
     context.font = `${style} ${fontSize}px ${fontFamily}`
     // 计算换行之后的偏移量
     let len = lines.length > 1 ? lines.length / Math.min(fontSize, 16) : 0
     let width = context.measureText(lines[0]).width
     let buffer = fontSize / 8
     let height = lines.length > 1 ? lines.length - 1 : 0
-
-    baseY -= len * (fontSize + 1) + bench
+    if(textPos.type !== "self" && textPos.position == "top")
+        baseY -= len * (fontSize + 1) + bench
     baseX -= width / 2
     color = mixColor(graphId, color, opacity)
 
@@ -93,14 +94,24 @@ export default function canvasLabelEdge(
             useBackGround = false
         }
     }
+
+    let maxLabelLength = width;
+
+    for (let i = 1; i < lines.length; i++) {
+        maxLabelLength = Math.max(
+            maxLabelLength,
+            context.measureText(lines[i]).width
+        )
+    }
+
     // 绘制背景色
     if (useBackGround) {
         context.beginPath()
-        context.fillStyle = background
+        context.fillStyle = mixColor(graphId, background, opacity)
         context.moveTo(baseX, baseY - fontSize) //左
         context.lineTo(baseX, baseY + 2 * buffer + height * (fontSize + 1)) //左
-        context.lineTo(baseX + width, baseY + 2 * buffer + height * (fontSize + 1)) //右
-        context.lineTo(baseX + width, baseY - fontSize) //右
+        context.lineTo(baseX + maxLabelLength, baseY + 2 * buffer + height * (fontSize + 1)) //右
+        context.lineTo(baseX + maxLabelLength, baseY - fontSize) //右
         context.closePath()
         context.fill()
     }

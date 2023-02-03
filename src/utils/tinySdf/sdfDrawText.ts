@@ -1,7 +1,7 @@
 import { mat4 } from 'gl-matrix'
 import { coordTransformation, floatColor, initGlTextureBind } from '..'
 import tinySDF from '.'
-import { globalInfo, globalProp, instancesGL } from '../../initial/globalProp'
+import { basicData, globalInfo, globalProp, instancesGL } from '../../initial/globalProp'
 import throttle from 'lodash/throttle'
 
 const pMatrix = mat4.create()
@@ -79,7 +79,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
         // 字体大小
         const fontSize = 28
         // buffer是控制文字上下浮动的距离
-        const buffer = 4
+        const buffer = 2
         // radius是控制生成sdf文字周边黑色区块的大小
         const radius = 8
         const sdf = new tinySDF({
@@ -117,7 +117,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
 
     try {
         flag = false
-        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) { throttled(graph, gl, texture);}
+        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) { throttled(graph, gl, texture); }
         else {
             initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
             // throttled(graph, gl, texture)
@@ -125,7 +125,7 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
                 for (let i in instancesGL) {
                     let gl = instancesGL[i]
                     // initGlTextureBind(gl, gl.TEXTURE1, gl.createTexture(), sdfCanvas, false)
-                    throttled(graph, gl,gl.createTexture())
+                    throttled(graph, gl, gl.createTexture())
                 }
             }
 
@@ -142,7 +142,7 @@ export function drawText(size: number, str: string, maxLength: number, style: st
     const vertexElements: number[] = []
     const textureElements: number[] = []
 
-    const fontsize = 36
+    const fontsize = 32
     const buf = fontsize / 24
 
     const height = fontsize + buf * 2
@@ -211,6 +211,8 @@ export function drawText(size: number, str: string, maxLength: number, style: st
         maxLength,
         str,
         style,
+        Occupy: height * scale / 2,
+        nlines: num
     })
 }
 
@@ -235,29 +237,35 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
         let xyOffect = coordTransformation(graphId, x, y)
             ; (x = xyOffect[0]), (y = xyOffect[1])
     }
+    const transform = (basicData[graphId]?.transform || 223)
 
     let postionState: { [key: string]: Function } = {
         bottom: () => {
-            return [margin[0] + x, margin[1] + y - radius / 100 - result.size / 500 + 0.03, angle]
+            return [
+                margin[0] + x,
+                margin[1] + y - (radius * 2 + result.Occupy - 3) / transform,
+                angle]
         },
         right: () => {
             return [
-                margin[0] + x + radius / 100 + (result.sum * mvpMatrix[0]) / 2,
+                margin[0] + x + (radius * 2 + 6) / transform + (result.sum * mvpMatrix[0]) / 2,
                 margin[1] + y + height,
                 angle,
             ]
         },
         left: () => {
             return [
-                margin[0] + x - radius / 100 - (result.sum * mvpMatrix[0]) / 2,
+                margin[0] + x - (radius * 2 + 6) / transform - (result.sum * mvpMatrix[0]) / 2,
                 margin[1] + y + height,
                 angle,
             ]
         },
         top: () => {
+            let topGap = result.nlines > 0 ?
+                (result.nlines) * (result.Occupy) : 0
             return [
                 margin[0] + x,
-                margin[1] + y + radius / 100 + height * 2.0 + result.size / 500 + 0.03,
+                margin[1] + y + (radius * 2 + result.Occupy + 3 + 2 * topGap) / transform,
                 angle,
             ]
         },
@@ -288,7 +296,6 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
     let vEle = result.vertexElements
     let tEle = result.textureElements
     let labelFloat32Array = new Float32Array(ATTRIBUTES * vEle.length / 4)
-
     // 纹理矩阵和坐标矩阵的计算
     for (let i = 0, j = 0, k = 0; i < vEle.length; i += 4, j += 2, k += ATTRIBUTES) {
 

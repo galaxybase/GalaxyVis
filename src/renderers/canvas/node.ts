@@ -113,7 +113,7 @@ export default class nodeCanvas {
             if (selectedTable.size) {
                 // @ts-ignore
                 this.frameCanvas = globalInfo[graphId].canvasBox.cloneNode(true)
-                this.frameCtx = this.frameCanvas.getContext('2d') as CanvasRenderingContext2D
+                this.frameCtx = this.frameCanvas.getContext('2d', {willReadFrequently: true}) as CanvasRenderingContext2D
                 this.context = this.frameCtx;
             }
             await this.plottingNodes(orderNodes, this.context, !viewChange, boolean)
@@ -156,7 +156,7 @@ export default class nodeCanvas {
                 let renderShape = data.shape
                 // 执行策略模式
                 let that = this;
-                let nodeBound = await this.strategies[renderShape]({
+                let nodeBound = this.strategies[renderShape]({
                     context,
                     data,
                     ratio: that.ratio,

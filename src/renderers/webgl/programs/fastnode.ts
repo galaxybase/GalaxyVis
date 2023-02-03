@@ -24,11 +24,11 @@ export default class fastnodeProgram extends AbstractHaloProgram {
         this.quad = {}
         // 视图矩阵和透视矩阵
         const projectMatirxLocation = gl.getUniformLocation(this.program, 'projection')
-        if (projectMatirxLocation == null) throw new Error('Halo: 获取不到projectionMatrix')
+        if (projectMatirxLocation == null) throw new Error('fastNode: 获取不到projectionMatrix')
         this.projectMatirxLocation = projectMatirxLocation
 
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
-        if (viewMatrixLocation == null) throw new Error('Halo: 获取不到viewMatrix')
+        if (viewMatrixLocation == null) throw new Error('fastNode: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
     }
 

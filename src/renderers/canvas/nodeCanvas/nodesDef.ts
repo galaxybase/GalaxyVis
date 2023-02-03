@@ -41,7 +41,7 @@ export default function canvasNodeDef(
         size,
         backgroundColor,
         (borderSize / 0.4) * size,
-        Math.ceil(0.08 * size * 1e3) / 1e3,
+        borderSize ? Math.ceil(0.06 * size * 1e3) / 1e3 : 0,
     ) //(borderSize * 5 / scale) * scale
     context.globalAlpha = opacity
     if (image.url != '') {
@@ -61,7 +61,7 @@ export default function canvasNodeDef(
             data,
             x,
             y,
-            size - Math.ceil(0.08 * size * 1e3 + (borderSize / 0.4) * size) / 1e3,
+            (size - Math.ceil(0.11 * size * 1e3 + (borderSize / 0.8) * size) / 1e3) * image.scale,
             context,
             'anonymous',
         )

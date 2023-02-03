@@ -52,6 +52,7 @@ export abstract class AbstractEdgeProgram extends AbstractProgram implements IEd
         const ext = this.ext
         const { color, width, col14row2 } = param
         gl.useProgram(this.program)
+
         // 背景颜色
         gl.uniform1f(this.background, globalInfo[this.graph.id].backgroundColor.floatColor)
         // 向缓冲绑定坐标

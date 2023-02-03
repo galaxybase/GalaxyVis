@@ -1,4 +1,5 @@
 import { AnimateType } from "../types"
+import { isIE } from "../utils"
 
 class BaseLayout {
     public galaxyvis: any
@@ -10,6 +11,8 @@ class BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
         this.galaxyvis = galaxyvis
         this.options = options
+        // ie不允许使用webworker
+        isIE() && (this.options.useWebWorker = false)
     }
     // 初始化
     init() { }

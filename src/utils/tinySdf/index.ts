@@ -30,7 +30,7 @@ export default class tinySDF {
         // 画布大小足够大，以便在glyph周围都有指定的缓冲区
         const size = (this.size = Math.floor(fontSize + buffer * 4))
         const canvas = this._createCanvas(size)
-        const ctx = (this.ctx = canvas.getContext('2d'))
+        const ctx = (this.ctx = canvas.getContext('2d' ,{willReadFrequently: true}) as CanvasRenderingContext2D)
 
         ctx!.textBaseline = 'middle'
         ctx!.textAlign = 'left'
@@ -75,7 +75,7 @@ export default class tinySDF {
             Math.ceil(actualBoundingBoxAscent) + Math.ceil(actualBoundingBoxDescent),
         )
 
-        const glyphHeight = this.size - 2 * this.buffer
+        const glyphHeight = this.size 
         const width = glyphWidth
         const height = glyphHeight + 2 * this.buffer
 

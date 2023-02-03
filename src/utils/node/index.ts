@@ -38,7 +38,7 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
                 let y = value.getAttribute('y')
                 if (renderer == 'webgl') {
                     let offset = coordTransformation(that.id, x, y)
-                    ;(x = offset[0]), (y = offset[1])
+                        ; (x = offset[0]), (y = offset[1])
                 }
                 // 计算最大最小边界
                 coordx_max = Math.max(coordx_max, x)
@@ -75,7 +75,7 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
                 { zoom, position: nowPosition },
                 { duration: options.duration, easing: options.easing },
                 () => {
-                    resolve((): void => {})
+                    resolve((): void => { })
                 },
             )
         } catch (err) {
@@ -99,7 +99,7 @@ export const nodeLocate = (that: any, options?: any): Promise<any> => {
             let x = that.getAttribute('x'),
                 y = that.getAttribute('y')
             let offset = that.renderer === 'webgl' ? coordTransformation(that.id, x, y) : [-x, -y]
-            ;(x = offset[0]), (y = offset[1])
+                ; (x = offset[0]), (y = offset[1])
             let nowPosition = [x, y, 3]
             let zoom = globalProp.defaultZoom
             animateCamera(
@@ -107,7 +107,7 @@ export const nodeLocate = (that: any, options?: any): Promise<any> => {
                 { zoom, position: nowPosition },
                 { duration: options.duration, easing: options.easing },
                 () => {
-                    resolve((): void => {})
+                    resolve((): void => { })
                 },
             )
         } catch (err) {
@@ -123,7 +123,8 @@ export const nodeLocate = (that: any, options?: any): Promise<any> => {
  */
 export const nodeGetAdjacent = (that: any, options?: AdjacencyOptions) => {
     if (!options) options = { direction: 'both', policy: 'include-sources' }
-    let { direction } = options
+    let direction = options?.direction || "both"
+    let hasFilter = options?.hasFilter || false
     let relationTable = that.getEdgeType().relationTable
     let Nodes = relationTable[that.value.id] || new Set()
     let inTable: Set<any> = new Set()
@@ -132,28 +133,30 @@ export const nodeGetAdjacent = (that: any, options?: AdjacencyOptions) => {
         Nodes?.forEach((item: any) => {
             //@ts-ignore
             let edge = basicData[that.id].edgeList.get(item)
-            let edgeValue = edge.value
-            let source = edgeValue.source
-            let target = edgeValue.target
-            // 无向边
-            let flag = false
-            if (!get(edgeValue.attribute, 'shape.head')) {
-                flag = true
-            }
-            if (that.value.id == source) {
-                outTable.add(target)
-                if (flag) {
-                    inTable.add(target)
+            if (edge && (hasFilter || edge.getAttribute('isVisible'))) {
+                let edgeValue = edge.value
+                let source = edgeValue.source
+                let target = edgeValue.target
+                // 无向边
+                let flag = false
+                if (!get(edgeValue.attribute, 'shape.head')) {
+                    flag = true
                 }
-            }
-            if (that.value.id == target) {
-                inTable.add(source)
-                if (flag) {
-                    outTable.add(source)
+                if (that.value.id == source) {
+                    outTable.add(target)
+                    if (flag) {
+                        inTable.add(target)
+                    }
+                }
+                if (that.value.id == target) {
+                    inTable.add(source)
+                    if (flag) {
+                        outTable.add(source)
+                    }
                 }
             }
         })
-    } catch {}
+    } catch { }
 
     let list: any = new Set()
     if (direction == 'both') {
@@ -232,29 +235,46 @@ export const nodeGetPosition = (that: any) => {
 /**
  * 获取点连边
  * @param that
- * @param hasFilter  是否包含过滤边
+ * @param options
  * @returns
  */
-export const nodeGetAdjacentEdges = (that: any, hasFilter?: boolean) => {
+export const nodeGetAdjacentEdges = (that: any, options?: AdjacencyOptions) => {
+    if (!options) options = { direction: 'both', policy: 'include-sources' }
+    let direction = options?.direction || "both"
+    let hasFilter = options?.hasFilter || false
     let nodeId = that.value.id
-    let edges = get(that.getRelationTable(), nodeId) || new Set()
+    let edges: Set<string> = new Set()
+    let { inRelationTable, outRelationTable } = that.getNodeTable()
+    let inTable = inRelationTable[nodeId] || new Set(), outTable = outRelationTable[nodeId] || new Set();
+    let RelationTable = that.getRelationTable()[nodeId]
+
+    if (direction == 'both') {
+        edges = new Set([...inTable, ...outTable])
+    } else if (direction == 'in') {
+        edges = inTable
+    } else {
+        edges = outTable
+    }
     let list: any[] = []
-    let { nodeList, edgeList } = basicData[that.id]
-    that.getRelationTable()
+    let { nodeList } = basicData[that.id]
 
     if (nodeList.get(nodeId)?.getAttribute('isVisible'))
         try {
-            edges?.forEach((id: string) => {
-                let edge = edgeList.get(id)
+            RelationTable?.forEach((id: string) => {
+                let edge = that.getEdge(id)
+                let isHas = edges.has(id)
                 if (
+                    isHas &&
                     edge &&
-                    edge.getAttribute('isVisible') ||
-                    (hasFilter && edge.getAttribute('isFilter'))
+                    (edge.getAttribute('isVisible') || hasFilter)
                 ) {
-                    list.push(id)
+                    let sourceVis = edge.getSource()?.getAttribute("isVisible")
+                    let targetVis = edge.getTarget()?.getAttribute("isVisible")
+                    if(sourceVis && targetVis)
+                        list.push(id)
                 }
             })
-        } catch {}
+        } catch { }
     return list
 }
 
@@ -366,9 +386,77 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         }
     }
 
+    if (attribute?.pulse) {
+        if (!useSet) {
+            if (
+                Object.keys(attribute.pulse).length == 1 &&
+                attribute.pulse["range"]
+            ) {
+                attribute.pulse = {
+                    ...that.value.attribute.pulse,
+                    ...attribute.pulse,
+                }
+            } else {
+                attribute.pulse = {
+                    ...TEPLATE.pulseTemplate,
+                    ...attribute.pulse,
+                }
+            }
+        } else {
+            attribute.pulse = {
+                ...attributes.pulse,
+                ...attribute.pulse,
+            }
+        }
+    }
     if (that.renderer === 'webgl') initWebglAttribute(that, attribute)
     return attribute
 }
+
+const initBadges = (that: any, badges: any) => {
+    let { text, image } = badges
+    let iconType = image ? 1 : text?.content != '' ? 2 : 3
+
+    if (iconType == 1 && !globalProp.iconMap.has(image)) {
+        let initImage: any = {
+            type: 'image',
+            num: globalProp.iconMap.size,
+            scale: image.scale,
+        }
+
+        initIconOrImage(that, {
+            key: image,
+            ...initImage,
+        })
+
+        globalProp.iconMap.set(image, {
+            ...initImage,
+        })
+        initImage = null
+    }
+
+    if (iconType == 2 && !globalProp.iconMap.has(text?.content)) {
+        let initIcon: any = {
+            type: 'icon',
+            style: text?.style || 'normal',
+            scale: text?.scale || 0.5,
+            num: globalProp.iconMap.size,
+            font: text?.font || 'Arial',
+        }
+
+        initIconOrImage(that, {
+            key: text?.content,
+            ...initIcon,
+        })
+
+        globalProp.iconMap.set(text?.content, {
+            ...initIcon,
+        })
+
+        initIcon = null
+    }
+}
+
 /**
  * webgl的数据加载处理
  * @param attribute
@@ -399,6 +487,7 @@ export function initWebglAttribute(that: any, attribute: any) {
             let initImage: any = {
                 type: 'image',
                 num: globalProp.iconMap.size,
+                scale: attribute?.image.scale,
             }
             initIconOrImage(that, {
                 key: attribute.image.url,
@@ -413,45 +502,18 @@ export function initWebglAttribute(that: any, attribute: any) {
         }
         // 处理badge
         if (attribute?.badges) {
-            let { text, image } = attribute.badges
-            let iconType = image ? 1 : text?.content != '' ? 2 : 3
-
-            if (iconType == 1 && !globalProp.iconMap.has(image)) {
-                let initImage: any = {
-                    type: 'image',
-                    num: globalProp.iconMap.size,
-                }
-
-                initIconOrImage(that, {
-                    key: image,
-                    ...initImage,
-                })
-
-                globalProp.iconMap.set(image, {
-                    ...initImage,
-                })
-                initImage = null
+            let badges = attribute.badges;
+            if (badges?.bottomRight) {
+                initBadges(that, badges.bottomRight)
             }
-
-            if (iconType == 2 && !globalProp.iconMap.has(text?.content)) {
-                let initIcon: any = {
-                    type: 'icon',
-                    style: text?.style || 'normal',
-                    scale: text?.scale || 0.5,
-                    num: globalProp.iconMap.size,
-                    font: text?.font || 'iconfont',
-                }
-
-                initIconOrImage(that, {
-                    key: text?.content,
-                    ...initIcon,
-                })
-
-                globalProp.iconMap.set(text?.content, {
-                    ...initIcon,
-                })
-
-                initIcon = null
+            if (badges?.bottomLeft) {
+                initBadges(that, badges.bottomLeft)
+            }
+            if (badges?.topLeft) {
+                initBadges(that, badges.topLeft)
+            }
+            if (badges?.topRight) {
+                initBadges(that, badges.topRight)
             }
         }
         //处理文字
@@ -473,11 +535,11 @@ export function initWebglAttribute(that: any, attribute: any) {
  * @param attribute
  * @returns
  */
-export const nodeSetAttributes = (that: any, attribute: any): Promise<any> => {
+export const nodeSetAttributes = (that: any, attribute: any, isNodeList?: boolean): Promise<any> => {
     return new Promise((resolve, reject) => {
         let flag = that.changeAttribute(attribute, true)
         if (flag) {
-            that.render()
+            !isNodeList && that.render()
             resolve(that)
         } else {
             reject(that)

@@ -55,6 +55,11 @@ export class lasso<T, K> {
             this.isActive = false
             this.isDrawing = false
 
+            if (this.galaxyvis.geo.enabled()) {
+                let geomap = this.galaxyvis.geo.getMap()
+                geomap.dragging['enable']()
+            }
+
             // 监听鼠标点击事件
             this.drawingCanvas.removeEventListener('mousedown', (e: any) => {
                 this.onDrawingStart(e)
@@ -91,6 +96,11 @@ export class lasso<T, K> {
                 this.drawingContext = this.drawingCanvas.getContext('2d')
                 this.drawingCanvas.style.cursor = 'cursor'
             }
+        }
+
+        if (this.galaxyvis.geo.enabled()) {
+            let geomap = this.galaxyvis.geo.getMap()
+            geomap.dragging['disable']()
         }
 
         // 监听鼠标点击事件
@@ -245,8 +255,8 @@ export class lasso<T, K> {
                 for (let [key, value] of nodes) {
                     let attributes = value.getAttribute()
                     let { x, y } = attributes
-                    // 根据相机位置更改点的初始位置
-                    ;(x += position[0]), (y += position[1])
+                        // 根据相机位置更改点的初始位置
+                        ; (x += position[0]), (y += position[1])
 
                     x *= scale / 2.0
                     y *= scale / 2.0

@@ -1,4 +1,4 @@
-import { globalProp } from '../../../initial/globalProp'
+import { basicData, globalProp } from '../../../initial/globalProp'
 import { mixColor, transformCanvasCoord } from '../../../utils'
 import { getLines } from './common'
 
@@ -40,7 +40,7 @@ export default function canvasLabelNode(
     // 根据相机位置更改点的初始位置
     size = size * scale
     let coord = transformCanvasCoord(graphId, x, y, positions, scale, thumbnail)
-    ;(x = coord.x), (y = coord.y)
+        ; (x = coord.x), (y = coord.y)
     // 字体的偏移量
     let labelOffsetX,
         labelOffsetY,
@@ -58,26 +58,29 @@ export default function canvasLabelNode(
     // 根据不同位置给点有不同偏移量
     switch (position) {
         case 'bottom':
-            labelOffsetY = +size + fontSize + 3
+            labelOffsetY = +size + fontSize + 2 * scale
             break
         case 'center':
             break
         case 'left':
-            labelOffsetX = -size - 3
+            labelOffsetX = -size - 3 * scale
+            labelOffsetY = fontSize / 2
             break
         case 'top':
             labelOffsetY = -size - fontSize / 4
             break
         case 'right':
-            labelOffsetX = +size + 3
+            labelOffsetX = +size + 3 * scale
+            labelOffsetY = fontSize / 2
             break
         default:
             break
     }
+    const transform = (basicData[graphId]?.transform || 223) * scale / 2
     // 文字换行记录
     var lines = getLines(content, maxLength),
-        baseX = x + labelOffsetX + margin[0] * 100,
-        baseY = Math.round(y + labelOffsetY + margin[1] * 100)
+        baseX = x + labelOffsetX + margin[0] * transform,
+        baseY = Math.round(y + labelOffsetY - margin[1] * transform)
 
     context.font = `${style} ${fontSize}px ${fontFamily}`
     // 不同位置下位置的处理
@@ -85,8 +88,9 @@ export default function canvasLabelNode(
         lines.length > 1 && position == 'top'
             ? lines.length - 1
             : lines.length > 1 && position !== 'bottom'
-            ? lines.length / 2
-            : 0
+                ? lines.length % 2 == 0 ?
+                    ((lines.length - 1) / 2) : Math.floor(lines.length / 2)
+                : 0
 
     baseY -= len * (fontSize + 1)
 
@@ -111,16 +115,24 @@ export default function canvasLabelNode(
                 baseY * combinedRatio,
             )
         }
-    } catch {}
+    } catch { }
+
+    let maxLabelLength = width;
+
+    for (let i = 1; i < lines.length; i++) {
+        maxLabelLength = Math.max(
+            maxLabelLength,
+            context.measureText(lines[i]).width
+        )
+    }
 
     // 绘制背景色
     context.beginPath()
-    // context.font = `${style} ${fontSize}px ${fontFamily}`
     context.fillStyle = background
     context.moveTo(baseX, baseY - fontSize) //左
     context.lineTo(baseX, baseY + 2 * buffer + height * (fontSize + 1)) //左
-    context.lineTo(baseX + width, baseY + 2 * buffer + height * (fontSize + 1)) //右
-    context.lineTo(baseX + width, baseY - fontSize) //右
+    context.lineTo(baseX + maxLabelLength, baseY + 2 * buffer + height * (fontSize + 1)) //右
+    context.lineTo(baseX + maxLabelLength, baseY - fontSize) //右
     context.closePath()
     context.fill()
     // 绘制文字

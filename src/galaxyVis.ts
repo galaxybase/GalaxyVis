@@ -31,6 +31,7 @@ import {
     wheelFunction,
 } from './utils'
 import { cloneDeep, get, has, debounce, merge } from 'lodash'
+import pulseCanvas from './renderers/canvas/pulse'
 
 export default class galaxyvis extends Graph {
     public gl!: WebGLRenderingContext // webgl上下文
@@ -48,6 +49,8 @@ export default class galaxyvis extends Graph {
     private localUpdate: boolean = true //开启局部更新
     private textStatus: boolean = true //是否渲染文字
     private divContainer: any
+    private pulse: boolean = false //是否开启pulse模式
+    private pulseCanvas: any;
 
     constructor(args: {
         container: string | HTMLElement //容器 如果是dom节点就直接用没有的话生成
@@ -56,11 +59,9 @@ export default class galaxyvis extends Graph {
         renderer?: string // 渲染类型
     }) {
         super()
-        // 判断是否存在canvas的父级div 并生成canvas
-        const canvasBox = this.setContainer(args.container)
         this.id = 'graph' + genID(0)
         // option下args属性拆分加载
-        this.initArgs(args)
+        const canvasBox = this.initArgs(args)
         if (this.renderer === 'webgl') {
             // 获取webgl上下文
             this.createWebGLContext(canvasBox, args.options as Options)
@@ -107,6 +108,11 @@ export default class galaxyvis extends Graph {
                 })
             })
         }
+        // 初始化pulse并开启自循环
+        if (this.pulse) {
+            const pulseCtx = this.pulseCanvas = new pulseCanvas(this)
+            pulseCtx.render()
+        }
     }
     // 初始化Option.args的属性
     private initArgs(args: any) {
@@ -118,7 +124,7 @@ export default class galaxyvis extends Graph {
             supported = isWebGLSupported()
             supported ? (this.renderer = 'webgl') : (this.renderer = 'canvas')
         }
-
+        // 缩略图
         if (get(args, 'options.thumbnail', undefined) == true) {
             if (Object.keys(basicData).length !== 0) {
                 this.id = Object.keys(basicData)[0]
@@ -134,7 +140,7 @@ export default class galaxyvis extends Graph {
             originInfo[this.id] = cloneDeep(originInfoSetting)
             globalInfo[this.id] = cloneDeep(globalInfoSetting)
         }
-
+        // zoom层级
         if (has(args, 'options.interactions.zoom')) {
             let zoomInit = get(args, 'options.interactions.zoom'),
                 defaultZoom = {
@@ -167,22 +173,29 @@ export default class galaxyvis extends Graph {
                 globalProp.defaultZoom = defaultValue
             }
         }
-
+        // 局部跟新
         if (get(args, 'options.useLocalUpdate', undefined) == false) {
             this.localUpdate = false
         }
-
+        // fast模式
         if (get(args, 'options.fast') == true) {
             this.fast = true
         } else {
             this.fast = false
         }
-
+        // safari文字
         if (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
             globalInfo[this.id].isSafari = true
         } else {
             globalInfo[this.id].isSafari = false
         }
+        // pulse
+        if (get(args, 'options.interactions.pulse', undefined) == true) {
+            this.pulse = true
+        }
+        // 判断是否存在canvas的父级div 并生成canvas
+        const canvasBox = this.setContainer(args.container, this.pulse)
+        return canvasBox
     }
     // 获取webgl上下文
     private createWebGLContext(
@@ -271,7 +284,7 @@ export default class galaxyvis extends Graph {
         return this.ctx
     }
     // 生成canvas
-    private setContainer(container: string | HTMLElement): HTMLCanvasElement {
+    private setContainer(container: string | HTMLElement, pulse: any): HTMLCanvasElement {
         var divContainer
         if (isDom(container)) {
             divContainer = container as HTMLElement
@@ -287,9 +300,21 @@ export default class galaxyvis extends Graph {
         // 添加节点到dom
         let width = divContainer.clientWidth || divContainer.offsetWidth,
             height = divContainer.clientHeight || divContainer.offsetHeight
-        const canvasBox = document.createElement('canvas')
-        canvasBox.width = width
-        canvasBox.height = height
+        const canvasBox = document.createElement('canvas');
+        canvasBox.width = width;
+        canvasBox.height = height;
+        canvasBox.style.position = "absolute";
+
+        // pulse
+        if (pulse) {
+            const pulsePass = document.createElement('canvas')
+            pulsePass.width = width;
+            pulsePass.height = height;
+            pulsePass.style.position = "absolute";
+            pulsePass.id = "pulse_" + this.id;
+            divContainer.appendChild(pulsePass);
+        }
+
         divContainer.appendChild(canvasBox)
         return canvasBox
     }
@@ -398,6 +423,16 @@ export default class galaxyvis extends Graph {
             } else {
                 globalInfo[this.id].BoxCanvas.setWidth = width
                 globalInfo[this.id].BoxCanvas.setHeight = height
+            }
+            // 重新渲染pulse
+            if (this.pulse) {
+                const pulsePass = document.getElementById("pulse_" + this.id) as HTMLCanvasElement;
+                pulsePass.width = width;
+                pulsePass.height = height;
+                pulsePass.style.width = width + 'px'
+                pulsePass.style.height = height + 'px'
+                this.pulseCanvas.stop();
+                this.pulseCanvas.render()
             }
         } catch { }
     }
@@ -522,7 +557,7 @@ export default class galaxyvis extends Graph {
         const gl = this.gl
         const that = this
         const showText = this.textStatus
-        
+
         if (showText && !this.thumbnail) {
             this.camera?.quad.clear()
         }
@@ -585,7 +620,7 @@ export default class galaxyvis extends Graph {
         const showText = this.textStatus
         const gl = this.gl
         const that = this
-        
+
         if (showText && !this.thumbnail) {
             this.camera?.quad.clear()
         }

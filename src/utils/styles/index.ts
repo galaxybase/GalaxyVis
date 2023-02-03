@@ -52,6 +52,7 @@ export const stylesAddRule = (galaxyvis: any, options: RuleOptions) => {
 
     if (ruleName && ruleName !== "geo-class") {
         galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+        !galaxyvis.geo.enabled() && galaxyvis.render()
     } else {
         galaxyvis.render()
     }
@@ -78,6 +79,7 @@ export const stylesCreateClass = (galaxyvis: any, options: ClassOptions, useRule
 
         if (name && name !== "geo-class") {
             galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+            !galaxyvis.geo.enabled() && galaxyvis.render()
         } else {
             galaxyvis.render()
         }

@@ -1,4 +1,3 @@
-import circularLayout from '../../layouts/circle/circular/circular'
 import {
     forceSimulation,
     forceLink,
@@ -8,13 +7,30 @@ import {
     forceX,
     forceCollide,
 } from '../../layouts/forceLink/force'
-import gridLayout from '../../layouts/grid/grid/gridLayout'
+import circularLayout from '../../layouts/Geometrical/circle'
+import duailCircleLayout from '../../layouts/Geometrical/dualCircle'
+import gridLayout from '../../layouts/Geometrical/grid'
+import hiveLayout from '../../layouts/Geometrical/hive'
+import layerCircleLayout from '../../layouts/Geometrical/layerCircle'
+import bfalLayout from '../../layouts/hierarchy/bfa'
 import concentricLayout from '../../layouts/hierarchy/concentric/concentric'
 import dagrelLayout from '../../layouts/hierarchy/dagreTree/dagre'
 import hierarchy from '../../layouts/hierarchy/hierarchy'
 import radialLayout from '../../layouts/hierarchy/radial/radial'
+import radiatreeLayout from '../../layouts/hierarchy/radiatree'
 import tree from '../../layouts/hierarchy/tree'
+import KKFaLayout from '../../layouts/forceLink/kk'
 import { BFSTree, floorBfs } from './bfsTree'
+import HierarchicalLayout from '../../layouts/hierarchy/hubsize'
+import balloonLayout from '../../layouts/Geometrical/balloon'
+import forceDirectedLayout from '../../layouts/forceLink/forceDirected'
+import FRLayout from '../../layouts/forceLink/fr'
+import spring2Layout from '../../layouts/forceLink/spring'
+import gatherTypeLayout from '../../layouts/other/gather'
+import sphereLayout from '../../layouts/Geometrical/sphere'
+import fruchtermanReingoldLayout from '../../layouts/forceLink/fruchtermanReingold'
+import topoLayout from '../../layouts/hierarchy/topo'
+import noverlapLayout from '../../layouts/other/noverlap'
 
 const LAYOUT_MESSAGE = {
     // run layout
@@ -31,7 +47,7 @@ function handleLayoutMessage(event: any) {
     let data: any,
         ids: any[] = [],
         positions: any[] = []
-    try{
+    try {
         switch (layoutType) {
             case 'circular': {
                 data = circularLayout(nodes, options)
@@ -49,7 +65,7 @@ function handleLayoutMessage(event: any) {
                 } catch (error: any) {
                     throw new Error(error)
                 }
-    
+
                 data = concentricLayout(listConcen, options)
                 if (options?.incremental) {
                     ids = Object.keys(data)
@@ -69,7 +85,7 @@ function handleLayoutMessage(event: any) {
                     forceY: strengthY,
                     forceX: strengthX,
                 } = options
-    
+
                 const simulation = forceSimulation(nodes)
                     // 设置或获取link中节点的查找方式
                     .force(
@@ -83,7 +99,7 @@ function handleLayoutMessage(event: any) {
                     .force('forceX', forceX().strength(strengthX || 0.03))
                     // 碰撞力 防止节点重叠
                     .force('collide', forceCollide(repulsion || 40).iterations(1))
-    
+
                 //作用力应用在所用的节点之间，当strength为正的时候可以模拟重力，当为负的时候可以模拟电荷力。
                 simulation.force('charge').strength((d: any) => {
                     if (d.isSingle == true) {
@@ -92,16 +108,16 @@ function handleLayoutMessage(event: any) {
                     return strength && typeof strength === 'function'
                         ? strength
                         : strength
-                        ? Math.abs(strength) * -1
-                        : -1200
+                            ? Math.abs(strength) * -1
+                            : -1200
                 })
-    
+
                 if (edgeStrength) {
                     simulation.force('link').strength(edgeStrength)
                 }
-    
+
                 simulation.force('link').distance(distance || 250)
-    
+
                 simulation.tick(tickNum || 150)
                 let force: { [key: string]: any } = {}
                 for (let i = 0, len = nodes.length; i < len; i++) {
@@ -129,21 +145,21 @@ function handleLayoutMessage(event: any) {
                 } catch (error: any) {
                     console.error(LAYOUT_MESSAGE.ERROR);
                 }
-    
+
                 let result: any = []
                 result = {
                     id: 'hierarchy_used_readOnly_by_cl',
                     children: nodesBak,
                 }
                 let treeSimulation = tree()
-    
+
                 treeSimulation.nodeSize([width, height])
-    
+
                 let hierarchyData = hierarchy(result)
                 // @ts-ignore
                 let treeData = treeSimulation(hierarchyData)
                 let nodeDescendants: any = treeData.descendants()
-    
+
                 let trees: { [key: string]: { x: number; y: number } } = {}
                 for (let i = 1, len = nodeDescendants.length; i < len; i++) {
                     let { data, x, y } = nodeDescendants[i]
@@ -160,7 +176,7 @@ function handleLayoutMessage(event: any) {
             }
             case 'grid': {
                 let grid: any = {}
-    
+
                 let { cols, rows, columns } = options
                 if (nodes.length != 1) {
                     grid = gridLayout(nodes, {
@@ -172,7 +188,7 @@ function handleLayoutMessage(event: any) {
                             height,
                         },
                     })
-    
+
                     for (let i in grid) {
                         grid[i].x = grid[i].x - center[0]
                         grid[i].y = grid[i].y - center[1]
@@ -201,6 +217,160 @@ function handleLayoutMessage(event: any) {
             }
             case 'dagre': {
                 data = dagrelLayout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'hive': {
+                data = hiveLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'dualCircle': {
+                data = duailCircleLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'layerCircle': {
+                data = layerCircleLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'radiatree': {
+                data = radiatreeLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'bfa': {
+                data = bfalLayout(nodes, [], options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'kk': {
+                let kkfa = new KKFaLayout(nodes, edges, options);
+                kkfa.resetConfig(kkfa.getConfig());
+                data = kkfa.runLayout();
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'hubsize': {
+                let hubsize = new HierarchicalLayout(nodes, edges, options);
+                hubsize.resetConfig({
+                    layerDistance: options.layerDistance,
+                    nodeDistance: options.nodeDistance,
+                    direction: options.direction,
+                    sortMethod: options.sortMethod
+                });
+                data = hubsize.runLayout();
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'balloon': {
+                data = balloonLayout(nodes, [], options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'frDirected': {
+                data = forceDirectedLayout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'fr': {
+                data = FRLayout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'spring': {
+                data = spring2Layout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'gather': {
+                data = gatherTypeLayout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'sphere': {
+                data = sphereLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'FruchtermanReingold': {
+                data = fruchtermanReingoldLayout(nodes, edges, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'topoCircle': {
+                data = topoLayout(nodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(data[i].id)
+                        positions.push({ ...data[i] })
+                    }
+                break;
+            }
+            case 'noverlap': {
+                let noverlap = new noverlapLayout(nodes, options);
+                data = noverlap.runLayout();
                 if (options?.incremental)
                     for (let i in data) {
                         ids.push(data[i].id)

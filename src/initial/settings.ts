@@ -11,7 +11,7 @@ export const TEPLATE = {
         minVisibleSize: 6, //文字最小可见范围
     }, //文字模板
     iconTemplate: {
-        font: 'iconfont', //字体类型
+        font: 'Arial', //字体类型
         color: '#ffffff', //icon颜色
         style: 'normal', //粗细
         content: '', //主要内容
@@ -38,6 +38,15 @@ export const TEPLATE = {
         head: undefined, //arrow
         style: undefined, //dash
     }, //线类型模板
+    pulseTemplate: {
+        range: [0,0,0], // 波的条数
+        width: 5, // 波的线宽
+        duration: 1000, // 整个波时间
+        interval: 10, // 波与波之间的间距
+        startColor: "#6cf", // 颜色
+        scale: 0.5,
+        startRatio: 1.0 /// 波开始的位置
+    }
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -60,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
         icon: TEPLATE.iconTemplate,
         image: TEPLATE.imageTemplate,
         halo: TEPLATE.haloTemplate,
+        pulse: TEPLATE.pulseTemplate,
         badges: null,
     },
     edgeAttribute: {
@@ -153,4 +163,5 @@ export const globalInfoSetting = {
     BoxCanvas: boxCanvas, //布局的画布
     canvasBox: document.createElement('canvas'), //整个canvas对象
     edgeType: null,
+    enabledNoStraightLine: false
 }

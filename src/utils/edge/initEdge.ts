@@ -80,7 +80,7 @@ export function createLineMesh(
     let dirtyData = -1
     if ((y2 >= y1 && x1 >= x2) || (y1 >= y2 && x1 > x2)) {
         ;[y1, y2] = [y2, y1]
-        ;[x1, x2] = [x2, x1]
+            ;[x1, x2] = [x2, x1]
         dirtyData = 1
     }
 
@@ -289,7 +289,7 @@ export function loopLineMesh(
     color = isSelect ? selectedColor : color
     // 通过三阶的贝塞尔函数 画出更多的点
     m == 0 && m++
-    radius = (m - 1) * 60 + (targetRadius + 1) * 6
+    radius = (m - 1) * 60 + (targetRadius + 2) * 6
     let rx = x,
         ry = y
     // 以（X,Y）为圆心 做两个塞尔函数的控制点
@@ -434,12 +434,15 @@ export function loopLineMesh(
 
     // @ts-ignore
     arrowPoint = null
-
     const result = {
         ...ans,
         ANGLE,
-        x: text?.position === 'center' ? midX : centerX,
-        y: text?.position === 'center' ? midY : centerY,
+        x: text?.position == 'center' ?
+                midX : (location == "upperRight" || location == "upperLeft") ? 
+                midX : centerX,
+        y: text?.position === 'center' ?
+                midY :  (location == "upperRight" || location == "upperLeft") ?
+                midY : centerY,
         text,
         hasContent,
         shape,
@@ -561,27 +564,27 @@ export const creatParallelLine = (
         clem1.m == 0 && clem1.k == 0 && !multiMin.f
             ? originalN1.x
             : clem1.m == 0 && clem1.k == 0 && multiMin.f
-            ? originalNode.x
-            : (clem1.m - originalNodeM) / (multiMin.n - clem1.k)
+                ? originalNode.x
+                : (clem1.m - originalNodeM) / (multiMin.n - clem1.k)
     let realY1 =
         clem1.m == 0 && clem1.k == 0 && !multiMin.f
             ? originalNode.y
             : clem1.m == 0 && clem1.k == 0 && multiMin.f
-            ? originalN1.y
-            : realX1 * clem1.k + clem1.m
+                ? originalN1.y
+                : realX1 * clem1.k + clem1.m
 
     let realX2 =
         clem2.m == 0 && clem2.k == 0 && !multiMin.f
             ? originalN2.x
             : clem2.m == 0 && clem2.k == 0 && multiMin.f
-            ? originalNode.x
-            : (clem2.m - originalNodeM) / (multiMin.n - clem2.k)
+                ? originalNode.x
+                : (clem2.m - originalNodeM) / (multiMin.n - clem2.k)
     let realY2 =
         clem2.m == 0 && clem2.k == 0 && !multiMin.f
             ? originalNode.y
             : clem2.m == 0 && clem2.k == 0 && multiMin.f
-            ? originalN2.y
-            : realX2 * clem2.k + clem2.m
+                ? originalN2.y
+                : realX2 * clem2.k + clem2.m
 
     let inOtherCircle = false
     if (XYdistance <= Math.max(r1, r2)) {
@@ -638,7 +641,7 @@ export const creatParallelLine = (
     let dirtyData = 1
     if ((y2 >= y1 && x1 >= x2) || (y1 >= y2 && x1 > x2)) {
         ;[y1, y2] = [y2, y1]
-        ;[x1, x2] = [x2, x1]
+            ;[x1, x2] = [x2, x1]
         dirtyData = -1
     }
 
@@ -791,7 +794,7 @@ const operationUnion = (
         MatArray2[j + 2] =
             Math.ceil(
                 Math.atan2(oldPoint[i + 5] - oldPoint[i + 1], oldPoint[i + 4] - oldPoint[i]) *
-                    LARGECONSTANTS,
+                LARGECONSTANTS,
             ) / LARGECONSTANTS
         MatArray2[j + 3] =
             Math.ceil((distance / scaleN) * LARGECONSTANTS + constantScale) / LARGECONSTANTS
@@ -823,9 +826,9 @@ const preBezierCalc = (
     forward: number,
 ) => {
     let originalNode = {
-            x: 0,
-            y: 0,
-        },
+        x: 0,
+        y: 0,
+    },
         po = 5,
         midx = (x1 + x2) / 2,
         midy = (y1 + y2) / 2 //计算中心点

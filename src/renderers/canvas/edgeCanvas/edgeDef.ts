@@ -68,12 +68,12 @@ export default function canvasEdgeDef(
         num,
         po,
         forward,
-    )
-    ;(sourceX = calcSourceX),
-        (sourceY = calcSourceY),
-        (targetX = calcTargetX),
-        (targetY = calcTargetY)
-    lineWidth /= 25
+    );
+    sourceX = calcSourceX,
+    sourceY = calcSourceY,
+    targetX = calcTargetX,
+    targetY = calcTargetY;
+    lineWidth /= 35
     color = isSelect ? selectedColor : color
     // 绘制虚线
     if (shape?.style == 'dash') {
@@ -83,6 +83,12 @@ export default function canvasEdgeDef(
     color = mixColor(graphId, color, opacity)
     context.strokeStyle = color
     context.lineWidth = width
+    
+    if (num == 0) {
+        if (originalNode.x == sourceX && originalNode.x == targetX) {
+            sourceX -= 1
+        }
+    }
 
     var bezier: any = []
     let bezierNumber = 0.05
@@ -150,8 +156,8 @@ export default function canvasEdgeDef(
         context.fillStyle = color
         context.beginPath()
         context.moveTo(aX - vX * 0.5, aY - vY * 0.5)
-        context.lineTo(insertPoints2.x - vY * 0.7, insertPoints2.y + vX * 0.7)
-        context.lineTo(insertPoints2.x + vY * 0.7, insertPoints2.y - vX * 0.7)
+        context.lineTo(insertPoints2.x - vY * 0.8, insertPoints2.y + vX * 0.8)
+        context.lineTo(insertPoints2.x + vY * 0.8, insertPoints2.y - vX * 0.8)
         context.moveTo(aX - vX * 0.5, aY - vY * 0.5)
         context.closePath()
         context.fill()
@@ -168,26 +174,26 @@ export default function canvasEdgeDef(
     context.setLineDash([])
     // 计算线的中心位置用于计算文字位置
     let bezierMid = bezier2(
-            0.5,
-            { x: sourceX, y: sourceY },
-            { x: originalNode.x, y: originalNode.y },
-            { x: targetX, y: targetY },
-        ),
+        0.5,
+        { x: sourceX, y: sourceY },
+        { x: originalNode.x, y: originalNode.y },
+        { x: targetX, y: targetY },
+    ),
         dirtyData = -1
 
     if ((targetY >= sourceY && sourceX >= targetX) || (sourceY >= targetY && sourceX > targetX)) {
-        ;[sourceY, targetY] = [targetY, sourceY]
-        ;[sourceX, targetX] = [targetX, sourceX]
+        [sourceY, targetY] = [targetY, sourceY];
+        [sourceX, targetX] = [targetX, sourceX];
         dirtyData = 1
     }
 
     let change =
-            num == 0
-                ? dirtyData
-                : Math.sign(
-                      (targetX - sourceX) * (originalNode.y - sourceY) -
-                          (targetY - sourceY) * (originalNode.x - sourceX),
-                  ),
+        num == 0
+            ? dirtyData
+            : Math.sign(
+                (targetX - sourceX) * (originalNode.y - sourceY) -
+                (targetY - sourceY) * (originalNode.x - sourceX),
+            ),
         r =
             lineWidth * scale * 40 +
             scale * Math.max(Math.floor(((text?.fontSize as number) / 10) * 1e3) / 1e3, 1),
@@ -195,23 +201,30 @@ export default function canvasEdgeDef(
     const Direction = text?.position === 'bottom' ? -1 : 1
     // 返回文字位置和旋转角度
     let textMod = {
-            x:
-                text?.position === 'center'
-                    ? bezierMid.x
-                    : bezierMid.x + moveX * c2 * r * change * Direction,
-            y:
-                text?.position === 'center'
-                    ? bezierMid.y
-                    : bezierMid.y + moveY * c2 * r * change * Direction,
-            ANGLE: Math.ceil(Math.atan2(targetY - sourceY, targetX - sourceX) * 1e5) / 1e5,
-        },
-        point = getPoint(bezier, width + 2)
+        x:
+            text?.position === 'center'
+                ? bezierMid.x
+                : bezierMid.x + moveX * c2 * r * change * Direction,
+        y:
+            text?.position === 'center'
+                ? bezierMid.y
+                : bezierMid.y + moveY * c2 * r * change * Direction,
+        ANGLE: Math.ceil(Math.atan2(targetY - sourceY, targetX - sourceX) * 1e5) / 1e5,
+        type: "def",
+        position
+    };
+    width += 5
+    let point = getPoint(bezier, width)
     bezier = null
     if (num == 0) {
         if (originalNode.y == sourceY && originalNode.y == targetY) {
             sourceY += width / 2
             targetY -= width / 2
-        } else if (originalNode.x == sourceX && originalNode.x == targetX) {
+        } else if (
+            (originalNode.x == sourceX && originalNode.x == targetX) || (
+                Math.abs(sourceX - targetX) <= 1e-3
+            )
+        ) {
             sourceX += width / 2
             targetX -= width / 2
         }

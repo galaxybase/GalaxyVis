@@ -1,10 +1,11 @@
 import { animateNodes } from '../graphAnimate'
-import { cloneDeep, defaultsDeep } from 'lodash'
+import { cloneDeep, defaultsDeep, isString } from 'lodash'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import NodeList from '../../classes/nodeList'
 import { genID } from '..'
 import { transformatAddEdgeFilter, transformatAddNodeFilter, transformatEdgeGroup } from '.'
 import EdgeList from '../../classes/edgeList'
+import { originInfo } from '../../initial/originInitial'
 
 export class transformat<T, K> {
     private galaxyvis: any
@@ -439,7 +440,7 @@ export class transformat<T, K> {
                     if (update && isRender) {
                         this.isMerge = false
                         basicEdgeList.forEach((value, key) => {
-                            if(value.getAttribute('isGroupEdge') && 
+                            if (value.getAttribute('isGroupEdge') &&
                                 (value.getAttribute('isVisible') || value.getAttribute('isFilter')))
                                 this.changed.push(key)
                         })
@@ -456,6 +457,7 @@ export class transformat<T, K> {
                         let sourceNode = item.getSource()
                         let targetNode = item.getTarget()
                         let flag = false;
+                        if (!sourceNode || !targetNode) continue;
                         if (
                             (sourceNode.getAttribute('isVisible') &&
                                 targetNode.getAttribute('isVisible')) ||
@@ -592,11 +594,23 @@ export class transformat<T, K> {
                             }
                             // 处理边集合
                             this.geoEdge?.forEach((item: any, key: any) => {
-                                let sourceNodeVisible = item.getSource()?.getAttribute('isVisible'),
-                                    targetNodeVisible = item.getTarget()?.getAttribute('isVisible')
+
+                                let target = isString(item.value?.target) ? item.getTarget() : item.value?.target
+                                let source = isString(item.value?.source) ? item.getSource() : item.value?.source
+
+                                let sourceNodeVisible = source?.getAttribute('isVisible');
+                                let targetNodeVisible = target?.getAttribute('isVisible');
+
                                 if (sourceNodeVisible && targetNodeVisible) {
-                                    item?.changeAttribute({ isVisible: true })
-                                    basicData[graphId].edgeList.set(key, item)
+                                    if (globalInfo[graphId].mergeEdgesTransformat && item.getAttribute('isGroupEdge')) {
+                                        item?.changeAttribute({ isVisible: true })
+                                        basicData[graphId].edgeList.set(key, item)
+                                        originInfo[graphId].edgeList.set(key, item.getAttribute())
+                                    } else if (!globalInfo[graphId].mergeEdgesTransformat && !item.getAttribute('isGroupEdge')) {
+                                        item?.changeAttribute({ isVisible: true })
+                                        basicData[graphId].edgeList.set(key, item)
+                                        originInfo[graphId].edgeList.set(key, item.getAttribute())
+                                    }
                                 }
                             })
                         }

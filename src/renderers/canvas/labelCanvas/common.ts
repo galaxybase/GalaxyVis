@@ -5,10 +5,10 @@
  * @returns
  */
 export function getLines(text: string, maxLineLength: number) {
-    var words = (text + '').split(' '),
+    var words = (text + '').split('\\n'),
         lines = [],
         lineLength = 0,
-        lineIndex = -1,
+        lineIndex = 0,
         lineList = [],
         lineFull = true
     for (var i = 0; i < words.length; ++i) {
@@ -17,23 +17,25 @@ export function getLines(text: string, maxLineLength: number) {
                 var parts = splitWord(words[i], maxLineLength)
                 for (var j = 0; j < parts.length; ++j) {
                     lines.push([parts[j]])
-                    ++lineIndex
+                    lineIndex++
                 }
                 lineLength = parts[parts.length - 1].length
             } else {
                 lines.push([words[i]])
-                ++lineIndex
-                lineLength = words[i].length + 1
+                lineIndex++
+                lineLength = words[i].length
             }
             lineFull = false
         } else if (lineLength + words[i].length <= maxLineLength) {
-            lines[lineIndex].push(words[i])
+            !lines[lineIndex] && (lines[lineIndex] = [])
+            lines[lineIndex++].push(words[i])
             lineLength += words[i].length + 1
         } else {
             lineFull = true
             --i
         }
     }
+
 
     for (i = 0; i < lines.length; ++i) {
         lineList.push(lines[i].join(' '))

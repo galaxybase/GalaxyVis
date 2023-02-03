@@ -1,3 +1,4 @@
+import { isIE } from '..'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import { PlainObject } from '../../types'
 import { renderSVG } from './renderSVG'
@@ -92,14 +93,14 @@ function downloadImage(
         context.drawImage(image, 0, 0, image.width, image.height)
         // 绘制水印
         if (textWatermark) {
-            let { content, style, fontSize, angle, repeat, space, color } = textWatermark
+            let { content, style, fontSize, angle, repeat, space, color, alpha } = textWatermark
 
             var { width: wText } = context.measureText(content)
+            context.globalAlpha = alpha || 1.0
             context.fillStyle = color || 'black'
             context.textBaseline = 'middle'
             context.textAlign = 'left'
             context.font = `${style} ${fontSize}px Arial`
-
             // 循环绘制
             if (repeat) {
                 let heightNumber = Math.ceil(image.height / space) + 10
@@ -118,13 +119,26 @@ function downloadImage(
                 context.rotate((angle * Math.PI) / 180)
                 context.fillText(content, -wText / 2, fontSize / 2)
             }
+            context.globalAlpha = 1.0
         }
         let url = canvas.toDataURL(type, scale) //得到图片的base64编码数据
         let a = document.createElement('a') // 生成一个a元素
-        let event = new MouseEvent('click') // 创建一个单击事件
-        a.download = name // 设置图片名称
-        a.href = url // 将生成的URL设置为a.href属性
-        a.dispatchEvent(event) // 触发a的单击事件
+        let event;
+        // 适配ie11
+        if (isIE()) {
+            // @ts-ignore
+            var imgData = canvas.msToBlob();
+            var blobObj = new Blob([imgData]);
+            // @ts-ignore
+            window.navigator.msSaveOrOpenBlob(blobObj, name);
+        }
+        else {
+            event = new MouseEvent('click') // 创建一个单击事件
+            a.download = name // 设置图片名称
+            a.href = url // 将生成的URL设置为a.href属性
+            a.dispatchEvent(event) // 触发a的单击事件
+        }
+
     }
     image.src = imgsrc
 }
@@ -193,30 +207,36 @@ function downloadJson(data: any, filename: string) {
     if (typeof data === 'object') {
         data = JSON.stringify(data, undefined, 4)
     }
-    var blob = new Blob([data], { type: 'text/json' }),
-        e = document.createEvent('MouseEvents'),
-        a = document.createElement('a')
-    a.download = filename
-    a.href = window.URL.createObjectURL(blob)
-    a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
-    e.initMouseEvent(
-        'click',
-        true,
-        false,
-        window,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        false,
-        false,
-        false,
-        0,
-        null,
-    )
-    a.dispatchEvent(e)
+    var blob = new Blob([data], { type: 'text/json' });
+
+    if (isIE()) {
+        // @ts-ignore
+        window.navigator.msSaveBlob(blob, filename)
+    } else {
+        var e = document.createEvent('MouseEvents'),
+            a = document.createElement('a')
+        a.download = filename
+        a.href = window.URL.createObjectURL(blob)
+        a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
+        e.initMouseEvent(
+            'click',
+            true,
+            false,
+            window,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            false,
+            false,
+            false,
+            0,
+            null,
+        )
+        a.dispatchEvent(e)
+    }
 }
 
 /**
@@ -230,6 +250,7 @@ export function exportExcelHandler(graph: any, options?: any) {
         try {
             // 初始参数
             let filename = options?.filename || `graph.xlsx`
+            let skipHeader = options?.skipHeader || false
             let download = true
             if (options && options.hasOwnProperty('download')) {
                 download = options.download
@@ -288,7 +309,27 @@ export function exportExcelHandler(graph: any, options?: any) {
             /* create a new blank workbook */
             var wb = window.XLSX.utils.book_new()
             sheetDataList.forEach((item: any) => {
-                let sheetData = window.XLSX.utils.json_to_sheet(item.list)
+
+                let header: any[] = [];
+                let headerDisplay: any = {}
+
+                if (skipHeader) {
+                    header = Object.keys(item.list[0]);
+
+                    for (let i = 0; i < header.length; i++) {
+                        headerDisplay[header[i]] = header[i]
+                    }
+                    let customisedHeader = options?.customisedHeader || {}
+                    headerDisplay = {
+                        ...headerDisplay,
+                        ...customisedHeader
+                    }
+                    item.list = [headerDisplay, ...item.list]
+                }
+
+                let sheetData = window.XLSX.utils.json_to_sheet(item.list, {
+                    header, skipHeader
+                })
                 window.XLSX.utils.book_append_sheet(wb, sheetData, item.name)
             })
             const workbookBlob = workbook2blob(wb, 'xlsx')
@@ -338,37 +379,42 @@ function workbook2blob(workbook: any, type: string) {
  * @param {filename<string>} 文件名称
  */
 function downloadExcel(blob: any, fileName: string) {
-    if (typeof blob == 'object' && blob instanceof Blob) {
-        blob = URL.createObjectURL(blob) // 创建blob地址
+    if (isIE()) {
+        // @ts-ignore
+        window.navigator.msSaveOrOpenBlob(blob, fileName)
+    } else {
+        if (typeof blob == 'object' && blob instanceof Blob) {
+            blob = URL.createObjectURL(blob) // 创建blob地址
+        }
+        var aLink = document.createElement('a')
+        aLink.href = blob
+        // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，有时候 file:///模式下不会生效
+        aLink.download = fileName
+        var event
+        if (window.MouseEvent) event = new MouseEvent('click')
+        //   移动端
+        else {
+            event = document.createEvent('MouseEvents')
+            event.initMouseEvent(
+                'click',
+                true,
+                false,
+                window,
+                0,
+                0,
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                false,
+                0,
+                null,
+            )
+        }
+        aLink.dispatchEvent(event)
     }
-    var aLink = document.createElement('a')
-    aLink.href = blob
-    // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，有时候 file:///模式下不会生效
-    aLink.download = fileName
-    var event
-    if (window.MouseEvent) event = new MouseEvent('click')
-    //   移动端
-    else {
-        event = document.createEvent('MouseEvents')
-        event.initMouseEvent(
-            'click',
-            true,
-            false,
-            window,
-            0,
-            0,
-            0,
-            0,
-            0,
-            false,
-            false,
-            false,
-            false,
-            0,
-            null,
-        )
-    }
-    aLink.dispatchEvent(event)
 }
 
 /**
@@ -383,6 +429,7 @@ export function exportCsvHandler(graph: any, options?: any) {
             // 初始参数
             let filename = options?.filename || `graph.csv`
             let separator = options?.separator || `,`
+            let skipHeader = options?.skipHeader || false
             let download = true
             if (options && options.hasOwnProperty('download')) {
                 download = options.download
@@ -418,7 +465,26 @@ export function exportCsvHandler(graph: any, options?: any) {
                     })
                 })
             }
-            let sheetData = window.XLSX.utils.json_to_sheet(list)
+            let header: any[] = [];
+            let headerDisplay: any = {}
+
+            if (skipHeader) {
+                header = Object.keys(list[0]);
+
+                for (let i = 0; i < header.length; i++) {
+                    headerDisplay[header[i]] = header[i]
+                }
+                let customisedHeader = options?.customisedHeader || {}
+                headerDisplay = {
+                    ...headerDisplay,
+                    ...customisedHeader
+                }
+                list = [headerDisplay, ...list]
+            }
+
+            let sheetData = window.XLSX.utils.json_to_sheet(list, {
+                header, skipHeader
+            })
             let result = window.XLSX.utils.sheet_to_csv(sheetData, {
                 FS: separator,
                 RS: '\n',
@@ -441,30 +507,35 @@ export function exportCsvHandler(graph: any, options?: any) {
  */
 function downloadCsv(data: any, filename: string) {
     let type = '' //头部数据类型
-    var blob = new Blob(['\ufeff' + data], { type: type }),
-        e = document.createEvent('MouseEvents'),
-        a = document.createElement('a')
-    a.download = filename
-    a.href = window.URL.createObjectURL(blob)
-    a.dataset.downloadurl = ['text/csv', a.download, a.href].join(':')
-    e.initMouseEvent(
-        'click',
-        true,
-        false,
-        window,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        false,
-        false,
-        false,
-        0,
-        null,
-    )
-    a.dispatchEvent(e)
+    var blob = new Blob(['\ufeff' + data], { type: type });
+    if (isIE()) {
+        // @ts-ignore
+        window.navigator.msSaveBlob(blob, filename)
+    } else {
+        let e = document.createEvent('MouseEvents'),
+            a = document.createElement('a')
+        a.download = filename
+        a.href = window.URL.createObjectURL(blob)
+        a.dataset.downloadurl = ['text/csv', a.download, a.href].join(':')
+        e.initMouseEvent(
+            'click',
+            true,
+            false,
+            window,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            false,
+            false,
+            false,
+            0,
+            null,
+        )
+        a.dispatchEvent(e)
+    }
 }
 
 var XMLNS = 'http://www.w3.org/2000/svg'
@@ -535,8 +606,15 @@ function toSVG(graph: any, params: PlainObject<any>) {
     svg.removeAttribute('style')
     svg.setAttribute('width', width + 'px')
     svg.setAttribute('height', height + 'px')
-    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-    svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+
+    if (!isIE()) {
+        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    } else {
+        svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
+        svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        // http://www.w3.org/XML/2008/xsdl-exx/ns1
+    }
 
     if (globalInfo[graph.id].backgroundColor.color != '#fff') {
         var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -548,7 +626,7 @@ function toSVG(graph: any, params: PlainObject<any>) {
 
     // 渲染图形并导出
     renderSVG(graph, svg).then(() => {
-        var svgString = svg.outerHTML,
+        var svgString = svg?.outerHTML || new XMLSerializer().serializeToString(svg),
             out = '<?xml version="1.0" encoding="utf-8"?>'
 
         svgString = out + svgString

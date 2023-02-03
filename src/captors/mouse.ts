@@ -88,6 +88,7 @@ class CaptorsMouse {
      * @param e 鼠标
      */
     public MouseMoveListener(e: MouseEvent) {
+        const graphId = this.scene.id
         let { globalScale } = globalProp,
             pointX: number,
             pointY: number,
@@ -147,7 +148,7 @@ class CaptorsMouse {
                     })
                 }
                 // 当hover的元素跟原来的不一样时
-                if (this.oldHoverTarget && id !== this.oldHoverTarget.getId()) {
+                if (this.oldHoverTarget && (id !== this.oldHoverTarget.getId() || this.oldHoverTarget.isNode() != isNode)) {
                     let odlIsNode = this.oldHoverTarget.isNode(),
                         oldId = this.oldHoverTarget.getId()
                     if (odlIsNode) {
@@ -161,8 +162,11 @@ class CaptorsMouse {
                     } else {
                         this.MouseAddOrRemoveEdgeHoverStyle(id, true)
                     }
-
                     this.oldHoverTarget = this.hoverTatget
+                    if (basicData[graphId].selectedTable.has(id)) {
+                        basicData[graphId].selectedTable.delete(id)
+                        basicData[graphId].selectedTable.add(id)
+                    }
                     this.scene.selectMovefresh(false)
                 } else {
                     // 当选中了点的时候
@@ -750,8 +754,8 @@ class CaptorsMouse {
                     let { attrNormal, width, attrMiter, points: attrPoint } = points
                     let boundPoints: any[] = []
                     for (let i = 0, j = 0; i < attrPoint.length; i += 2, j++) {
-                        boundPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]) - position[0];
-                        boundPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]) - position[1];
+                        boundPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.025 / scale, 0.025)) * attrMiter[j]) - position[0];
+                        boundPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.025 / scale, 0.025)) * attrMiter[j]) - position[1];
                     }
                     for (let i = 0; i < boundPoints.length; i += 2) {
                         if (
@@ -1046,8 +1050,8 @@ class CaptorsMouse {
                 let { attrNormal, width, attrMiter, points: attrPoint } = points
                 let newPoints: any[] = []
                 for (let i = 0, j = 0; i < attrPoint.length; i += 2, j++) {
-                    newPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]);
-                    newPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.02 / scale, 0.02)) * attrMiter[j]);
+                    newPoints[i] = (attrPoint[i] + attrNormal[i] * (width + Math.max(0.025 / scale, 0.025)) * attrMiter[j]);
+                    newPoints[i + 1] = (attrPoint[i + 1] + attrNormal[i + 1] * (width + Math.max(0.025 / scale, 0.025)) * attrMiter[j]);
                 }
                 for (let i = 0; i < newPoints.length; i += 2) {
                     if (

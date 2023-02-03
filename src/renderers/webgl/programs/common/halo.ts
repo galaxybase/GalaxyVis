@@ -43,6 +43,7 @@ export abstract class AbstractHaloProgram extends AbstractProgram implements IHa
         const gl = this.gl
         const ext = this.ext
         gl.useProgram(this.program)
+        
         // 背景颜色
         gl.uniform1f(this.background, globalInfo[this.graph.id].backgroundColor.floatColor)
         

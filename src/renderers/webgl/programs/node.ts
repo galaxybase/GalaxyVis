@@ -56,18 +56,32 @@ export default class NodeProgram extends AbstractNodeProgram {
                 drawNodeList.set(key, {
                     badges: isBadges,
                 })
-                if (isBadges)
-                    drawNodeList.set(`badges_` + key, {
-                        badges: true,
-                    })
+                if (isBadges) {
+                    let badgesArray = Object.keys(attributes.badges)
+                    for (let i = 0; i < badgesArray.length; i++) {
+                        drawNodeList.set(`badges_${badgesArray[i]}` + key, {
+                            badges: true,
+                        })
+                    }
+                }
                 if (!needFresh.size || !needFresh.has(key)) float32Nodes.set(key, value)
-                else if (needFresh.has(key)) updateNodes.set(key, value)
+            }
+        }
+
+        for (let item of needFresh) {
+            let node = nodeList.get(item)
+            if (!node) continue
+            let value = node.value
+            let attributes = value.attribute
+            if (attributes?.isVisible) {
+                updateNodes.set(item, value)
             }
         }
 
         if (updateNodes.size) {
             for (let [key, value] of updateNodes) float32Nodes.set(key, value)
         }
+
         this.initCollection(drawNodeList.size * ATTRIBUTES)
         let collection = nodeCollection[graphId]
         let len = 0
@@ -116,7 +130,8 @@ export default class NodeProgram extends AbstractNodeProgram {
                 collection.packedData[len + 10] = colorBuffer[0]
                 len += 11
             } else {
-                for (let j = 0; j < 2; j++) {
+                let badgesLength = 1 + Object.keys(attributes.badges).length
+                for (let j = 0; j < badgesLength; j++) {
                     for (let i = 0 + j * 4, k = 0; i < 4 + j * 4; i++, k++) {
                         collection.packedData[len + k] = packedBuffer[i]
                     }
@@ -183,11 +198,22 @@ export default class NodeProgram extends AbstractNodeProgram {
             100,
         )
         const view = this.camera.getViewMatrix()
+
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)    
+
         // 视图矩阵 * 透视矩阵
         gl.uniformMatrix4fv(this.projectMatirxLocation, false, projection)
         gl.uniformMatrix4fv(this.viewMatrixLocation, false, view)
         gl.useProgram(program)
         let drawNum = nodeCollection[this.graph.id].packedData.length / ATTRIBUTES
         ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 6, drawNum)
+
+        gl.blendFuncSeparate(
+            gl.SRC_ALPHA,
+            gl.ONE_MINUS_SRC_ALPHA,
+            gl.ONE,
+            gl.ONE_MINUS_SRC_ALPHA,
+        )
+
     }
 }

@@ -39,7 +39,7 @@ export const preBezierCalc = (
     po: number | undefined,
     forward: number,
 ): any => {
-    lineWidth /= 25
+    lineWidth /= 35
     // 根据默认比例缩放当前点的大小
     let scale = (globalProp.globalScale / ratio) * 2.0,
         width = lineWidth * scale * 150,
@@ -278,7 +278,7 @@ export const defaultEdge = (
         maxY,
         targetX,
         targetY,
-        targetSize + lineWidth * scale * 450,
+        targetSize + lineWidth * scale * 650,
     )
 
     insertPoints2 = insertPoints2 ? insertPoints2 : { x: maxX, y: maxY }

@@ -1,3 +1,6 @@
+import { clone } from "lodash"
+import { basicData } from "../../initial/globalProp"
+
 export function BFSTree(nodes: any, lis: any, edges: any, allNodes?: any) {
     nodes = nodes.constructor === Array ? nodes : [nodes]
     for (let i = 0; i < nodes.length; i++) {
@@ -82,10 +85,102 @@ export const floorBfs = (node: any, edge: any, root: any) => {
             let ans = node.filter((item: any) => {
                 return item.index == i
             })
-
             floor[index].push(ans[0]?.id)
         }
     }
+    // 防止出现空层
+    let floors:any = []
+    for (let i = 0; i < floor.length; i++) {
+        if (floor[i]) {
+            floors.push(floor[i])
+        }
+    }
 
-    return floor
+    return floors
+}
+
+
+export const comboBfs = (
+    graphId: string,
+    nodesBak: any[],
+    listConcen: any[],
+    relationTable: { [key: string]: Set<any> }
+) => {
+
+    let branches = new Set(nodesBak.map((item) => {
+        return item.id
+    }))
+
+    let usedEdge = new Set()
+
+    let finsh = 0, len = listConcen.length;
+
+    for (let i = 0; i < len; i++) {
+        for (let j = 0, arrLen = listConcen[i].length; j < arrLen; j++) {
+            let item = listConcen[i][j]
+            listConcen[i][j] = {
+                id: item,
+                parent: item
+            }
+        }
+    }
+
+    let combos = clone(listConcen)
+
+    while (finsh != len) {
+        finsh = 0;
+        for (let i = 0; i < len; i++) {
+            // 该层的点
+            let level = listConcen[i]
+            let newConcen: any[] = []
+            // 扩展该点的一度关系，并把它职位同一个combo中
+            for (let j = 0, arrLen = level.length; j < arrLen; j++) {
+                let Edges = relationTable[level[j].id]
+                Edges && Edges.forEach((item: any) => {
+                    if (!usedEdge.has(item)) {
+
+                        let edge = basicData[graphId].edgeList.get(item)
+                        let edgeValue = edge.value
+                        let source = edgeValue.source
+                        let target = edgeValue.target
+
+                        if (source == level[j].id && !branches.has(target)) {
+                            usedEdge.add(item)
+                            newConcen.push({ id: target, parent: level[j].parent })
+                            branches.add(target)
+                        }
+
+                        if (target == level[j].id && !branches.has(source)) {
+                            usedEdge.add(item)
+                            newConcen.push({ id: source, parent: level[j].parent })
+                            branches.add(source)
+                        }
+                    }
+                })
+
+            }
+            if (newConcen.length == 0) finsh += 1;
+            combos[i] = [...combos[i], ...newConcen]
+            listConcen[i] = newConcen
+        }
+    }
+
+    let combosMap = new Map()
+    // 整合数据
+    for (let i = 0; i < len; i++) {
+        for (let j = 0, arrLen = combos[i].length; j < arrLen; j++) {
+            let item = combos[i][j]
+            let id = item.id
+            let parent = item.parent
+            if (combosMap.has(parent)) {
+                let value = combosMap.get(parent)
+                value.push(id)
+                combosMap.set(parent, value)
+            } else {
+                combosMap.set(parent, [id])
+            }
+        }
+    }
+
+    return combosMap
 }

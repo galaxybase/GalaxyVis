@@ -4,6 +4,8 @@ import { AnimateOptions } from '../types'
 import { ANIMATE_DEFAULTS } from '../initial/globalProp'
 import easings from './easings'
 
+export let cameraFram: number | null = null
+
 /**
  * 动画的过度效果
  * @param graph 指向整个camera
@@ -38,7 +40,7 @@ export function animateCamera(
         position: camera.position,
     }
 
-    let frame: number | null = null
+    cameraFram = null;
 
     const step = () => {
         let p = (Date.now() - start) / options.duration
@@ -71,12 +73,12 @@ export function animateCamera(
 
         graph.camerarefresh(true)
         // 执行下一帧动画
-        frame = requestFrame(step)
+        cameraFram = requestFrame(step)
     }
 
     step()
 
     return () => {
-        if (frame) cancelFrame(frame)
+        if (cameraFram) cancelFrame(cameraFram)
     }
 }

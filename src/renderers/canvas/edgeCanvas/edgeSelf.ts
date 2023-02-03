@@ -38,7 +38,7 @@ export default function canvasEdgeSelf(
     ;(sourceX = coord.x), (sourceY = coord.y)
 
     let { color, width: lineWidth, location, shape, text, selectedColor, isSelect, opacity } = data
-    lineWidth /= 25
+    lineWidth /= 30
     color = isSelect ? selectedColor : color
     // 点的缩放
     let radius = scale * ((num - 1) * 40 + sourceSize * 5),
@@ -118,8 +118,8 @@ export default function canvasEdgeSelf(
         context.fillStyle = color
         context.beginPath()
         context.moveTo(aX + vX * 0.5, aY + vY * 0.5)
-        context.lineTo(insertPoints2.x - vY * 0.7, insertPoints2.y + vX * 0.7)
-        context.lineTo(insertPoints2.x + vY * 0.7, insertPoints2.y - vX * 0.7)
+        context.lineTo(insertPoints2.x - vY * 0.8, insertPoints2.y + vX * 0.8)
+        context.lineTo(insertPoints2.x + vY * 0.8, insertPoints2.y - vX * 0.8)
         context.moveTo(aX + vX * 0.5, aY + vY * 0.5)
         context.closePath()
         context.fill()
@@ -165,7 +165,6 @@ export default function canvasEdgeSelf(
         { x: pot2[0], y: pot2[1] },
         { x: sourceX, y: sourceY },
     )
-
     let bezierright = bezier3(
         right,
         { x: sourceX, y: sourceY },
@@ -178,9 +177,11 @@ export default function canvasEdgeSelf(
         x: text?.position === 'center' ? bezierMid.x : (bezierleft.x + bezierright.x) / 2,
         y: text?.position === 'center' ? bezierMid.y : (bezierleft.y + bezierright.y) / 2,
         ANGLE,
+        type: "self",
+        position
     }
-
-    let point = getPoint(bezier, width + 2)
+    width += 5
+    let point = getPoint(bezier, width)
 
     // 计算一个AABB的包围盒
     let boundBox: any[] = [

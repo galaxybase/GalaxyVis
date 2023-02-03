@@ -1,4 +1,4 @@
-import { disPoint, switchSelfLinePostion, transformCanvasCoord } from '..'
+import { disPoint, isIE, switchSelfLinePostion, transformCanvasCoord } from '..'
 import { globalProp } from '../../initial/globalProp'
 import {
     bezier2,
@@ -10,7 +10,9 @@ import {
 } from '../../renderers/canvas/edgeCanvas/commom'
 import { getLines } from '../../renderers/canvas/labelCanvas/common'
 import { loopLineType } from '../../types'
-import { drawQuardBezier, drawSelfBezier, svgLinePath, textBaseSvgSetAttribute } from './common'
+import { drawQuardBezier, drawSelfBezier, svgInnerHTML, svgLinePath, textBaseSvgSetAttribute } from './common'
+
+var xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
 
 export const svgEdgeDef = (
     graphId: string,
@@ -27,6 +29,7 @@ export const svgEdgeDef = (
     forward: number, //是否换向
     thumbnail: boolean,
 ) => {
+    xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     let { color, width: lineWidth, shape, text } = data
     let po = 5
     forward *= -1
@@ -58,12 +61,12 @@ export const svgEdgeDef = (
         num,
         po,
         forward,
-    )
-    ;(sourceX = calcSourceX),
-        (sourceY = calcSourceY),
-        (targetX = calcTargetX),
-        (targetY = calcTargetY)
-    lineWidth /= 25
+    );
+    sourceX = calcSourceX,
+        sourceY = calcSourceY,
+        targetX = calcTargetX,
+        targetY = calcTargetY;
+    lineWidth /= 35
     // 创建svg的path
     let path = svgLinePath(
         drawQuardBezier(sourceX, sourceY, originalNode, targetX, targetY),
@@ -123,7 +126,7 @@ export const svgEdgeDef = (
         }
         // 设置dashArray的属性实现有箭头的效果
         path.setAttributeNS(null, 'stroke-dasharray', svgPathLength + ' 0 0 ' + targetSize)
-        let arrowPath = document.createElementNS('xmlns', 'path')
+        let arrowPath = document.createElementNS(xmlns, 'path')
         // 填充三角形
         let arrowD =
             'M' +
@@ -131,13 +134,13 @@ export const svgEdgeDef = (
             ' , ' +
             (aY - vY * 0.5) +
             ' L' +
-            (insertPoints2.x - vY * 0.7) +
+            (insertPoints2.x - vY * 0.8) +
             ' , ' +
-            (insertPoints2.y + vX * 0.7) +
+            (insertPoints2.y + vX * 0.8) +
             ' L' +
-            (insertPoints2.x + vY * 0.7) +
+            (insertPoints2.x + vY * 0.8) +
             ' , ' +
-            (insertPoints2.y - vX * 0.7) +
+            (insertPoints2.y - vX * 0.8) +
             ' Z'
         arrowPath.setAttributeNS(null, 'd', arrowD)
         arrowPath.setAttributeNS(null, 'fill', color)
@@ -168,11 +171,11 @@ export const svgEdgeDef = (
 
             // 计算线的中心位置用于计算文字位置
             let bezierMid = bezier2(
-                    0.5,
-                    { x: sourceX, y: sourceY },
-                    { x: originalNode.x, y: originalNode.y },
-                    { x: targetX, y: targetY },
-                ),
+                0.5,
+                { x: sourceX, y: sourceY },
+                { x: originalNode.x, y: originalNode.y },
+                { x: targetX, y: targetY },
+            ),
                 dirtyData = -1
 
             if (
@@ -180,7 +183,7 @@ export const svgEdgeDef = (
                 (sourceY >= targetY && sourceX > targetX)
             ) {
                 ;[sourceY, targetY] = [targetY, sourceY]
-                ;[sourceX, targetX] = [targetX, sourceX]
+                    ;[sourceX, targetX] = [targetX, sourceX]
                 dirtyData = 1
             }
             // 计算文字换向
@@ -188,9 +191,9 @@ export const svgEdgeDef = (
                 num == 0
                     ? dirtyData
                     : Math.sign(
-                          (targetX - sourceX) * (originalNode.y - sourceY) -
-                              (targetY - sourceY) * (originalNode.x - sourceX),
-                      )
+                        (targetX - sourceX) * (originalNode.y - sourceY) -
+                        (targetY - sourceY) * (originalNode.x - sourceX),
+                    )
             // 计算文字离控制点距离
             let c2 = numOfLine != 0 ? (Math.pow(-1, num) * -3) / XYdistance : 3 / XYdistance
             // 缩放距离的大小
@@ -233,10 +236,11 @@ export const svgEdgeDef = (
                 baseY = Math.round(labelOffsetY + margin[1] * 100)
             // 绘制文字
             for (var i = 0; i < lines.length; ++i) {
-                var textSvg = document.createElementNS('xmls', 'text')
+                var textSvg = document.createElementNS(xmlns, 'text')
                 textSvg.setAttributeNS(null, 'x', baseX + '')
                 textSvg.setAttributeNS(null, 'y', baseY + i * (fontSize + 1) + '')
-                textSvg.innerHTML = lines[i]
+                // textSvg.innerHTML = lines[i]
+                svgInnerHTML(textSvg, lines[i])
                 textG.appendChild(textSvg)
             }
             edgeG.appendChild(textG)
@@ -256,15 +260,16 @@ export const svgEdgeSelf = (
     num: number, //对于这个点来说这是第几条边
     thumbnail: boolean,
 ) => {
+    xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     // 根据默认比例缩放当前点的大小
     let scale = (globalProp.globalScale / ratio) * 2.0,
         // 根据相机位置更改点的初始位置
         coord = transformCanvasCoord(graphId, sourceX, sourceY, position, scale, thumbnail)
-    ;(sourceX = coord.x), (sourceY = coord.y)
+        ; (sourceX = coord.x), (sourceY = coord.y)
 
     let { color, width: lineWidth, location, shape, text } = data
     // 缩放边的大小
-    lineWidth /= 25
+    lineWidth /= 30
     let width = lineWidth * scale * 150
     // 点的缩放
     let radius = scale * ((num - 1) * 40 + sourceSize * 5),
@@ -286,7 +291,7 @@ export const svgEdgeSelf = (
         width,
         color,
     )
-    document.createElementNS('xmlns', 'path')
+    document.createElementNS(xmlns, 'path')
     // 如果含有箭头
     if (shape?.head == 'arrow') {
         var bezier = []
@@ -346,7 +351,7 @@ export const svgEdgeSelf = (
             y: insertPoints ? insertPoints.y : maxY,
         })
 
-        let arrowPath = document.createElementNS('xmlns', 'path')
+        let arrowPath = document.createElementNS(xmlns, 'path')
         // 计算每个控制点之间的距离然后赋值给dasharray的属性
         let svgPathLength = 0
         for (let i = 1, len = bezier.length; i < len; i++) {
@@ -360,13 +365,13 @@ export const svgEdgeSelf = (
             ' , ' +
             (aY + vY * 0.5) +
             ' L' +
-            (insertPoints2.x - vY * 0.7) +
+            (insertPoints2.x - vY * 0.8) +
             ' , ' +
-            (insertPoints2.y + vX * 0.7) +
+            (insertPoints2.y + vX * 0.8) +
             ' L' +
-            (insertPoints2.x + vY * 0.7) +
+            (insertPoints2.x + vY * 0.8) +
             ' , ' +
-            (insertPoints2.y - vX * 0.7) +
+            (insertPoints2.y - vX * 0.8) +
             ' Z'
         arrowPath.setAttributeNS(null, 'd', arrowD)
         arrowPath.setAttributeNS(null, 'fill', color)
@@ -445,10 +450,11 @@ export const svgEdgeSelf = (
                 baseY = Math.round(labelOffsetY + margin[1] * 100)
 
             for (var i = 0; i < lines.length; ++i) {
-                var textSvg = document.createElementNS('xmls', 'text')
+                var textSvg = document.createElementNS(xmlns, 'text')
                 textSvg.setAttributeNS(null, 'x', baseX + '')
                 textSvg.setAttributeNS(null, 'y', baseY + i * (fontSize + 1) + '')
-                textSvg.innerHTML = lines[i]
+                // textSvg.innerHTML = lines[i]
+                svgInnerHTML(textSvg, lines[i])
                 textG.appendChild(textSvg)
             }
             edgeG.appendChild(textG)
@@ -472,6 +478,7 @@ export const svgEdgeParallel = (
     targetSize: number, //终止点大小
     thumbnail: boolean,
 ) => {
+    xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     let { color, width: lineWidth, shape, text } = data
     let po = undefined
     let {
@@ -499,12 +506,12 @@ export const svgEdgeParallel = (
         num,
         po,
         forward,
-    )
-    ;(sourceX = calcSourceX),
-        (sourceY = calcSourceY),
-        (targetX = calcTargetX),
-        (targetY = calcTargetY)
-    lineWidth /= 25
+    );
+    sourceX = calcSourceX,
+        sourceY = calcSourceY,
+        targetX = calcTargetX,
+        targetY = calcTargetY;
+    lineWidth /= 30
     // 缩放目标点和起始点的大小
     sourceSize *= scale
     targetSize *= scale
@@ -536,8 +543,8 @@ export const svgEdgeParallel = (
     if (shape?.head == 'arrow' && !inOtherCircle) {
         // 绘制箭头
         let d = Math.sqrt(
-                Math.pow(realX2 - originalNode.x, 2) + Math.pow(realY2 - originalNode.y, 2),
-            ),
+            Math.pow(realX2 - originalNode.x, 2) + Math.pow(realY2 - originalNode.y, 2),
+        ),
             aSize = lineWidth * scale * 150 * 3.0,
             aX = originalNode.x + ((realX2 - originalNode.x) * (d - aSize)) / d,
             aY = originalNode.y + ((realY2 - originalNode.y) * (d - aSize)) / d,
@@ -547,7 +554,7 @@ export const svgEdgeParallel = (
         let newPath = drawQuardBezier(realX1, realY1, originalNode, aX, aY)
 
         path.setAttributeNS(null, 'd', newPath)
-        let arrowPath = document.createElementNS('xmlns', 'path')
+        let arrowPath = document.createElementNS(xmlns, 'path')
         let arrowD =
             'M' +
             (aX + vX) +
@@ -599,17 +606,17 @@ export const svgEdgeParallel = (
                 (sourceY >= targetY && sourceX > targetX)
             ) {
                 ;[sourceY, targetY] = [targetY, sourceY]
-                ;[sourceX, targetX] = [targetX, sourceX]
+                    ;[sourceX, targetX] = [targetX, sourceX]
                 dirtyData = -1
             }
 
             let change =
-                    num == 0
-                        ? dirtyData
-                        : Math.sign(
-                              (targetX - sourceX) * (originalNode.y - sourceY) -
-                                  (targetY - sourceY) * (originalNode.x - sourceX),
-                          ),
+                num == 0
+                    ? dirtyData
+                    : Math.sign(
+                        (targetX - sourceX) * (originalNode.y - sourceY) -
+                        (targetY - sourceY) * (originalNode.x - sourceX),
+                    ),
                 pos = XYdistance,
                 c2 = numOfLine != 0 ? -Math.pow(-1, num) / pos : -3 / pos,
                 xp = change * moveX * c2, //上移坐标
@@ -646,10 +653,11 @@ export const svgEdgeParallel = (
                 baseY = Math.round(labelOffsetY + margin[1] * 100)
 
             for (var i = 0; i < lines.length; ++i) {
-                var textSvg = document.createElementNS('xmls', 'text')
+                var textSvg = document.createElementNS(xmlns, 'text')
                 textSvg.setAttributeNS(null, 'x', baseX + '')
                 textSvg.setAttributeNS(null, 'y', baseY + i * (fontSize + 1) + '')
-                textSvg.innerHTML = lines[i]
+                // textSvg.innerHTML = lines[i]
+                svgInnerHTML(textSvg, lines[i])
                 textG.appendChild(textSvg)
             }
             edgeG.appendChild(textG)

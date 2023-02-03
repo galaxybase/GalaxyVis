@@ -50,7 +50,7 @@ export const removeClass = (
                     classAttributes(that, selfClasses, classList, nodeOrEdge)
                 }
                 if (isReFresh) throttled(that)
-                resolve(void 0)
+                resolve(that)
             }
         } catch (error) {
             reject(error)
@@ -135,7 +135,7 @@ export const addClass = (
                 )
             }
             if (update) throttled(that)
-            resolve(void 0)
+            resolve(that)
         }
     })
 }
@@ -259,11 +259,11 @@ export const getAttribute = (that: any, attribute?: any) => {
  * @param attribute
  * @returns
  */
-export const setAttribute = (that: any, attribute: any): Promise<any> => {
+export const setAttribute = (that: any, attribute: any, isEdgeList?:boolean): Promise<any> => {
     return new Promise((resolve, reject) => {
         let flag = that.changeAttribute(attribute, true)
         if (flag) {
-            that.render()
+            !isEdgeList && that.render()
             resolve(that)
         } else {
             reject(that)

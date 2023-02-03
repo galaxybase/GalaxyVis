@@ -5,7 +5,7 @@ import fragmentShaderSource from '../shaders/edge.frag.glsl'
 import { glMatrix, mat4 } from 'gl-matrix'
 import { coordTransformation, floatColor, hashNumber } from '../../../utils'
 import { createLineMesh, loopLineMesh } from '../../../utils/edge/initEdge'
-import { basicData, globalProp } from '../../../initial/globalProp'
+import { basicData, globalInfo, globalProp } from '../../../initial/globalProp'
 
 let edgeHaloCollection: EdgeHaloCollection = {}
 const edgeGroups = globalProp.edgeGroups
@@ -67,27 +67,34 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
                         hashSet = baseTypeHash?.get(hash), //两点之间hash表
                         size = hashSet?.num
                     if (!size) continue
-                    let lineNumber = [...hashSet.total].indexOf(key),
-                        forwardSource = forwadHashTable?.get(hash)?.sourceNumber,
+
+                    let lineNumber = [...hashSet.total].indexOf(key);
+
+                    if (globalInfo[graphId].enabledNoStraightLine) {
+                        size == 1 && size++
+                        size % 2 !== 0 && lineNumber++
+                    }
+
+                    let forwardSource = forwadHashTable?.get(hash)?.sourceNumber,
                         forward =
                             lineNumber == 0
                                 ? 1
                                 : size % 2 == 0
-                                ? lineNumber % 2 == 1 && sourceNumber != forwardSource
-                                    ? -1
-                                    : 1
-                                : lineNumber % 2 == 0 && sourceNumber != forwardSource
-                                ? -1
-                                : 1,
+                                    ? lineNumber % 2 == 1 && sourceNumber != forwardSource
+                                        ? -1
+                                        : 1
+                                    : lineNumber % 2 == 0 && sourceNumber != forwardSource
+                                        ? -1
+                                        : 1,
                         { x: targetX, y: targetY, radius: targetSize } = target_attribute,
                         { x: sourceX, y: sourceY, radius: sourceSize } = souce_attribute
                     let xyOffect = coordTransformation(graphId, sourceX, sourceY),
                         xyOffect2 = coordTransformation(graphId, targetX, targetY),
                         line
-                    ;(sourceX = xyOffect[0]),
-                        (sourceY = xyOffect[1]),
-                        (targetX = xyOffect2[0]),
-                        (targetY = xyOffect2[1])
+                        ; (sourceX = xyOffect[0]),
+                            (sourceY = xyOffect[1]),
+                            (targetX = xyOffect2[0]),
+                            (targetY = xyOffect2[1])
                     halo.location = location
                     forwadHashTable?.set(hash, { sourceNumber, targetNumber })
                     // 如果宽度为0则跳过
@@ -139,7 +146,7 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
                     }
                 }
             }
-        } catch {}
+        } catch { }
 
         forwadHashTable = null
         if (collection?.color.length) {

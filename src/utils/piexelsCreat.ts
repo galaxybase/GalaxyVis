@@ -1,7 +1,3 @@
-const pixelRatio = 1
-const imageCanvas = document.createElement('canvas')
-const imageCanvasContext = imageCanvas.getContext('2d')
-
 /**
  * iconfont的加载
  * @param {*} filterType  filter类型
@@ -12,7 +8,7 @@ const imageCanvasContext = imageCanvas.getContext('2d')
  * @param {*} xAxis  x轴的初始 用于text
  * @returns
  */
-const getTextPixels = async function (
+ const getTextPixels = async function (
     filterType: number,
     typeface: string,
     written: any,
@@ -20,7 +16,9 @@ const getTextPixels = async function (
     number: number,
     xAxis: number,
 ) {
-    var imageContext = imageCanvasContext as CanvasRenderingContext2D
+    const pixelRatio = 1
+    const imageCanvas = document.createElement('canvas')
+    var imageContext = imageCanvas.getContext('2d', {willReadFrequently: true}) as CanvasRenderingContext2D
     var pixel = number * pixelRatio
     // 字体宽度
     var textWidth = pixel
@@ -38,12 +36,23 @@ const getTextPixels = async function (
         // @ts-ignore
         await document.fonts.load(imageContext.font)
     }
-
     imageContext.clearRect(0, 0, width, height)
     imageContext.fillStyle = 'black'
-    imageContext.textBaseline = 'middle'
+    let textHeight = 0;
+    
+    if (imageContext.measureText(typeface)?.actualBoundingBoxAscent) {
+        let { actualBoundingBoxAscent, actualBoundingBoxDescent } = imageContext.measureText(typeface)
+        textHeight = (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2;
+        if(!textHeight || isNaN(textHeight)){
+            textHeight = 0;
+            imageContext.textBaseline = 'middle';
+        }
+    } else {
+        imageContext.textBaseline = 'middle'
+    }
+
     imageContext.textAlign = 'center'
-    imageContext.fillText(typeface, width / 2, height / 2)
+    imageContext.fillText(typeface, width / 2, height / 2 + textHeight)
 
     let data: any = imageContext.getImageData(0, 0, width, height)
 

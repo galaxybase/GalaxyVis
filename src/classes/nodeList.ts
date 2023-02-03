@@ -12,6 +12,7 @@ import { ANIMATE_DEFAULTS, basicData } from '../initial/globalProp'
 export default class NodeList {
     private galaxyvis: any
     private ids: string[]
+    public isNodeList: boolean = true
     public size: number = 0
     constructor(galaxyvis: any, ids: string[] | undefined) {
         this.galaxyvis = galaxyvis
@@ -185,14 +186,14 @@ export default class NodeList {
      * 返回节点的相邻边列表。
      * @returns
      */
-    public getAdjacentEdges = () => {
+    public getAdjacentEdges = (options?: AdjacencyOptions) => {
         let list: string[] = []
-        
+
         if (!this.ids || !this.ids?.length)
             return new NodeList(this.galaxyvis, list)
         try {
             this.ids.forEach(id => {
-                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges())
+                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges(options))
             })
         } catch { }
 
@@ -214,10 +215,10 @@ export default class NodeList {
      * @param  {...any} attribute
      * @returns
      */
-    public getAttribute = (attribute?: any) => {
+    public getAttribute = (attribute?: any, useHidden = false) => {
         let list: any[] = []
         this.ids.forEach(id => {
-            list.push(this.galaxyvis.getNode(id)?.getAttribute(attribute))
+            list.push(this.galaxyvis.getNode(id, useHidden)?.getAttribute(attribute))
         })
         return list
     }
@@ -226,17 +227,17 @@ export default class NodeList {
      * 设置属性
      * @param {*} attribute
      */
-    public setAttributes = (attribute: any) => {
+    public setAttributes = (attribute: any, useHidden = false) => {
         let promiseList: any[] = []
-
         let attributeisArray = isArray(attribute) ? true : false
         this.ids.forEach((id, index) => {
             promiseList.push(
                 this.galaxyvis
-                    .getNode(id)
-                    ?.setAttributes(attributeisArray ? attribute[index] : attribute),
+                    .getNode(id, useHidden)
+                    ?.setAttributes(attributeisArray ? attribute[index] : attribute, this.isNodeList),
             )
         })
+        this.galaxyvis.render();
         return Promise.all(promiseList)
     }
 

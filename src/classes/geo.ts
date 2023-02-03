@@ -132,6 +132,8 @@ const DEFAULT_TITLE = {
  */
 export default class geo<T, K> {
     private galaxyvis: any
+    private pulsePass: any
+    private graphContainer: HTMLDivElement | null = null;
     map: any
     layer: any
     mapContainer: any
@@ -167,7 +169,8 @@ export default class geo<T, K> {
                 duration: any = o?.duration || 0,
                 disableNodeDragging: any =
                     Number(o?.disableNodeDragging) == 0 ? o?.disableNodeDragging : true,
-                crs: any = o?.crs || L?.CRS.EPSG3857
+                crs: any = o?.crs || L?.CRS.EPSG3857,
+                allowdDclick: any = o?.allowdDclick || false;
             this.options = options
             tiles = Object.assign(DEFAULT_TITLE, tiles)
 
@@ -178,7 +181,9 @@ export default class geo<T, K> {
             let canvas = this.galaxyvis.gl?.canvas || this.galaxyvis.ctx?.canvas
             canvas.removeEventListener('wheel', this.galaxyvis.WheelFunction)
             canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
-            canvas.removeEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
+            !allowdDclick && canvas.removeEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
+
+            this.galaxyvis.camera.updateTransform()
 
             // 创建geo的容器和图层
             if (!document.getElementById('galaxyvis-geo-map')) {
@@ -217,13 +222,14 @@ export default class geo<T, K> {
             if (!disableNodeDragging) {
                 this.map.on('mousemove', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
+                    var useLasso = this.galaxyvis.tools.lasso.enabled();
                     if (node) {
                         draggable = true
                         this.map.dragging['disable']()
                         canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     } else if (!this.map.dragging._enable && draggable) {
                         draggable = false
-                        this.map.dragging['enable']()
+                        !useLasso && this.map.dragging['enable']()
                         canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     }
                     this.moving = true
@@ -279,12 +285,13 @@ export default class geo<T, K> {
             else {
                 this.map.on('mousemove', (e: any) => {
                     let node = this.galaxyvis.mouseCaptor.hoverTatget
+                    var useLasso = this.galaxyvis.tools.lasso.enabled();
                     if (node) {
                         this.map.dragging['disable']()
                         this.galaxyvis.mouseCaptor.geoEnable = false
                         canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     } else {
-                        this.map.dragging['enable']()
+                        !useLasso && this.map.dragging['enable']()
                         this.galaxyvis.mouseCaptor.geoEnable = true
                         canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
                     }
@@ -355,10 +362,10 @@ export default class geo<T, K> {
             !len && ((viewPoint.lat = 39.9043), (viewPoint.lng = 116.3848))
             // 设置地图的经纬度和世界缩放等级
             this.map.setView(new L.LatLng(viewPoint.lat, viewPoint.lng), viewZoom)
-
+            this.graphContainer = this.graphicContainer()
             this.layer = new L.CanvasLayer({
                 // geo地图的父级
-                container: this.graphicContainer(),
+                container: this.graphContainer,
                 // 触发更新
                 onUpdate: (refesh: boolean = false) => {
                     if (!this.layer._map) return Promise.resolve(void 0)
@@ -495,10 +502,17 @@ export default class geo<T, K> {
                 var divContainer = this.galaxyvis.getDivContainer()
                 var canvas = this.galaxyvis.ctx?.canvas || this.galaxyvis.gl?.canvas
                 divContainer.insertBefore(canvas, divContainer.firstChild)
+                if (this.galaxyvis.pulse && this.pulsePass) {
+                    let pulseCanvas = this.galaxyvis.pulseCanvas;
+                    pulseCanvas.stop()
+                    pulseCanvas.render()
+                    const pulsePass = this.pulsePass;
+                    divContainer.insertBefore(pulsePass, divContainer.firstChild)
+                }
                 // graph类的鼠标事件回滚
                 canvas.addEventListener('wheel', this.galaxyvis.WheelFunction)
                 canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
-                canvas.addEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
+                !this.options.allowdDclick && canvas.addEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
                 let nodes = basicData[id].nodeList
                 let originNodes = originInfo[id].nodeList
                 // 撤回计算的坐标
@@ -709,6 +723,12 @@ export default class geo<T, K> {
         dom.style.top = '0px'
 
         dom.insertBefore(canvas, dom.firstChild)
+
+        if (this.galaxyvis.pulse) {
+            const id = this.galaxyvis.id
+            const pulsePass = this.pulsePass = document.getElementById("pulse_" + id) as HTMLCanvasElement;
+            dom.insertBefore(pulsePass, dom.firstChild)
+        }
 
         return dom
     }

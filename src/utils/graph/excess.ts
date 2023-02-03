@@ -4,6 +4,39 @@ import { createLineMesh, creatParallelLine, loopLineMesh } from '../edge/initEdg
 
 const edgeGroups = globalProp.edgeGroups
 
+export const getNodeTable = (that: any) => {
+    let edgeList = basicData[that.id].edgeList;
+    let inRelationTable: { [key: string]: Set<string> } = {},
+        outRelationTable: { [key: string]: Set<string> } = {},
+        table: { [key: string]: any } = {};
+    for (let [key] of edgeList) {
+        let attribute = edgeList.get(key)?.getAttribute()
+        if (!attribute) continue;
+        let { source, target, isVisible } = attribute
+        if (isVisible) {
+            if (inRelationTable[target]) {
+                inRelationTable[target].add(key)
+            } else if (!inRelationTable[target]) {
+                inRelationTable[target] = new Set([key])
+            }
+
+            if (outRelationTable[source]) {
+                outRelationTable[source].add(key)
+            } else if (!outRelationTable[source]) {
+                outRelationTable[source] = new Set([key])
+            }
+            table[key] = {
+                source, target
+            }
+        }
+    }
+    return {
+        inRelationTable,
+        outRelationTable,
+        table
+    }
+}
+
 export const getRelationTable = (that: any) => {
     let edgeList = basicData[that.id].edgeList
     let relationTable: any = {}
@@ -50,14 +83,14 @@ export const excessGetEdgeType = (that: any) => {
                 })
             }
 
-            if(isGroupEdge){
+            if (isGroupEdge) {
                 let children = item.value.children;
                 let cnt = 0
                 for (let j = 0; j < children.length; j++) {
                     let edge = edgeList.get(children[j])
-                    if(edge && edge.getAttribute('isVisible')) cnt++
+                    if (edge && edge.getAttribute('isVisible')) cnt++
                 }
-                if(cnt == children.length) {
+                if (cnt == children.length) {
                     isVisible = false
                     item.changeAttribute({
                         isVisible: false,
@@ -158,28 +191,34 @@ export const excessGetEdgeDrawVal = (that: any) => {
                 hashSet = type == 'basic' ? baseTypeHash.get(hash) : typeHash.get(hash), //两点之间hash表
                 size = hashSet?.num
             if (!size) continue
-            let lineNumber = [...hashSet.total].indexOf(key),
-                forward =
+            let lineNumber = [...hashSet.total].indexOf(key);
+
+            if(globalInfo[that.id].enabledNoStraightLine){
+                size == 1 && size++
+                size % 2 !== 0 && lineNumber++
+            }
+
+            let forward =
                     lineNumber == 0
                         ? 1
                         : size % 2 == 0
-                        ? lineNumber % 2 == 1 && sourceNumber != forwardSource
-                            ? -1
-                            : 1
-                        : lineNumber % 2 == 0 && sourceNumber != forwardSource
-                        ? -1
-                        : 1,
+                            ? lineNumber % 2 == 1 && sourceNumber != forwardSource
+                                ? -1
+                                : 1
+                            : lineNumber % 2 == 0 && sourceNumber != forwardSource
+                                ? -1
+                                : 1,
                 { x: targetX, y: targetY, radius: targetSize, shape } = target_attribute,
                 { x: sourceX, y: sourceY, radius: sourceSize } = souce_attribute,
-                line
+                line;
             if (!(target_attribute.isVisible && souce_attribute.isVisible)) {
                 val.changeAttribute({ isVisible: false })
                 continue
             } else {
                 let xyOffect = coordTransformation(that.id, sourceX, sourceY)
-                ;(sourceX = xyOffect[0]), (sourceY = xyOffect[1])
+                    ; (sourceX = xyOffect[0]), (sourceY = xyOffect[1])
                 let xyOffect2 = coordTransformation(that.id, targetX, targetY)
-                ;(targetX = xyOffect2[0]), (targetY = xyOffect2[1])
+                    ; (targetX = xyOffect2[0]), (targetY = xyOffect2[1])
                 if (type == 'basic') {
                     if (source != target) {
                         size > 1 && size % 2 == 0 && lineNumber++
@@ -340,9 +379,9 @@ const excessGetEdge = (id: string, needFresh: any) => {
  * @returns
  */
 export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?: any) => {
-    if(!typeHash || !baseTypeHash){
+    if (!typeHash || !baseTypeHash) {
         excessGetEdgeType(that)
-    } 
+    }
     let count = 0,
         lineDrawCount: any[] = [],
         num = 0,
@@ -441,7 +480,7 @@ export const graphGetOriginData = (that: any) => {
                 }
             })
         }
-    } catch {}
+    } catch { }
 
     edgeList.forEach((item, key) => {
         let source = item.value.source,

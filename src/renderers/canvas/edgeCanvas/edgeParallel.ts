@@ -70,7 +70,7 @@ export default function canvasEdgeParallel(
         (sourceY = calcSourceY),
         (targetX = calcTargetX),
         (targetY = calcTargetY)
-    lineWidth /= 25
+    lineWidth /= 30
     color = isSelect ? selectedColor : color
     // 缩放目标点和起始点的大小
     sourceSize *= scale
@@ -224,9 +224,11 @@ export default function canvasEdgeParallel(
         x: text?.position === 'center' ? bezierMid.x + xp : bezierMid.x + xp2 * Direction,
         y: text?.position === 'center' ? bezierMid.y + yp : bezierMid.y + yp2 * Direction,
         ANGLE: Math.ceil(Math.atan2(targetY - sourceY, targetX - sourceX) * 1e5) / 1e5,
+        type: "parallel",
+        position
     }
-
-    let point = getPoint(bezier, width + 2)
+    width += 5
+    let point = getPoint(bezier, width)
 
     if (originalNode.y == sourceY && originalNode.y == targetY) {
         sourceY += width / 2
