@@ -1,7 +1,7 @@
 import { vec3 } from 'gl-matrix'
-import { basicData, globalInfo, globalProp, instancesGL } from '../initial/globalProp'
+import { basicData, globalInfo, globalProp, instancesGL, thumbnailInfo } from '../initial/globalProp'
 import { originInitial } from '../initial/originInitial'
-import { loopLineType } from '../types'
+import { IBound, loopLineType } from '../types'
 import { getTextPixels } from './piexelsCreat'
 import { sdfCreate } from './tinySdf/sdfDrawText'
 
@@ -15,7 +15,7 @@ const RGBA_TEST_REGEX2 = /^\s*rgba?\s*\(/
 const RGBA_EXTRACT_REGEX2 =
     /^\s*rgba?\s*\(\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([0-9]*)(?:\s*,\s*(.*)?)?\)\s*$/
 
-export const floatColor = function (val: string): any {
+export const floatColor = function (val: string) {
     // 缓存不必重复计算
     if (typeof FLOAT_COLOR_CACHE[val] !== 'undefined') {
         return FLOAT_COLOR_CACHE[val]
@@ -37,7 +37,7 @@ export const floatColor = function (val: string): any {
         }
         a = 0
     } else if (RGBA_TEST_REGEX2.test(val)) {
-        let match: any = val.match(RGBA_EXTRACT_REGEX2)
+        let match = val.match(RGBA_EXTRACT_REGEX2)
 
         if (match) {
             r = +match[1]
@@ -128,6 +128,7 @@ export const initIconOrImage = async (that: any, data: any) => {
     globalProp.useIniticon++
     const atlas = globalProp.atlas,
         textureCtx = globalProp.textureCtx as CanvasRenderingContext2D
+    const thumbnailGL = thumbnailInfo[that.id]
     // icon类型
     if (data.type == 'icon') {
         // 等待字体加载
@@ -144,10 +145,10 @@ export const initIconOrImage = async (that: any, data: any) => {
         const url = data.key,
             count = data.num,
             imageCanvas = document.createElement('canvas'),
-            imageCanvasContext = imageCanvas.getContext('2d') as CanvasRenderingContext2D
+            imageCanvasContext = imageCanvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D
         imageCanvas.height = 128
         imageCanvas.width = 128
-        imageCanvasContext.fillStyle = 'rgba(255,255,255,0)'
+        imageCanvasContext.fillStyle = data.color || 'rgba(255,255,255,0)'
         imageCanvasContext.fillRect(0, 0, 128, 128)
         // 图片信息
         var textureInfo = {
@@ -166,20 +167,28 @@ export const initIconOrImage = async (that: any, data: any) => {
                 textureCtx?.putImageData(textureInfo.pixels, textureInfo.x, textureInfo.y)
                 if (Object.keys(instancesGL).length > 0) {
                     for (let i in instancesGL) {
-                        let gl = instancesGL[i]
+                        let gl = instancesGL[i].gl
+                        initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
+                    }
+                    if (thumbnailGL && thumbnailGL.thumbnail) {
+                        let gl = thumbnailGL.gl
                         initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
                     }
                 }
                 that.render()
             } catch (err) {
-                console.log(err, 'err')
+                console.warn(err, 'err')
             }
         })
         img.src = url
     }
     if (Object.keys(instancesGL).length > 0) {
         for (let i in instancesGL) {
-            let gl = instancesGL[i]
+            let gl = instancesGL[i].gl
+            initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
+        }
+        if (thumbnailGL && thumbnailGL.thumbnail) {
+            let gl = thumbnailGL.gl
             initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
         }
     }
@@ -215,7 +224,7 @@ export const getY = function (e: MouseEvent | WheelEvent): number {
 export const vectorAngle = (x: number[], y: number[], z: number[]) => {
     let mX = Math.sqrt(x.reduce((acc: number, n: number) => acc + Math.pow(n, 2), 0));
     let mY = Math.sqrt(y.reduce((acc: number, n: number) => acc + Math.pow(n, 2), 0));
-    let ans = Math.acos(x.reduce((acc: number, n: number, i: any) => acc + n * y[i], 0) / (mX * mY));
+    let ans = Math.acos(x.reduce((acc: number, n: number, i: number) => acc + n * y[i], 0) / (mX * mY));
     // 叉乘计算方向
     let direction = ((x[0] - z[0]) * (y[1] - z[1])) - ((x[1] - z[1]) * (y[0] - z[0])) < 0 ? 1 : -1
     return isNaN(ans) ? 0 : ans * direction
@@ -533,37 +542,6 @@ export const crossProduct = (x1: number, y1: number, x2: number, y2: number) => 
 }
 
 /**
- * 快排
- * @param ary
- * @param left
- * @param right
- * @returns
- */
-export const quickSort: any = function (arr: any) {
-    if (arr.length <= 1) {
-        return arr
-    }
-
-    var pivotIndex = Math.floor(arr.length / 2)
-
-    var pivot = arr.splice(pivotIndex, 1)[0]
-
-    var left = []
-
-    var right = []
-
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i] < pivot) {
-            left.push(arr[i])
-        } else {
-            right.push(arr[i])
-        }
-    }
-
-    return quickSort(left).concat([pivot], quickSort(right))
-}
-
-/**
  * 动画回调处理
  */
 export const requestFrame =
@@ -652,17 +630,20 @@ export const translateColor = function (val: string): any {
  * 更新sdf文字集数据
  * @param attributeText
  */
-export const updateSDFTextData = (attributeText: any) => {
+export const updateSDFTextData = (attributeText: any, id: string) => {
     try {
         let flag = false
         let str = (attributeText.content + '').split('') || [],
             style = attributeText.style || 'normal'
         str.forEach((x: string) => {
-            let value = `${x}-${style}`
+            let value = `${x}-${style}-${id}`
             if (!globalProp.textSet.has(value)) {
                 globalProp.textSet.add(value)
                 flag = true
             }
+            // if(Object.keys(instancesGL).length > 1){
+            //     flag = true
+            // }
         })
         return flag
     } catch (err) {
@@ -720,7 +701,7 @@ export function computeArea(
  * @param bodyB
  * @returns
  */
-export const intersects = function (bodyA: any, bodyB: any) {
+export const intersects = function (bodyA: IBound, bodyB: IBound) {
     return !(
         bodyA.x + bodyA.width < bodyB.x ||
         bodyB.x + bodyB.width < bodyA.x ||
@@ -750,11 +731,11 @@ export const isDom = (obj: any) => {
  */
 export const isIE = () => {
     // @ts-ignore
-    if(!!window.ActiveXObject || "ActiveXObject" in window){
-      return true;
-    }else{
-      return false;
-　　 }
+    if (!!window.ActiveXObject || "ActiveXObject" in window) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /**
@@ -797,14 +778,14 @@ export const isWebGLSupported = function () {
  * @param opacity
  * @returns
  */
-export const mixColor = (graphId: string, color: any, opacity: number) => {
+export const mixColor = (graphId: string, color: string, opacity: number) => {
     if (opacity === 1) return color
     if (!color) return `rgba(0,0,0,0)`
     // opacity *= opacity
-    color = translateColor(color)
+    let transColor = translateColor(color)
 
     let { r: r1, g: g1, b: b1, a: a1 } = translateColor(globalInfo[graphId].backgroundColor.color),
-        { r: r2, g: g2, b: b2, a: a2 } = color
+        { r: r2, g: g2, b: b2, a: a2 } = transColor
 
     let a = a1 * (1 - opacity) + a2 * opacity,
         r = Math.round((r1 * (1 - opacity) + r2 * opacity) * 255),
@@ -826,7 +807,7 @@ export const transformCanvasCoord = (
     graphId: string,
     x: number,
     y: number,
-    position: any[],
+    position: number[],
     scale: number,
     thumbnail: boolean = false,
 ) => {
@@ -864,7 +845,7 @@ export const roundedNum = (somenum: number) => {
  */
 export const switchSelfLinePostion = (
     renderType: string,
-    location: any,
+    location: string | undefined,
     sourceX: number,
     sourceY: number,
     radius: number,
@@ -882,7 +863,7 @@ export const switchSelfLinePostion = (
         if (location == 'lowerRight') location = 'upperRight'
         else if (location == 'upperRight') location = 'lowerRight'
     }
-    switch (Number(loopLineType[location])) {
+    switch (Number(loopLineType[location as any])) {
         case 1:
             pot1 = [
                 radius * Math.cos((Math.PI / 180) * 90) + sourceX,
@@ -983,8 +964,8 @@ export const getContainerHeight = (container: any) => {
  */
 export const initGlTextureBind = (
     gl: WebGLRenderingContext,
-    activeTexture: any,
-    tex: any,
+    activeTexture: number,
+    tex: WebGLTexture | null,
     ctx: CanvasRenderingContext2D | HTMLCanvasElement,
     filpY: boolean = true,
 ) => {
@@ -1100,11 +1081,11 @@ export const isInSceen = (
     }
 }
 
-export function wheelFunction(this: any, event: any) {
+export function wheelFunction(this: any, event: MouseEvent) {
     this.camera.processMouseScroll(event)
 }
 
-export function mousedownFunction(this: any, event: any) {
+export function mousedownFunction(this: any, event: MouseEvent) {
     this.mouseCaptor.MouseDownListener(event)
     this.camera.processMouseDown(event)
 }

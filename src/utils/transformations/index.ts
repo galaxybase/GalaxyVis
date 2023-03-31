@@ -1,4 +1,4 @@
-import { cloneDeep, defaultsDeep, find, indexOf, isString, merge } from 'lodash'
+import { cloneDeep, defaultsDeep, find, isString, merge } from 'lodash'
 import { genID, hashNumber } from '..'
 import { originInfo, originInitial } from '../../initial/originInitial'
 import { DEFAULT_SETTINGS } from '../../initial/settings'
@@ -20,11 +20,11 @@ import Edge from '../../classes/edge'
  * @returns
  */
 export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isRender: boolean) => {
-    let nodeList = basicData[galaxyvis.id].nodeList,
-        edgeList = basicData[galaxyvis.id].edgeList,
+    let GraphId = galaxyvis.id
+    let { nodeList, edgeList, selectedTable, selectedNodes, selectedEdgeTable, selectedEdges } = basicData[GraphId],
         relationTable = galaxyvis.getEdgeType().relationTable, //获取关联表
         changedTable: string[] = [] //更改的数据id表
-    nodeList.forEach((item: any, key: any) => {
+    nodeList.forEach((item: any, key: string) => {
         // 匹配规则
         if (!criteria(item) && item.getAttribute('isVisible')) {
             // 获取当前边的关联关系
@@ -35,11 +35,11 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
                         // 获取起始点和终止点
                         let { source, target } = edgeList.get(item).getAttribute()
                         nodeList.get(source).setSelected(false, false, true)
-                        basicData[galaxyvis.id].selectedTable.delete(source)
-                        basicData[galaxyvis.id].selectedNodes.delete(source)
+                        selectedTable.delete(source)
+                        selectedNodes.delete(source)
                         nodeList.get(target).setSelected(false, false, true)
-                        basicData[galaxyvis.id].selectedTable.delete(target)
-                        basicData[galaxyvis.id].selectedNodes.delete(target)
+                        selectedTable.delete(target)
+                        selectedNodes.delete(target)
                         // 是否是从过滤点那边影响到的隐藏边
                         edgeList.get(item).changeAttribute({
                             isVisible: false,
@@ -47,8 +47,8 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
                             isSelect: false,
                         })
                         edgeList.get(item).setSelected(false, false, true)
-                        basicData[galaxyvis.id].selectedEdgeTable.delete(item)
-                        basicData[galaxyvis.id].selectedEdges.delete(item)
+                        selectedEdgeTable.delete(item)
+                        selectedEdges.delete(item)
                     }
                 })
             }
@@ -74,21 +74,21 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
  * @returns
  */
 export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isRender = true) => {
-    let edgeList = basicData[galaxyvis.id].edgeList,
-        nodeList = basicData[galaxyvis.id].nodeList,
+    let GraphId = galaxyvis.id;
+    let { nodeList, edgeList, selectedTable, selectedNodes, selectedEdgeTable, selectedEdges } = basicData[GraphId],
         changedTable: string[] = [] //更改的数据id表
 
-    edgeList.forEach((item: any, key: any) => {
+    edgeList.forEach((item: any, key: string) => {
         if (!criteria(item)) {
             if ((!item.getAttribute('isFilter') &&
                 !item.getAttribute('usedMerge'))) {
                 let { source, target } = item.getAttribute()
                 nodeList.get(source).setSelected(false, false, true)
-                basicData[galaxyvis.id].selectedTable.delete(source)
-                basicData[galaxyvis.id].selectedNodes.delete(source)
+                selectedTable.delete(source)
+                selectedNodes.delete(source)
                 nodeList.get(target).setSelected(false, false, true)
-                basicData[galaxyvis.id].selectedTable.delete(target)
-                basicData[galaxyvis.id].selectedNodes.delete(target)
+                selectedTable.delete(target)
+                selectedNodes.delete(target)
                 // 是否是从过滤点那边影响到的隐藏边
                 item.changeAttribute({
                     isVisible: false,
@@ -96,8 +96,8 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
                     isSelect: false,
                 })
                 edgeList.get(key).setSelected(false, false, true)
-                basicData[galaxyvis.id].selectedEdgeTable.delete(key)
-                basicData[galaxyvis.id].selectedEdges.delete(key)
+                selectedEdgeTable.delete(key)
+                selectedEdges.delete(key)
                 // 添加到可更改表
                 changedTable[changedTable.length] = item.getId()
             }
@@ -115,7 +115,7 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
  * @param opts
  * @returns
  */
-export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> => {
+export const transformatNodeGroup = (galaxyvis: any, opts?: any) => {
     let {
         duration = 0,
         edgeGenerator, //边样式
@@ -130,6 +130,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
         return new Promise((resolve, reject) => {
             // 创建一个唯一id
             let genid = genID(4)
+            let GraphId = galaxyvis.id;
             //先拿到所有需要分组的点
             //没有selector的话拿到全部
             let groupNodes = new Map()
@@ -160,8 +161,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                 let groupId = `gen_group_default_${genid}`
                 groupNodesbyId[groupId] = groupNodes
             }
-            let allNodelist = basicData[galaxyvis.id].nodeList,
-                allEdgelist = basicData[galaxyvis.id].edgeList,
+            let { nodeList: allNodelist, edgeList: allEdgelist } = basicData[GraphId],
                 edgeAllAttribute: PlainObject<any> = {} //边合并的属性
             if (typeof edgeGenerator == 'function') {
                 try {
@@ -225,9 +225,9 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                 creatAttribute = merge(creatAttribute, nodeAllAttribute)
                 let groupNodes: any = new Node(creatAttribute)
                 groupNodes.__proto__ = galaxyvis
-                originInfo[galaxyvis.id].nodeList.set(i, creatAttribute.attribute)
+                originInfo[GraphId].nodeList.set(i, creatAttribute.attribute)
                 // 添加rule
-                globalInfo[galaxyvis.id].ruleList.forEach((key, item) => {
+                globalInfo[GraphId].ruleList.forEach((key, item) => {
                     groupNodes.addClass(item, 2, false)
                 })
                 // 记录当前点id
@@ -235,8 +235,8 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                 allNodelist.set(i, groupNodes)
                 groupNode.set(i, groupNodes)
                 // canvas绘制顺序
-                if (!globalInfo[galaxyvis.id].nodeOrder.has(i)) {
-                    globalInfo[galaxyvis.id].nodeOrder.add(i)
+                if (!globalInfo[GraphId].nodeOrder.has(i)) {
+                    globalInfo[GraphId].nodeOrder.add(i)
                 }
             }
             //动画效果的添加
@@ -371,7 +371,7 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                         num: originInitial.graphIndex++,
                                                     }
 
-                                                    originInfo[galaxyvis.id].edgeList.set(
+                                                    originInfo[GraphId].edgeList.set(
                                                         id,
                                                         cloneEdgeAttr,
                                                     )
@@ -382,15 +382,15 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                         groupEdge.value.data = datas
                                                     }
 
-                                                    globalInfo[galaxyvis.id].ruleList.forEach(
+                                                    globalInfo[GraphId].ruleList.forEach(
                                                         (key, item) => {
                                                             groupEdge.addClass(item, 2, false)
                                                         },
                                                     )
                                                     allEdgelist.set(id, groupEdge)
                                                     // canvas绘制顺序
-                                                    if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
-                                                        globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                    if (!globalInfo[GraphId].edgeOrder.has(id)) {
+                                                        globalInfo[GraphId].edgeOrder.add(id)
                                                     }
                                                     add && edgeChildren.push(id) && (edgeChildren = [...new Set(edgeChildren)])
                                                 }
@@ -471,26 +471,26 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                     children: edgeChildren, //子集
                                                     num: originInitial.graphIndex++,
                                                 }
-                                                originInfo[galaxyvis.id].edgeList.set(
+                                                originInfo[GraphId].edgeList.set(
                                                     id,
                                                     creatAttribute.attribute,
                                                 )
                                                 let groupEdge: any = new Edge(creatAttribute)
                                                 groupEdge.__proto__ = galaxyvis
-                                                globalInfo[galaxyvis.id].ruleList.forEach(
+                                                globalInfo[GraphId].ruleList.forEach(
                                                     (key, item) => {
                                                         groupEdge.addClass(item, 2, false)
                                                     },
                                                 )
                                                 allEdgelist.set(id, groupEdge)
                                                 // canvas绘制顺序
-                                                if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
-                                                    globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                if (!globalInfo[GraphId].edgeOrder.has(id)) {
+                                                    globalInfo[GraphId].edgeOrder.add(id)
                                                 }
 
                                                 try {
-                                                    if (globalInfo[galaxyvis.id].mergeEdgesTransformat) {
-                                                        let { transformat, options } = globalInfo[galaxyvis.id].mergeEdgesTransformat
+                                                    if (globalInfo[GraphId].mergeEdgesTransformat) {
+                                                        let { transformat, options } = globalInfo[GraphId].mergeEdgesTransformat
                                                         transformat.destroy(true, 0, false).then(async () => {
                                                             await galaxyvis.transformations.addEdgeGrouping(options, false)
                                                         })
@@ -553,21 +553,21 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                 }
                                                 creatAttribute = merge(creatAttribute, edgeAllAttribute)
                                                 // 添加到初始属性之中
-                                                originInfo[galaxyvis.id].edgeList.set(
+                                                originInfo[GraphId].edgeList.set(
                                                     id,
                                                     creatAttribute.attribute,
                                                 )
                                                 let groupEdge: any = new Edge(creatAttribute)
                                                 groupEdge.__proto__ = galaxyvis
-                                                globalInfo[galaxyvis.id].ruleList.forEach(
+                                                globalInfo[GraphId].ruleList.forEach(
                                                     (key, item) => {
                                                         groupEdge.addClass(item, 2, false)
                                                     },
                                                 )
                                                 allEdgelist.set(id, groupEdge)
                                                 // canvas绘制顺序
-                                                if (!globalInfo[galaxyvis.id].edgeOrder.has(id)) {
-                                                    globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                if (!globalInfo[GraphId].edgeOrder.has(id)) {
+                                                    globalInfo[GraphId].edgeOrder.add(id)
                                                 }
 
                                                 if (allNodelist.get(node).value?.children?.length) {
@@ -602,13 +602,13 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                             edgeAllAttribute,
                                                         )
                                                         // 添加到初始属性之中
-                                                        originInfo[galaxyvis.id].edgeList.set(
+                                                        originInfo[GraphId].edgeList.set(
                                                             id,
                                                             creatAttribute.attribute,
                                                         )
                                                         let groupEdge: any = new Edge(creatAttribute)
                                                         groupEdge.__proto__ = galaxyvis
-                                                        globalInfo[galaxyvis.id].ruleList.forEach(
+                                                        globalInfo[GraphId].ruleList.forEach(
                                                             (key, item) => {
                                                                 groupEdge.addClass(item, 2, false)
                                                             },
@@ -616,9 +616,9 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                                                         allEdgelist.set(id, groupEdge)
                                                         // canvas绘制顺序
                                                         if (
-                                                            !globalInfo[galaxyvis.id].edgeOrder.has(id)
+                                                            !globalInfo[GraphId].edgeOrder.has(id)
                                                         ) {
-                                                            globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                                            globalInfo[GraphId].edgeOrder.add(id)
                                                         }
                                                     }
                                                 }
@@ -632,10 +632,10 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
                         item.changeAttribute({ isVisible: true })
                     })
 
-                    basicData[galaxyvis.id].selectedTable = new Set()
-                    basicData[galaxyvis.id].selectedEdgeTable = new Set()
-                    basicData[galaxyvis.id].selectedNodes = new Set()
-                    basicData[galaxyvis.id].selectedEdges = new Set()
+                    basicData[GraphId].selectedTable = new Set()
+                    basicData[GraphId].selectedEdgeTable = new Set()
+                    basicData[GraphId].selectedNodes = new Set()
+                    basicData[GraphId].selectedEdges = new Set()
                     let nodeList: string[] = []
                     groupNodes.forEach((item: any, key: string) => {
                         nodeList.push(item)
@@ -657,14 +657,14 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any): Promise<any> =
  * @param opts
  * @returns
  */
-export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true, isMerge = false): Promise<any> => {
+export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true, isMerge = false) => {
     let { generator, selector } = opts
     try {
         return new Promise((resolve, reject) => {
             // 获取两边之间的类型
             const { typeHash, baseTypeHash } = galaxyvis.getEdgeType()
-            let edgeList = basicData[galaxyvis.id].edgeList,
-                nodeList = basicData[galaxyvis.id].nodeList,
+            let GraphId = galaxyvis.id;
+            let { edgeList, nodeList, selectedTable, selectedNodes, selectedEdgeTable, selectedEdges } = basicData[GraphId],
                 changedTable: any[] = []
             for (let w = 0; w < 2; w++) {
                 // 获取当前的Hash表
@@ -701,16 +701,16 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                                     targetNode.getAttribute('isSelect')
                                 ) {
                                     sourceNode.setSelected(false, false, true)
-                                    basicData[galaxyvis.id].selectedTable.delete(source)
-                                    basicData[galaxyvis.id].selectedNodes.delete(source)
+                                    selectedTable.delete(source)
+                                    selectedNodes.delete(source)
                                     targetNode.setSelected(false, false, true)
-                                    basicData[galaxyvis.id].selectedTable.delete(target)
-                                    basicData[galaxyvis.id].selectedNodes.delete(target)
+                                    selectedTable.delete(target)
+                                    selectedNodes.delete(target)
                                 }
 
                                 this_edge.setSelected(false, false, true)
-                                basicData[galaxyvis.id].selectedEdgeTable.delete(edgeId)
-                                basicData[galaxyvis.id].selectedEdges.delete(edgeId)
+                                selectedEdgeTable.delete(edgeId)
+                                selectedEdges.delete(edgeId)
                                 // 添加到子集中
                                 children.push(newTotal[i])
                             }
@@ -753,14 +753,14 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                                 // 合并属性
                                 creatAttribute = merge(creatAttribute, edgeAllAttribute)
                                 // 初始化属性
-                                originInfo[galaxyvis.id].edgeList.set(id, creatAttribute.attribute)
+                                originInfo[GraphId].edgeList.set(id, creatAttribute.attribute)
                                 let groupEdge: any = new Edge(creatAttribute)
                                 groupEdge.__proto__ = galaxyvis
-                                globalInfo[galaxyvis.id].ruleList.forEach((key, item) => {
+                                globalInfo[GraphId].ruleList.forEach((key, item) => {
                                     groupEdge.addClass(item, 2, false)
                                 })
                                 edgeList.set(id, groupEdge)
-                                globalInfo[galaxyvis.id].edgeOrder.add(id)
+                                globalInfo[GraphId].edgeOrder.add(id)
                                 changedTable[changedTable.length] = id
                             } else if (children.length == 1) {
                                 let id = children[0];

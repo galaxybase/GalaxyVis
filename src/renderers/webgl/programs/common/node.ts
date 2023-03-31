@@ -21,6 +21,7 @@ export abstract class AbstractNodeProgram extends AbstractProgram implements INo
     public background: WebGLUniformLocation //背景颜色
     public ColorLocation: number
     public atlas: WebGLUniformLocation
+    public uThum: WebGLUniformLocation
 
     constructor(
         gl: WebGLRenderingContext,
@@ -47,23 +48,27 @@ export abstract class AbstractNodeProgram extends AbstractProgram implements INo
 
         //Uniform
         const background = gl.getUniformLocation(this.program, 'background')
-        if (background == null) console.log('Node:  获取不到background')
+        if (background == null) console.warn('Node:  获取不到background')
         this.background = background as WebGLUniformLocation
 
         // 获取纹理集的下标
         const spriteAtlas = gl.getUniformLocation(this.program, 'spriteAtlas')
-        if (spriteAtlas == null) console.log('Node:  获取不到spriteAtlas')
+        if (spriteAtlas == null) console.warn('Node:  获取不到spriteAtlas')
         this.spriteAtlas = spriteAtlas as WebGLUniformLocation
 
         const atlas = gl.getUniformLocation(this.program, 'atlas')
-        if (atlas == null) console.log('Node:  获取不到atlas')
+        if (atlas == null) console.warn('Node:  获取不到atlas')
         this.atlas = atlas as WebGLUniformLocation
+
+        const uThum = gl.getUniformLocation(this.program, 'u_thum')
+        if (uThum == null) console.warn('Node:  获取不到uThum')
+        this.uThum = uThum as WebGLUniformLocation
     }
 
     bind(param: any): void {
         const gl = this.gl
         const ext = this.ext
-        if (globalProp.useIniticon === 0 || this.graph.thumbnail) {
+        if (globalProp.useIniticon === 0 || (this.graph.thumbnail && !globalProp.useIniticon)) {
             let tex = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
             tex.canvas.width = 128.0
             tex.canvas.height = 128.0
@@ -78,6 +83,9 @@ export abstract class AbstractNodeProgram extends AbstractProgram implements INo
         // 背景颜色
         gl.uniform1f(this.background, globalInfo[this.graph.id].backgroundColor.floatColor)
         gl.uniform1f(this.atlas, 1 / globalProp.atlas)
+
+        let u_thum = Number(this.graph.thumbnail)
+        gl.uniform1f(this.uThum, u_thum)
 
         // 向缓冲区绑定坐标
         initAttributeVariable(

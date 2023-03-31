@@ -39,7 +39,7 @@ import {
     graphGetOriginData,
     getNodeTable,
 } from '../utils/graph/excess'
-import { edgeAttributes, NodeAttributes } from '../types'
+import { edgeAttributes, NodeAttributes, PlainObject } from '../types'
 
 export default class Graph {
     [x: string]: any
@@ -99,7 +99,7 @@ export default class Graph {
      * @param RawGraph
      * @returns
      */
-    addGraph(RawGraph: { [key: string]: any[] }) {
+    addGraph(RawGraph: PlainObject<any[]>) {
         return graphAddGraph(this, RawGraph)
     }
 
@@ -108,7 +108,7 @@ export default class Graph {
      * @param ids
      * @returns
      */
-    getNodes = (ids?: any, getHidden: boolean = false): any => {
+    getNodes = (ids?: any, getHidden: boolean = false) => {
         if (ids && typeof ids === 'boolean') {
             getHidden = ids
             ids = null
@@ -138,7 +138,7 @@ export default class Graph {
      * @param getMerge
      * @returns
      */
-    getEdges = (ids?: any, getHidden: boolean = false, getMerge?: boolean): Map<string, any> => {
+    getEdges = (ids?: any, getHidden: boolean = false, getMerge?: boolean) => {
         if (ids && typeof ids === 'boolean') {
             getHidden = ids
             ids = null

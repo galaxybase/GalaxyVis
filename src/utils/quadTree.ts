@@ -1,6 +1,13 @@
+interface IBounds {
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}
+
 // 四叉树节点
 class Node {
-    public _bounds: any //一个节点的大小
+    public _bounds: IBounds //一个节点的大小
     public children: any[] //子节点
     public nodes: any[] //当前节点下点个数
     public _classConstructor: any
@@ -11,7 +18,7 @@ class Node {
     TOP_RIGHT = 1
     BOTTOM_LEFT = 2
     BOTTOM_RIGHT = 3
-    constructor(bounds: any, depth: number, maxDepth: any, maxChildren: any) {
+    constructor(bounds: IBounds, depth: number, maxDepth: number, maxChildren: number) {
         this._bounds = bounds
         this.children = []
         this.nodes = []
@@ -30,7 +37,7 @@ class Node {
         this._classConstructor = this
     }
     // 插入子节点
-    public insert(item: any) {
+    public insert(item: IBounds) {
         if (this.nodes.length) {
             // 决定当前节点的象限
             var index = this._findIndex(item)
@@ -56,7 +63,7 @@ class Node {
         }
     }
 
-    public retrieve(item: any) {
+    public retrieve(item: IBounds) {
         if (this.nodes.length) {
             var index = this._findIndex(item)
 
@@ -175,11 +182,11 @@ class Node {
 class BoundsNode extends Node {
     _stuckChildren: any[] = []
     _out: any[] = []
-    constructor(bounds: any, depth: number, maxChildren: any, maxDepth: any) {
+    constructor(bounds: IBounds, depth: number, maxChildren: number, maxDepth: number) {
         super(bounds, depth, maxChildren, maxDepth)
         this._classConstructor = BoundsNode
     }
-    public insert(item: any) {
+    public insert(item: IBounds) {
         if (this.nodes.length) {
             var index = this._findIndex(item)
             var node = this.nodes[index]
@@ -218,7 +225,7 @@ class BoundsNode extends Node {
         return this.children.concat(this._stuckChildren)
     }
 
-    public retrieve(item: any) {
+    public retrieve(item: IBounds) {
         var out = this._out
         out.length = 0
         if (this.nodes.length) {
@@ -303,7 +310,7 @@ export class QuadTree {
      * @param {Number} maxDepth 
      * @param {Number} maxChildren 
      **/
-    constructor(bounds: any, pointQuad: any, maxDepth: any, maxChildren: any) {
+    constructor(bounds: IBounds, pointQuad: boolean, maxDepth: number, maxChildren: number) {
         var node
         if (pointQuad) {
             node = new Node(bounds, 0, maxDepth, maxChildren)
@@ -339,7 +346,7 @@ export class QuadTree {
      * @method retrieve
      * @param {Object} item 
      **/
-    retrieve(item: any) {
+    retrieve(item: IBounds) {
         var out = this.root.retrieve(item).slice(0)
         return out
     }

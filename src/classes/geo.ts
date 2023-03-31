@@ -1,12 +1,12 @@
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
 import { originInfo } from '../initial/originInitial'
-import { GeoModeOptions, MouseType } from '../types'
+import { GeoModeOptions, MouseType, PlainObject } from '../types'
 import { animateNodes } from '../utils/graphAnimate'
-import { cloneDeep, update } from 'lodash'
+import { cloneDeep } from 'lodash'
 
 const L = window.L //解决未引入leaflet导致编译失败
 const standards = 1.5
-let geoClass: { [key: string]: any } = {}
+let geoClass: PlainObject<any> = {}
 L && (L.CanvasLayer = L.Layer.extend({
     options: {
         pane: 'overlayPane',
@@ -134,15 +134,15 @@ export default class geo<T, K> {
     private galaxyvis: any
     private pulsePass: any
     private graphContainer: HTMLDivElement | null = null;
-    map: any
-    layer: any
-    mapContainer: any
-    loadingGeoMode: boolean = true
-    geoVisibleFilter: any
-    options: any
-    moving: boolean = false
-    minZoomLevel: number
-    maxZoomLevel: number
+    public map: any
+    public layer: any
+    public mapContainer: HTMLElement | undefined
+    public loadingGeoMode: boolean = true
+    public geoVisibleFilter: any
+    public options: GeoModeOptions | undefined
+    public moving: boolean = false
+    public minZoomLevel: number
+    public maxZoomLevel: number
     constructor(galaxyvis: any) {
         this.galaxyvis = galaxyvis
         this.minZoomLevel = 0
@@ -159,18 +159,18 @@ export default class geo<T, K> {
             let divContainer
             let o = options
             let originNodes = originInfo[id].nodeList
-            let minZoomLevel: any = this.minZoomLevel = o?.minZoomLevel || 1,
-                maxZoomLevel: any = this.maxZoomLevel = o?.maxZoomLevel || 20,
-                sizeRatio: any = o?.sizeRatio || 1.0,
-                attribution: any = o?.attribution,
-                tiles: any = o?.tiles || DEFAULT_TITLE,
+            let minZoomLevel = this.minZoomLevel = o?.minZoomLevel || 1,
+                maxZoomLevel = this.maxZoomLevel = o?.maxZoomLevel || 20,
+                sizeRatio = o?.sizeRatio || 1.0,
+                attribution = o?.attribution,
+                tiles = o?.tiles || DEFAULT_TITLE,
                 latitudePath: any = o?.latitudePath || 'lat',
                 longitudePath: any = o?.longitudePath || 'lng',
-                duration: any = o?.duration || 0,
-                disableNodeDragging: any =
+                duration = o?.duration || 0,
+                disableNodeDragging =
                     Number(o?.disableNodeDragging) == 0 ? o?.disableNodeDragging : true,
-                crs: any = o?.crs || L?.CRS.EPSG3857,
-                allowdDclick: any = o?.allowdDclick || false;
+                crs = o?.crs || L?.CRS.EPSG3857,
+                allowdDclick = o?.allowdDclick || false;
             this.options = options
             tiles = Object.assign(DEFAULT_TITLE, tiles)
 
@@ -186,11 +186,14 @@ export default class geo<T, K> {
             this.galaxyvis.camera.updateTransform()
 
             // 创建geo的容器和图层
-            if (!document.getElementById('galaxyvis-geo-map')) {
+            if (!document.getElementById(`galaxyvis-geo-map-${id}`)) {
                 divContainer =
                     this.galaxyvis.ctx?.canvas.parentNode || this.galaxyvis.gl?.canvas.parentNode
-                this.mapContainer = this.initDOM(divContainer, 'div', 'galaxyvis-geo-map')
+                this.mapContainer = this.initDOM(divContainer, 'div', `galaxyvis-geo-map-${id}`)
+            } else {
+                return reject("The map has already been used")
             }
+            
             this.map = new L.Map(this.mapContainer, {
                 attributionControl: attribution ? true : false, //右下角的copyright
                 zoomControl: false, //左上角缩放
@@ -496,8 +499,8 @@ export default class geo<T, K> {
                 this.map.remove()
                 this.map._animatingZoom = !1
                 this.map = null
-                var t = this.mapContainer.parentNode
-                t && t.removeChild(this.mapContainer)
+                var t = this.mapContainer!.parentNode
+                t && t.removeChild(this.mapContainer as HTMLElement)
                 // 添加回graph对象
                 var divContainer = this.galaxyvis.getDivContainer()
                 var canvas = this.galaxyvis.ctx?.canvas || this.galaxyvis.gl?.canvas
@@ -512,7 +515,7 @@ export default class geo<T, K> {
                 // graph类的鼠标事件回滚
                 canvas.addEventListener('wheel', this.galaxyvis.WheelFunction)
                 canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
-                !this.options.allowdDclick && canvas.addEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
+                !this.options?.allowdDclick && canvas.addEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
                 let nodes = basicData[id].nodeList
                 let originNodes = originInfo[id].nodeList
                 // 撤回计算的坐标
@@ -648,7 +651,7 @@ export default class geo<T, K> {
         if (!ids || ids?.length == 0) {
             ids = [];
             let nodeList = this.galaxyvis.getFilterNode()
-            nodeList.forEach((_: any, key: any) => {
+            nodeList.forEach((_: any, key: string) => {
                 (ids as Array<any>).push(key)
             })
         }
@@ -678,11 +681,17 @@ export default class geo<T, K> {
                 minLat = Math.min(minLat, lat)
             }
         }
-        let corner1 = L.latLng(minLat, minLng),
-            corner2 = L.latLng(maxLat, maxLng),
-            bounds = L.latLngBounds(corner1, corner2)
-        this.map.fitBounds(bounds)
-
+        if (
+            maxLng != -Infinity && 
+            maxLat != -Infinity && 
+            minLng != Infinity && 
+            minLat != Infinity
+        ) {
+            let corner1 = L.latLng(minLat, minLng),
+                corner2 = L.latLng(maxLat, maxLng),
+                bounds = L.latLngBounds(corner1, corner2)
+            this.map.fitBounds(bounds)
+        }
     }
     /**
      * 初始化一个dom

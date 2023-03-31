@@ -68,6 +68,7 @@ export default function drawBadges(
                 )
             }
             drawImage(
+                graphId,
                 {
                     image: {
                         url: image,

@@ -154,7 +154,7 @@ export default class haloCanvas {
                     continue
                 }
             }
-        } catch {}
+        } catch { }
     }
 
     clear = () => {

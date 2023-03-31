@@ -13,7 +13,7 @@ varying vec4 u_uv_texcoord;
 
 uniform float background;
 uniform sampler2D spriteAtlas;
-
+uniform float u_thum;
 
 void contentMain(in float u_iconType,in vec4 color,in vec4 vColors){
     gl_FragColor = vColors; 
@@ -96,14 +96,22 @@ void main(void){
         iG == 4 ?
             length(u_texcoord-vec2(.5,1.)):
             1.;
+    
+    
+    
     // 计算中心点距离
     float distance=distance(u_texcoord,vec2(.5));
+     float a_strokeWidth = u_strokeWidth;
+
+    if(int(floor(u_thum + 0.5)) == 1){
+        a_strokeWidth = 0.0;
+    }
     // 通过aa实现抗锯齿的效果
     // fwidth函数返回的是X和Y方向偏导数的绝对值的和
-    float delta=fwidth(u_strokeWidth);
+    float delta=fwidth(a_strokeWidth);
     float fwdis=fwidth(distance);
     // 外环标准值
-    float benchmark = 0.5 - u_strokeWidth;
+    float benchmark = 0.5 - a_strokeWidth;
     vec4 color=texture2D(spriteAtlas,u_uv);
     vec4 vColors = mix(vec4(1.0),u_color,uGradient);
     vec4 InteriorColor;
@@ -135,34 +143,38 @@ void main(void){
 
         col = mix( vec4(backgroundColor,1.0),col, opacity);
 
-        if(0.0 != u_strokeWidth){
-            col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
-            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
-        }else{
+        if(0.0 != a_strokeWidth){
+            col = mix( col, outLine, 1.0-smoothstep(0.03 + a_strokeWidth, a_strokeWidth + 0.03 + fwdis,abs(d)) );
+            col = mix( col, stroke, 1.0-smoothstep(a_strokeWidth,fwdis + a_strokeWidth,abs(d)) );
+        }else if(int(floor(u_thum + 0.5)) == 0 && a_strokeWidth == 0.0){
             col = mix( col, vec4(vec3(col), 0.0), 1.0-smoothstep(0.0,fwdis,abs(d)) );
         }
 
 
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(.0),1.0); 
-        if(0.0 != u_strokeWidth)
+        if(0.0 != a_strokeWidth)
             col = mix( col, stroke, 1.0-smoothstep(0.0,fwdis,abs(d)) );
+
+        if(int(floor(u_thum + 0.5)) == 1){
+            col = mix( col, vec4(backgroundColor,1.0), 1.0-smoothstep(0.0,0.03,abs(d)) );
+        }
 
         gl_FragColor = col;
     }else if(shape==2){
         vec4 col = InteriorColor;
         float d = sdBox(vec2(.5)-u_texcoord,vec2(0.45));
         col = mix( vec4(backgroundColor,1.0),col, opacity);
-        if(0.0 != u_strokeWidth){
-            col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
-            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth,abs(d)) );
+        if(0.0 != a_strokeWidth){
+            col = mix( col, outLine, 1.0-smoothstep(0.03 + a_strokeWidth, a_strokeWidth + 0.03 + fwdis,abs(d)) );
+            col = mix( col, stroke, 1.0-smoothstep(a_strokeWidth,fwdis + a_strokeWidth,abs(d)) );
         }else{
             col = mix( col, vec4(vec3(col), 0.0), 1.0-smoothstep(0.0,fwdis,abs(d)) );
         }
 
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(.0),1.0); 
-        if(0.0 != u_strokeWidth)
+        if(0.0 != a_strokeWidth)
             col = mix( col, stroke, 1.0-smoothstep(0.0,fwdis+0.01,abs(d)) );
 
         gl_FragColor = col;
@@ -173,13 +185,13 @@ void main(void){
 
         vec4 col = InteriorColor;
         
-        col = mix( col, outLine, 1.0-smoothstep(0.06 + u_strokeWidth, u_strokeWidth + 0.06 + fwdis,abs(d)) );
+        col = mix( col, outLine, 1.0-smoothstep(0.06 + a_strokeWidth, a_strokeWidth + 0.06 + fwdis,abs(d)) );
 
         col = mix( vec4(backgroundColor,1.0),col, opacity);
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(.0),1.0);
-        if(0.0 != u_strokeWidth){
-            col = mix(col, stroke, 1.0-smoothstep(u_strokeWidth,fwdis + u_strokeWidth + 0.02, abs(d) ) );
+        if(0.0 != a_strokeWidth){
+            col = mix(col, stroke, 1.0-smoothstep(a_strokeWidth,fwdis + a_strokeWidth + 0.02, abs(d) ) );
             col = mix( col, stroke, 1.0-smoothstep(0.0,fwdis+0.02,abs(d)) );
         }
 
@@ -192,13 +204,13 @@ void main(void){
 
         vec4 col = InteriorColor; 
 
-        col = mix( col, outLine, 1.0-smoothstep(0.03 + u_strokeWidth, u_strokeWidth + 0.03 + fwdis,abs(d)) );
+        col = mix( col, outLine, 1.0-smoothstep(0.03 + a_strokeWidth, a_strokeWidth + 0.03 + fwdis,abs(d)) );
         col = mix( vec4(backgroundColor,1.0),col, opacity);
         if(sign(d)>0.0)
             col = col - sign(d)*vec4(vec3(0.0),1.0);
-        if(0.0 != u_strokeWidth){
-            col = mix( col, stroke, 1.0-smoothstep(0.0,u_strokeWidth + fwdis,abs(d)) );    
-            col = mix( col, stroke, 1.0-smoothstep(u_strokeWidth,  fwdis +u_strokeWidth,abs(d)) );
+        if(0.0 != a_strokeWidth){
+            col = mix( col, stroke, 1.0-smoothstep(0.0,a_strokeWidth + fwdis,abs(d)) );    
+            col = mix( col, stroke, 1.0-smoothstep(a_strokeWidth,  fwdis +a_strokeWidth,abs(d)) );
         }
         gl_FragColor = col;
     }

@@ -22,27 +22,29 @@ export const edgeSetSelected = (
 ) => {
     let isSelect = that.getAttribute('isSelect')
     let sucess = 0
+    let GraphId = that.id
+    let { selectedEdges, selectedEdgeTable, selectedTable } = basicData[GraphId]
     if (isSelect !== active) {
         let { id } = that.value,
             targetNode = that.getTarget(),
             sourceNode = that.getSource()
         if (active) {
-            basicData[that.id].selectedEdges.add(id)
-            basicData[that.id].selectedEdgeTable.add(id)
+            selectedEdges.add(id)
+            selectedEdgeTable.add(id)
             targetNode.setSelected(true, false, true)
             sourceNode.setSelected(true, false, true)
             sucess = 1
-            mouseAddEdgeClass(that.id, id)
+            mouseAddEdgeClass(GraphId, id)
             if (!edgeLsit) {
                 let scene = that.__proto__
                 let edgeList = new exportList(scene, [id])
                 that.events.emit('edgesSelected', edgeList)
             }
         } else {
-            if (basicData[that.id].selectedEdges.has(id)) {
-                mouseRemoveEdgeClass(that.id, id)
-                basicData[that.id].selectedEdges.delete(id)
-                basicData[that.id].selectedEdgeTable.delete(id)
+            if (selectedEdges.has(id)) {
+                mouseRemoveEdgeClass(GraphId, id)
+                selectedEdges.delete(id)
+                selectedEdgeTable.delete(id)
                 targetNode.setSelected(false, false, true)
                 sourceNode.setSelected(false, false, true)
                 sucess = 2
@@ -58,7 +60,7 @@ export const edgeSetSelected = (
         targetNode.changeAttribute({ isSelect: active })
 
         if (update) {
-            basicData[that.id].selectedTable.add(that.getId())
+            selectedTable.add(that.getId())
             that.selectMovefresh()
         }
         return sucess
@@ -85,7 +87,7 @@ export const edgeChangeAttribute = (that: any, attribute: any, useSet: boolean =
 
         return true
     } catch (error) {
-        console.log(error)
+        console.warn(error)
         return false
     }
 }
@@ -119,7 +121,7 @@ export const edgeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         }
         let thumbnail = that instanceof String || that == null ? that : that.thumbnail
         if (that.renderer === 'webgl' && !thumbnail) {
-            let flag = updateSDFTextData(attribute?.text)
+            let flag = updateSDFTextData(attribute?.text, that.id)
             if (flag) initText(that)
             drawText(
                 attribute.text.fontSize,
@@ -188,7 +190,7 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
             forwardSource =
                 lineNumber != 0
                     ? basicData[that.id].edgeList.get([...hashSet.total][lineNumber - 1]).value
-                          .source
+                        .source
                     : undefined,
             forward = (
                 size % 2 == 0
@@ -196,8 +198,8 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
                         ? 1
                         : -1
                     : lineNumber % 2 == 0 && source.getId() != forwardSource
-                    ? 1
-                    : -1
+                        ? 1
+                        : -1
             ) as any,
             { x: sourceX, y: sourceY, radius } = source.getAttribute(),
             { x: targetX, y: targetY } = target.getAttribute()
@@ -214,9 +216,9 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
     if (source.getId() != target.getId()) {
         size > 1 && size % 2 == 0 && lineNumber++
         let originalNode = {
-                x: 0,
-                y: 0,
-            },
+            x: 0,
+            y: 0,
+        },
             po = 5,
             midx = (sourceX + targetX) / 2,
             midy = (sourceY + targetY) / 2, //计算中心点
@@ -264,7 +266,7 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
             { x: pot2[0], y: pot2[1] },
             { x: sourceX, y: sourceY },
         )
-        ;(bezierX = bezierMid.x), (bezierY = bezierMid.y)
+            ; (bezierX = bezierMid.x), (bezierY = bezierMid.y)
     }
 
     // that.addNode({

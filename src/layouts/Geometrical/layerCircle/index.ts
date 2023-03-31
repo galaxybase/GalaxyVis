@@ -1,3 +1,5 @@
+import { PlainObject } from "../../hierarchy/tclass";
+
 let outCircleNodes = 11;
 let layerDistance = 30;
 let boolTransition = true;
@@ -101,7 +103,7 @@ function genericLayerCircleLayout(assign: any, nodes: any, options: any) {
         }
     }
     
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < length; i++) {
         var n = nodes[i];
         layoutNodes[n.key] = {

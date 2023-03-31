@@ -1,15 +1,15 @@
 import vertexShaderSource from '../shaders/node.fast.vert.glsl'
 import fragmentShaderSource from '../shaders/node.fast.frag.glsl'
 import { glMatrix, mat4 } from 'gl-matrix'
-import { AbstractHaloProgram } from './common/halo'
 import { coordTransformation, floatColor, isSameSet } from '../../../utils'
 import { basicData, globalProp } from '../../../initial/globalProp'
-import { NodeHaloCollection } from '../../../types'
+import { NodeFastCollection } from '../../../types'
 import { clone } from 'lodash'
+import { AbstractFastProgram } from './common/fast'
 
-let fastnodeCollection: NodeHaloCollection = {}
+let fastnodeCollection: NodeFastCollection = {}
 const ATTRIBUTES = 5;
-export default class fastnodeProgram extends AbstractHaloProgram {
+export default class fastnodeProgram extends AbstractFastProgram {
     private oldUpdateNodes: Set<any>
     private len: number
     private plotting32Nodes: any
@@ -24,11 +24,11 @@ export default class fastnodeProgram extends AbstractHaloProgram {
         this.quad = {}
         // 视图矩阵和透视矩阵
         const projectMatirxLocation = gl.getUniformLocation(this.program, 'projection')
-        if (projectMatirxLocation == null) throw new Error('fastNode: 获取不到projectionMatrix')
+        if (projectMatirxLocation == null) throw new Error('Fast: 获取不到projectionMatrix')
         this.projectMatirxLocation = projectMatirxLocation
 
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
-        if (viewMatrixLocation == null) throw new Error('fastNode: 获取不到viewMatrix')
+        if (viewMatrixLocation == null) throw new Error('Fast: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
     }
 

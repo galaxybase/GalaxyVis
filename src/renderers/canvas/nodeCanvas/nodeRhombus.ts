@@ -52,6 +52,7 @@ export default function canvasNodeRhombus(
         }
         // 绘制图片
         drawImage(
+            graphId,
             data,
             x,
             y,

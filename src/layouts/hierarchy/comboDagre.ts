@@ -9,6 +9,7 @@ import dagre from 'dagre'
 import NodeList from '../../classes/nodeList'
 import { basicData } from '../../initial/globalProp'
 import { EventType } from '../../utils/events'
+import { PlainObject } from './tclass'
 
 class ComboDagrelLayout extends BaseLayout {
     constructor(galaxyvis: any, options: AnimateType) {
@@ -180,7 +181,7 @@ class ComboDagrelLayout extends BaseLayout {
      * @param centerNode 
      * @returns 
      */
-    execute(nodes: { [key: string]: any }, centerNode: string) {
+    execute(nodes: PlainObject<any>, centerNode: string) {
         let maxX = -Infinity,
             minX = Infinity,
             maxY = -Infinity,
@@ -267,7 +268,7 @@ class ComboDagrelLayout extends BaseLayout {
                     resolve(data)
                 })
             } catch (err) {
-                console.log(err)
+                console.warn(err)
                 reject(LAYOUT_MESSAGE.ERROR)
             }
         })

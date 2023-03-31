@@ -1,4 +1,4 @@
-import { tNode } from "../../hierarchy/tclass";
+import { PlainObject, tNode } from "../../hierarchy/tclass";
 
 function genericFRLayout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
@@ -89,7 +89,7 @@ function genericFRLayout(assign: any, _nodes: any, _links: any, options: any) {
         });
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {

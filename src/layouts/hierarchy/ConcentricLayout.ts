@@ -23,7 +23,7 @@ class ConcentricLayout extends BaseLayout {
         let { nodes } = this.options
 
         if (!nodes) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push(key)
             })
         } else {

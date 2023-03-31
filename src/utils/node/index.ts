@@ -7,7 +7,7 @@ import { drawText } from '../tinySdf/sdfDrawText'
 import { mouseAddClass, mouseRemoveClass } from '../mouse'
 import { updateSDFTextData } from '../../utils'
 import NodeList from '../../classes/nodeList'
-import { AdjacencyOptions } from '../../types'
+import { AdjacencyOptions, AnimateOptions } from '../../types'
 import { cloneDeep, clone, defaultsDeep, get, merge } from 'lodash'
 
 /**
@@ -17,18 +17,19 @@ import { cloneDeep, clone, defaultsDeep, get, merge } from 'lodash'
  * @param options
  * @returns
  */
-export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any> => {
+export const nodeListLocate = (that: any, ids: string[], options?: AnimateOptions) => {
     return new Promise((resolve, reject) => {
         try {
             if (that.geo.enabled()) {
                 return that.geo.locate(ids)
             }
+            let GraphId = that.id;
             let coordx_max: number = -Infinity,
                 coordx_min: number = Infinity,
                 coordy_max: number = -Infinity,
                 coordy_min: number = Infinity
             let camera = that.camera
-            let nodeList = basicData[that.id].nodeList
+            let nodeList = basicData[GraphId].nodeList
             let renderer = that.renderer
             let padding = renderer === 'webgl' ? 3 / 5 : 5
             for (let keys in ids) {
@@ -37,7 +38,7 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
                 let x = value.getAttribute('x')
                 let y = value.getAttribute('y')
                 if (renderer == 'webgl') {
-                    let offset = coordTransformation(that.id, x, y)
+                    let offset = coordTransformation(GraphId, x, y)
                         ; (x = offset[0]), (y = offset[1])
                 }
                 // 计算最大最小边界
@@ -60,7 +61,7 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
                 coordx_max - coordx_min + 2 * padding,
             )
 
-            let zommratio = renderer === 'webgl' ? 12 : globalInfo[that.id].canvasBox.width
+            let zommratio = renderer === 'webgl' ? 12 : globalInfo[GraphId].canvasBox.width
 
             let zoom = (Math.atan2(maxratio, zommratio) * 360) / Math.PI
 
@@ -73,7 +74,7 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
             animateCamera(
                 that,
                 { zoom, position: nowPosition },
-                { duration: options.duration, easing: options.easing },
+                { duration: options!.duration, easing: options!.easing },
                 () => {
                     resolve((): void => { })
                 },
@@ -89,13 +90,12 @@ export const nodeListLocate = (that: any, ids: any, options?: any): Promise<any>
  * @param options
  * @returns
  */
-export const nodeLocate = (that: any, options?: any): Promise<any> => {
+export const nodeLocate = (that: any, options?: AnimateOptions) => {
     return new Promise((resolve, reject) => {
         try {
             if (that.geo.enabled()) {
                 return that.geo.locate(that.getId())
             }
-            let camera = that.camera
             let x = that.getAttribute('x'),
                 y = that.getAttribute('y')
             let offset = that.renderer === 'webgl' ? coordTransformation(that.id, x, y) : [-x, -y]
@@ -105,7 +105,7 @@ export const nodeLocate = (that: any, options?: any): Promise<any> => {
             animateCamera(
                 that,
                 { zoom, position: nowPosition },
-                { duration: options.duration, easing: options.easing },
+                { duration: options!.duration, easing: options!.easing },
                 () => {
                     resolve((): void => { })
                 },
@@ -158,7 +158,7 @@ export const nodeGetAdjacent = (that: any, options?: AdjacencyOptions) => {
         })
     } catch { }
 
-    let list: any = new Set()
+    let list = new Set()
     if (direction == 'both') {
         list = new Set([...inTable, ...outTable])
     } else if (direction == 'in') {
@@ -185,14 +185,16 @@ export const nodeSetSelected = (
     update: boolean,
     nodeList: boolean = false,
 ) => {
+    let GraphId = that.id;
     let isSelect = that.getAttribute('isSelect')
     let success = 0
+    let {selectedNodes,selectedTable} = basicData[GraphId]
     if (isSelect !== active) {
         let { id } = that.value
         if (active) {
-            basicData[that.id].selectedNodes.add(id)
-            basicData[that.id].selectedTable.add(id)
-            mouseAddClass(that.id, id)
+            selectedNodes.add(id)
+            selectedTable.add(id)
+            mouseAddClass(GraphId, id)
             success = 1
             if (!nodeList) {
                 let scene = that.__proto__
@@ -200,10 +202,10 @@ export const nodeSetSelected = (
                 that.events.emit('nodesSelected', nodeList)
             }
         } else {
-            if (basicData[that.id].selectedNodes.has(id)) {
-                basicData[that.id].selectedNodes.delete(id)
-                basicData[that.id].selectedTable.delete(id)
-                mouseRemoveClass(that.id, id)
+            if (selectedNodes.has(id)) {
+                selectedNodes.delete(id)
+                selectedTable.delete(id)
+                mouseRemoveClass(GraphId, id)
                 success = 2
                 if (!nodeList) {
                     let scene = that.__proto__
@@ -213,7 +215,7 @@ export const nodeSetSelected = (
             }
         }
         that.changeAttribute({ isSelect: active })
-        basicData[that.id].selectedTable.add(that.getId())
+        selectedTable.add(that.getId())
         if (update) {
             that.selectMovefresh()
         }
@@ -295,7 +297,7 @@ export const nodeChangeAttribute = (that: any, attribute: any, useSet: boolean =
         originInfo[that.id].nodeList.set(that.value.id, originNode)
         return true
     } catch (error) {
-        console.log('error node' + error)
+        console.warn('error node' + error)
         return false
     }
 }
@@ -348,7 +350,7 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         }
     }
 
-    if (attribute?.image) {
+    if (attribute?.image || attributes?.image) {
         if (typeof attribute.image == 'string') {
             attribute.image = {
                 url: attribute.image,
@@ -413,7 +415,7 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
     return attribute
 }
 
-const initBadges = (that: any, badges: any) => {
+const initBadges = (that: any, badges: { text: any; image: any }) => {
     let { text, image } = badges
     let iconType = image ? 1 : text?.content != '' ? 2 : 3
 
@@ -429,8 +431,9 @@ const initBadges = (that: any, badges: any) => {
             ...initImage,
         })
 
-        globalProp.iconMap.set(image, {
+        globalProp.iconMap.set(image , {
             ...initImage,
+            key: image.url,
         })
         initImage = null
     }
@@ -451,6 +454,7 @@ const initBadges = (that: any, badges: any) => {
 
         globalProp.iconMap.set(text?.content, {
             ...initIcon,
+            key: text.content
         })
 
         initIcon = null
@@ -478,24 +482,27 @@ export function initWebglAttribute(that: any, attribute: any) {
                 ...initIcon,
             })
 
-            globalProp.iconMap.set(attribute.icon.content, { ...initIcon })
+            globalProp.iconMap.set(attribute.icon.content, { ...initIcon, key: attribute.icon.content})
 
             initIcon = null
         }
         // 处理图片
-        if (!globalProp.iconMap.has(attribute.image?.url) && attribute.image?.url) {
+        let color = attribute?.color || 'rgba(255,255,255,0)'
+        if (!globalProp.iconMap.has(attribute.image?.url + color) && attribute.image?.url) {
             let initImage: any = {
                 type: 'image',
                 num: globalProp.iconMap.size,
                 scale: attribute?.image.scale,
+                color
             }
             initIconOrImage(that, {
                 key: attribute.image.url,
                 ...initImage,
             })
 
-            globalProp.iconMap.set(attribute.image.url, {
+            globalProp.iconMap.set(attribute.image.url + color, {
                 ...initImage,
+                key: attribute.image.url,
             })
 
             initImage = null
@@ -518,7 +525,7 @@ export function initWebglAttribute(that: any, attribute: any) {
         }
         //处理文字
         if (attribute?.text && !thumbnail) {
-            let flag = updateSDFTextData(attribute.text)
+            let flag = updateSDFTextData(attribute.text, that.id)
             if (flag) initText(that)
             drawText(
                 attribute.text.fontSize,
@@ -535,7 +542,7 @@ export function initWebglAttribute(that: any, attribute: any) {
  * @param attribute
  * @returns
  */
-export const nodeSetAttributes = (that: any, attribute: any, isNodeList?: boolean): Promise<any> => {
+export const nodeSetAttributes = (that: any, attribute: any, isNodeList?: boolean) => {
     return new Promise((resolve, reject) => {
         let flag = that.changeAttribute(attribute, true)
         if (flag) {

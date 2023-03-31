@@ -60,6 +60,7 @@ export default function canvasNodeTriangle(
 
         // 绘制图片
         drawImage(
+            graphId,
             data,
             x,
             y,

@@ -1,4 +1,5 @@
 import { globalProp, basicData, globalInfo } from '../initial/globalProp'
+import { PlainObject } from '../types'
 import { coordTransformation } from '../utils'
 import NodeList from './nodeList'
 /**
@@ -10,13 +11,14 @@ export class lasso<T, K> {
     private galaxyvis: any //galaxyvis对象
     private camera: any //相机对象
     private isActive: boolean //是否弃用
-    private divContainer: any //生成的父级容器
-    private drawingCanvas: any //绘制的canvas
-    private drawingContext: any //绘制的canvas2d
+    private divContainer!: HTMLElement //生成的父级容器
+    private drawingCanvas!: HTMLCanvasElement | undefined//绘制的canvas
+    private drawingContext!: CanvasRenderingContext2D | undefined //绘制的canvas2d
     private isDrawing: boolean //是否正在拖动
-    private drewPoints: any[] //画线的点
+    private drewPoints: Array<{ x: number, y: number }> //画线的点
     private selectedNodes: any[] //选中的点
     private callback: any // 回调函数
+
     constructor(galaxyvis: any) {
         this.galaxyvis = galaxyvis
         this.camera = this.galaxyvis.camera
@@ -37,7 +39,7 @@ export class lasso<T, K> {
      * 开启套索
      * @param param0
      */
-    enable({ callback }: { [key: string]: any }) {
+    enable({ callback }: PlainObject<any>) {
         if (callback) {
             this.callback = callback
         }
@@ -61,22 +63,22 @@ export class lasso<T, K> {
             }
 
             // 监听鼠标点击事件
-            this.drawingCanvas.removeEventListener('mousedown', (e: any) => {
+            this.drawingCanvas!.removeEventListener('mousedown', (e: MouseEvent) => {
                 this.onDrawingStart(e)
             })
             // 监听鼠标移动事件
-            this.drawingCanvas.removeEventListener('mousemove', (e: any) => {
+            this.drawingCanvas!.removeEventListener('mousemove', (e: MouseEvent) => {
                 this.onDrawing(e)
             })
             // 监听鼠标抬起事件
-            this.drawingCanvas.removeEventListener('mouseup', (e: any) => {
+            this.drawingCanvas!.removeEventListener('mouseup', (e: MouseEvent) => {
                 this.onDrawingEnd(e)
             })
             // 查找lasso对象是否存在
             if (document.getElementById('lasso')) {
                 // 删除lasso的画布
-                this.divContainer.removeChild(document.getElementById('lasso'))
-                this.drawingCanvas.style.cursor = ''
+                this.divContainer.removeChild(document.getElementById('lasso') as HTMLElement)
+                this.drawingCanvas!.style.cursor = ''
                 this.drawingCanvas = undefined
                 this.drawingContext = undefined
                 this.drewPoints = []
@@ -93,8 +95,8 @@ export class lasso<T, K> {
             if (!document.getElementById('lasso')) {
                 // 创建lasso的画布
                 this.initDOM('canvas', 'lasso')
-                this.drawingContext = this.drawingCanvas.getContext('2d')
-                this.drawingCanvas.style.cursor = 'cursor'
+                this.drawingContext = (this.drawingCanvas as HTMLCanvasElement).getContext('2d') as CanvasRenderingContext2D
+                this.drawingCanvas!.style.cursor = 'cursor'
             }
         }
 
@@ -104,15 +106,15 @@ export class lasso<T, K> {
         }
 
         // 监听鼠标点击事件
-        this.drawingCanvas.addEventListener('mousedown', (e: any) => {
+        this.drawingCanvas!.addEventListener('mousedown', (e: MouseEvent) => {
             this.onDrawingStart(e)
         })
         // 监听鼠标移动事件
-        this.drawingCanvas.addEventListener('mousemove', (e: any) => {
+        this.drawingCanvas!.addEventListener('mousemove', (e: MouseEvent) => {
             this.onDrawing(e)
         })
         // 监听鼠标抬起事件
-        this.drawingCanvas.addEventListener('mouseup', (e: any) => {
+        this.drawingCanvas!.addEventListener('mouseup', (e: MouseEvent) => {
             this.onDrawingEnd(e)
         })
     }
@@ -144,11 +146,11 @@ export class lasso<T, K> {
         }
         this.divContainer.appendChild(dom)
 
-        this.drawingCanvas = dom
+        this.drawingCanvas = dom as HTMLCanvasElement
     }
 
-    onDrawingStart(event: any) {
-        let drawingRectangle = this.drawingCanvas.getBoundingClientRect()
+    onDrawingStart(event: MouseEvent) {
+        let drawingRectangle = this.drawingCanvas!.getBoundingClientRect()
         // 开始绘制
         if (this.isActive) {
             this.isDrawing = true
@@ -160,18 +162,18 @@ export class lasso<T, K> {
                 y: event.clientY - drawingRectangle.top,
             })
             // 改变鼠标形状
-            this.drawingCanvas.style.cursor = 'cell'
+            this.drawingCanvas!.style.cursor = 'cell'
             // 阻止默认事件发生
             event.stopPropagation()
         }
     }
 
-    onDrawing(event: any) {
+    onDrawing(event: MouseEvent) {
         // 绘制线
         if (this.isActive && this.isDrawing) {
             let x = 0,
                 y = 0,
-                drawingRectangle = this.drawingCanvas.getBoundingClientRect()
+                drawingRectangle = this.drawingCanvas!.getBoundingClientRect()
 
             x = event.clientX
             y = event.clientY
@@ -181,17 +183,17 @@ export class lasso<T, K> {
                 y: y - drawingRectangle.top,
             })
             // 生成绘制的属性
-            this.drawingContext.lineWidth = 2
-            this.drawingContext.strokeStyle = 'rgba(57,207,255,1.0)'
-            this.drawingContext.fillStyle = 'rgba(224, 245, 255, 0.25)'
-            this.drawingContext.lineJoin = 'round'
-            this.drawingContext.lineCap = 'round'
+            this.drawingContext!.lineWidth = 2
+            this.drawingContext!.strokeStyle = 'rgba(57,207,255,1.0)'
+            this.drawingContext!.fillStyle = 'rgba(224, 245, 255, 0.25)'
+            this.drawingContext!.lineJoin = 'round'
+            this.drawingContext!.lineCap = 'round'
             // 清空画布
-            this.drawingContext.clearRect(
+            this.drawingContext!.clearRect(
                 0,
                 0,
-                this.drawingContext.canvas.width,
-                this.drawingContext.canvas.height,
+                this.drawingContext!.canvas.width,
+                this.drawingContext!.canvas.height,
             )
 
             let sourcePoint = this.drewPoints[0],
@@ -208,12 +210,12 @@ export class lasso<T, K> {
                     }
                 }
             // 开始绘制
-            this.drawingContext.beginPath()
-            this.drawingContext.moveTo(sourcePoint.x, sourcePoint.y)
+            this.drawingContext!.beginPath()
+            this.drawingContext!.moveTo(sourcePoint.x, sourcePoint.y)
 
             for (let i = 1; i < pointsLength; i++) {
                 let middlePoint = getMiddlePointCoordinates(sourcePoint, destinationPoint)
-                this.drawingContext.quadraticCurveTo(
+                this.drawingContext!.quadraticCurveTo(
                     sourcePoint.x,
                     sourcePoint.y,
                     middlePoint.x,
@@ -223,16 +225,16 @@ export class lasso<T, K> {
                 destinationPoint = this.drewPoints[i + 1]
             }
 
-            this.drawingContext.lineTo(sourcePoint.x, sourcePoint.y)
-            this.drawingContext.stroke()
+            this.drawingContext!.lineTo(sourcePoint.x, sourcePoint.y)
+            this.drawingContext!.stroke()
             // 填充
-            this.drawingContext.fill()
+            this.drawingContext!.fill()
             // 阻止默认事件发生
             event.stopPropagation()
         }
     }
 
-    onDrawingEnd(e: any) {
+    onDrawingEnd(e: MouseEvent) {
         if (this.isActive && this.isDrawing) {
             this.isDrawing = false
 
@@ -265,7 +267,7 @@ export class lasso<T, K> {
 
                     // 先判断是不是在屏幕内
                     if (x >= 0 && x <= width && y >= 0 && y <= height)
-                        if (this.drawingContext.isPointInPath(x, y)) {
+                        if (this.drawingContext!.isPointInPath(x, y)) {
                             basicData[this.galaxyvis.id].selectedNodes.add(key)
                             this.selectedNodes.push(key)
                         }
@@ -287,7 +289,7 @@ export class lasso<T, K> {
                     y = (-y + ratio / 2) * unitHeight
 
                     if (x >= 0 && x <= width && y >= 0 && y <= height)
-                        if (this.drawingContext.isPointInPath(x, y)) {
+                        if (this.drawingContext!.isPointInPath(x, y)) {
                             basicData[this.galaxyvis.id].selectedNodes.add(key)
                             this.selectedNodes.push(key)
                         }
@@ -306,8 +308,8 @@ export class lasso<T, K> {
 
             this.galaxyvis.events.emit('nodesSelected', nodeList)
 
-            this.drawingContext.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height)
-            this.drawingCanvas.style.cursor = 'default'
+            this.drawingContext!.clearRect(0, 0, this.drawingCanvas!.width, this.drawingCanvas!.height)
+            this.drawingCanvas!.style.cursor = 'default'
             e.stopPropagation()
 
             this.disable()

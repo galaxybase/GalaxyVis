@@ -65,7 +65,7 @@ export abstract class AbstractSDFProgram extends AbstractProgram implements ISDF
         this.gammerLocation = gammerLocation
         //Uniform
         const background = gl.getUniformLocation(this.program, 'background')
-        if (background == null) console.log('Text:  获取不到background')
+        if (background == null) console.warn('Text:  获取不到background')
         this.background = background as WebGLUniformLocation
     }
 

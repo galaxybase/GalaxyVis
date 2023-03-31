@@ -1,3 +1,5 @@
+import { PlainObject } from "../../hierarchy/tclass";
+
 let highdegreeoutside = false;
 let secondarynodecount = 15;  // 核心数
 let boolNoOverlap = true;
@@ -143,7 +145,7 @@ function genericduailCircleLayout(assign: any, nodes: any, options: any) {
             n.layoutData = null;
         }
     }
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < length; i++) {
         var n = nodes[i];
         layoutNodes[n.key] = {

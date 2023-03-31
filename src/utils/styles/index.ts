@@ -1,5 +1,5 @@
 import { genID } from '..'
-import { ClassOptions, RuleOptions } from '../../types'
+import { ClassOptions, PlainObject, RuleOptions } from '../../types'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import { StyleRule } from '../../classes/styleRule'
 import { merge } from 'lodash'
@@ -30,28 +30,29 @@ export const stylesAddRule = (galaxyvis: any, options: RuleOptions) => {
         true,
     )
 
-    nodeList.forEach((item: any, key: any) => {
+    nodeList.forEach((item: any, key: string) => {
         if (nodeSelector && nodeSelector(item)) {
             item.addClass(ruleName, 2, false)
         }
-        if (!nodeSelector) {
+        if (!nodeSelector && nodeAttributes) {
             item.addClass(ruleName, 2, false)
         }
     })
 
     let edgeList = basicData[galaxyvis.id].edgeList
 
-    edgeList.forEach((item: any, key: any) => {
+    edgeList.forEach((item: any, key: string) => {
         if (edgeSelector && edgeSelector(item)) {
             item.addClass(ruleName, 2, false)
         }
-        if (!edgeSelector) {
+        if (!edgeSelector && edgeAttributes) {
             item.addClass(ruleName, 2, false)
         }
     })
 
     if (ruleName && ruleName !== "geo-class") {
-        galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+        if(nodeAttributes && nodeAttributes.radius)
+            galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
         !galaxyvis.geo.enabled() && galaxyvis.render()
     } else {
         galaxyvis.render()
@@ -78,7 +79,8 @@ export const stylesCreateClass = (galaxyvis: any, options: ClassOptions, useRule
         })
 
         if (name && name !== "geo-class") {
-            galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
+            if(nodeAttributes && nodeAttributes.radius)
+                galaxyvis.geo.enabled() && galaxyvis.geo.updateGeoClass()
             !galaxyvis.geo.enabled() && galaxyvis.render()
         } else {
             galaxyvis.render()
@@ -108,21 +110,22 @@ export const stylesGetClass = (className: string) => {
  * 设置hover点样式
  * @param nodeAttributes
  */
-export const stylesSetHoveredNodeAttributes = (
+ export const stylesSetHoveredNodeAttributes = (
     galaxyvis: any,
-    nodeAttributes: {
-        [key: string]: any
-    },
+    nodeAttributes: PlainObject<any>,
 ) => {
-    let rule = '$rule$_galaxyvis_hovered_node_style'
 
-    let hoveNodeAttribute = globalInfo[galaxyvis.id].nodeHoverStyle
+    let id = galaxyvis.id
+
+    let rule = '$rule$_galaxyvis_hovered_node_style_' + id; 
+
+    let hoveNodeAttribute = globalInfo[id].nodeHoverStyle
 
     hoveNodeAttribute['rule'] = rule
 
     hoveNodeAttribute['nodeAttributes'] = merge(hoveNodeAttribute['nodeAttributes'], nodeAttributes)
 
-    globalInfo[galaxyvis.id].nodeHoverStyle = hoveNodeAttribute
+    globalInfo[id].nodeHoverStyle = hoveNodeAttribute
 
     classList[rule] = { nodeAttributes: hoveNodeAttribute.nodeAttributes }
 }
@@ -132,19 +135,20 @@ export const stylesSetHoveredNodeAttributes = (
  */
 export const stylesSetHoveredEdgeAttributes = (
     galaxyvis: any,
-    edgeAttributes: {
-        [key: string]: any
-    },
+    edgeAttributes: PlainObject<any>,
 ) => {
-    let rule = '$rule$_galaxyvis_hovered_edge_style'
 
-    let hoveEdgeAttribute = globalInfo[galaxyvis.id].edgeHoverStyle
+    let id = galaxyvis.id
+
+    let rule = '$rule$_galaxyvis_hovered_edge_style_' + id;
+
+    let hoveEdgeAttribute = globalInfo[id].edgeHoverStyle
 
     hoveEdgeAttribute['rule'] = rule
 
     hoveEdgeAttribute['edgeAttributes'] = merge(hoveEdgeAttribute['edgeAttributes'], edgeAttributes)
 
-    globalInfo[galaxyvis.id].edgeHoverStyle = hoveEdgeAttribute
+    globalInfo[id].edgeHoverStyle = hoveEdgeAttribute
 
     classList[rule] = { edgeAttributes: hoveEdgeAttribute.edgeAttributes }
 }
@@ -154,13 +158,13 @@ export const stylesSetHoveredEdgeAttributes = (
  */
 export const stylesSetSelectedNodeAttributes = (
     galaxyvis: any,
-    nodeAttributes: {
-        [key: string]: any
-    },
+    nodeAttributes: PlainObject<any>,
 ) => {
-    let rule = '$rule$_galaxyvis_selected_node_style'
+    let id = galaxyvis.id
 
-    let selectNodeAttribute = globalInfo[galaxyvis.id].nodeSelectStyle
+    let rule = '$rule$_galaxyvis_selected_node_style_' + id;
+
+    let selectNodeAttribute = globalInfo[id].nodeSelectStyle
 
     selectNodeAttribute['rule'] = rule
 
@@ -169,7 +173,7 @@ export const stylesSetSelectedNodeAttributes = (
         nodeAttributes,
     )
 
-    globalInfo[galaxyvis.id].nodeSelectStyle = selectNodeAttribute
+    globalInfo[id].nodeSelectStyle = selectNodeAttribute
 
     classList[rule] = { nodeAttributes: selectNodeAttribute.nodeAttributes }
 }
@@ -179,13 +183,14 @@ export const stylesSetSelectedNodeAttributes = (
  */
 export const stylesSetSelectedEdgeAttributes = (
     galaxyvis: any,
-    edgeAttributes: {
-        [key: string]: any
-    },
+    edgeAttributes: PlainObject<any>,
 ) => {
-    let rule = '$rule$_galaxyvis_selected_edge_style'
 
-    let selectEdgeAttribute = globalInfo[galaxyvis.id].edgeSelectStyle
+    let id = galaxyvis.id
+
+    let rule = '$rule$_galaxyvis_selected_edge_style_' + id
+
+    let selectEdgeAttribute = globalInfo[id].edgeSelectStyle
 
     selectEdgeAttribute['rule'] = rule
 
@@ -194,7 +199,7 @@ export const stylesSetSelectedEdgeAttributes = (
         edgeAttributes,
     )
 
-    globalInfo[galaxyvis.id].edgeSelectStyle = selectEdgeAttribute
+    globalInfo[id].edgeSelectStyle = selectEdgeAttribute
 
     classList[rule] = { edgeAttributes: selectEdgeAttribute.edgeAttributes }
 }

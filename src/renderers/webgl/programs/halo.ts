@@ -1,15 +1,15 @@
-import vertexShaderSource from '../shaders/node.fast.vert.glsl'
-import fragmentShaderSource from '../shaders/node.fast.frag.glsl'
+import vertexShaderSource from '../shaders/node.halo.vert.glsl'
+import fragmentShaderSource from '../shaders/node.halo.frag.glsl'
 import { glMatrix, mat4 } from 'gl-matrix'
 import { AbstractHaloProgram } from './common/halo'
 import { coordTransformation, floatColor } from '../../../utils'
-import { basicData, globalProp } from '../../../initial/globalProp'
+import { basicData, globalProp, thumbnailInfo } from '../../../initial/globalProp'
 import edgeHaloProgram from './edgeHalo'
 import { NodeHaloCollection } from '../../../types'
 
 let nodeHaloCollection: NodeHaloCollection = {}
 
-const ATTRIBUTES = 5;
+const ATTRIBUTES = 6;
 export default class HaloProgram extends AbstractHaloProgram {
     private edgeHaloProgram!: edgeHaloProgram
 
@@ -55,12 +55,15 @@ export default class HaloProgram extends AbstractHaloProgram {
             // 获取点Halo
             let renderHalo = data.halo
             // 如果宽度为0则跳过
-            if (renderHalo?.width == 0 || !renderHalo) continue
+            if (!renderHalo || renderHalo.width == 0 || renderHalo.progress == 0) continue
             let item = getHaloAttribute(graphId, data);
 
             (collection.floatData as number[]).push(...item.offset);
             (collection.floatData as number[]).push(item.zoomResults);
             (collection.floatData as number[]).push(...item.color);
+
+            // (collection.floatData as number[]).push(item.widthResults);
+            (collection.floatData as number[]).push(item.progress);
         }
         if (collection?.floatData?.length) {
             nodeHaloCollection[graphId] = collection
@@ -77,6 +80,9 @@ export default class HaloProgram extends AbstractHaloProgram {
         if (collection?.floatData?.length) {
             this.bind(new Float32Array(collection.floatData))
             this.render()
+        }else{
+            if(thumbnailInfo[this.graph.id])
+                return this.process()
         }
         this.edgeHaloProgram.refreshProcess()
     }
@@ -93,7 +99,7 @@ export default class HaloProgram extends AbstractHaloProgram {
         }
 
         // 根据需要跟新的表找到相应的位置
-        needFresh.forEach((val: any, key: any) => {
+        needFresh.forEach((val: any, key: string) => {
             count = 0
             for (let [keys, val] of drawNodeList) {
                 if (keys == key) {
@@ -150,12 +156,15 @@ export default class HaloProgram extends AbstractHaloProgram {
 const getHaloAttribute = (graphId: string, data: any) => {
     let { x, y, radius, halo, opacity } = data
 
-    let { color, width } = halo
+    let { color, width, progress } = halo;
 
-    let haloRadius = Number(radius) + width / 2
-
+    progress == undefined && (progress = 100);
+    
+    let haloRadius = Number(radius + width / 4)
+    
     // 真实的r比例
     let zoomResults: number = parseFloat((haloRadius / globalProp.standardRadius).toFixed(1))
+    // let widthResults = parseFloat(((width / 2) / haloRadius).toFixed(1))
     // 偏移量
     let offsets: number[] = coordTransformation(graphId, x, y)
     // 颜色
@@ -165,5 +174,7 @@ const getHaloAttribute = (graphId: string, data: any) => {
         offset: offsets,
         color,
         zoomResults,
+        // widthResults,
+        progress: 100 != progress ? progress / 100 : 1
     }
 }

@@ -27,7 +27,7 @@ export const removeClass = (
     type: number,
     nodeOrEdge: boolean,
     isReFresh: boolean = true,
-): Promise<any> => {
+) => {
     return new Promise((resolve, reject) => {
         try {
             //@ts-ignore
@@ -73,13 +73,13 @@ export const addClass = (
     type: number = 1,
     nodeOrEdge: boolean,
     update: boolean = true,
-): Promise<any> => {
+) => {
     return new Promise((resolve, reject) => {
         //@ts-ignore
         let classList = that.styles.getClassList()
         let acquiredClass = get(classList, className)
         let selfClasses = that.value.classList
-
+        let GraphId = that.id;
         if (!acquiredClass) {
             reject(`class ${className} does not exist`)
         } else {
@@ -89,12 +89,12 @@ export const addClass = (
             if (selfClasses.length > 1) {
                 let selectedStyle =
                     nodeOrEdge == false
-                        ? globalInfo[that.id].edgeSelectStyle
-                        : globalInfo[that.id].nodeSelectStyle
+                        ? globalInfo[GraphId].edgeSelectStyle
+                        : globalInfo[GraphId].nodeSelectStyle
                 let hoverStyle =
                     nodeOrEdge == false
-                        ? globalInfo[that.id].edgeHoverStyle
-                        : globalInfo[that.id].nodeHoverStyle
+                        ? globalInfo[GraphId].edgeHoverStyle
+                        : globalInfo[GraphId].nodeHoverStyle
                 if (selectedStyle && Object.keys(selectedStyle).length) {
                     let index = selfClasses.find((x: any) => x.className == selectedStyle.rule)
                     if (
@@ -125,7 +125,7 @@ export const addClass = (
             if (nodeOrEdge && that.renderer === 'webgl') {
                 initWebglAttribute(that, attribute)
             } else if (that.renderer === 'webgl' && !that.thumbnail) {
-                let flag = updateSDFTextData(attribute?.text)
+                let flag = updateSDFTextData(attribute?.text, GraphId)
                 if (flag) initText(that)
                 drawText(
                     attribute?.text.fontSize,
@@ -166,7 +166,7 @@ export const resetAttributes = (
     nodeOrEdge: boolean,
     update?: boolean,
     attributeNames?: any[],
-): Promise<any> => {
+) => {
     return new Promise((resolve, reject) => {
         try {
             const DEFAULT_ATTRIBUTES = nodeOrEdge
@@ -259,7 +259,7 @@ export const getAttribute = (that: any, attribute?: any) => {
  * @param attribute
  * @returns
  */
-export const setAttribute = (that: any, attribute: any, isEdgeList?:boolean): Promise<any> => {
+export const setAttribute = (that: any, attribute: any, isEdgeList?:boolean) => {
     return new Promise((resolve, reject) => {
         let flag = that.changeAttribute(attribute, true)
         if (flag) {

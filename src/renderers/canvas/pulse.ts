@@ -22,7 +22,7 @@ export default class pulseCanvas {
         const graph = self.graph
         const graphId = graph.id;
         const camera = graph.camera;
-
+        // 更新比例
         camera.updateTransform()
 
         const transform = basicData[graphId]?.transform || 223
@@ -32,7 +32,7 @@ export default class pulseCanvas {
         let renderType = graph.getRenderType();
 
         let pulseNodes: Set<string> = new Set();
-
+        // 监听取消选中事件
         graph.events.on("nodesUnselected", (nodes: NodeList) => {
             nodes.setAttributes({
                 pulse: {
@@ -45,7 +45,7 @@ export default class pulseCanvas {
             let { selectedNodes, nodeList } = basicData[graphId]
             if (selectedNodes.size) {
                 self.ctx.clearRect(0, 0, width, height);
-
+                // 拷贝一份数据防止污染
                 let position = clone(camera.position);
                 let ratio = camera.ratio;
                 let scale = (globalProp.globalScale / ratio) * 2.0
@@ -61,6 +61,7 @@ export default class pulseCanvas {
                     let { range, duration, interval, scale: numScale, startRatio } = pulse;
                     const timeStep = interval / duration;
                     let ratioPulse = [startRatio - 1, startRatio - 1, startRatio - 1];
+                    // 给range排序,这个是相对波的位置
                     range[0] = Math.ceil((range[0] + timeStep) * 1e3) / 1e3;
                     if (range[0] >= numScale) range[1] = Math.ceil((range[1] + timeStep) * 1e3) / 1e3;
                     if (range[0] >= numScale * 2) range[2] = Math.ceil((range[2] + timeStep) * 1e3) / 1e3;
@@ -71,6 +72,7 @@ export default class pulseCanvas {
                             range
                         }
                     })
+                    // 转换坐标
                     let coord = transformCanvasCoord(graphId, x, y, position, scale)
                     x = coord.x;
                     y = coord.y;
@@ -82,7 +84,7 @@ export default class pulseCanvas {
 
             } else if (pulseNodes.size) {
                 self.ctx.clearRect(0, 0, width, height);
-
+                // 重置pulse
                 pulseNodes.forEach((key: string) => {
                     let node = nodeList.get(key);
                     if (node) {
@@ -102,7 +104,7 @@ export default class pulseCanvas {
         }
         self.pulseFrameId = requestFrame(tickFrame)
     }
-
+    // 绘制pulse
     drawPulse(range: number, x: number, y: number, scale: number, radius: number, pulse: { [key: string]: any }) {
         const ctx = this.ctx;
         const graphId = this.graph.id;
@@ -114,10 +116,12 @@ export default class pulseCanvas {
         radius *= scale;
         width *= scale / 20;
         if(width == 0) return;
+        // 颜色转rgba
         let rgba = translateColor(startColor)
         ctx.beginPath();
         ctx.arc(x, y, radius * ((range) + 1), 0, Math.PI * 2);
         ctx.lineWidth = width;
+        // 颜色渐变
         ctx.strokeStyle = `rgba(${rgba.r * 255}, ${rgba.g * 255}, ${rgba.b * 255}, ${(numScale * 3 - range) / range})`;
         ctx.stroke();
         ctx.closePath();

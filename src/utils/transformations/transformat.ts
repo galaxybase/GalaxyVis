@@ -25,8 +25,7 @@ export class transformat<T, K> {
         this.id = 'transformat_id_by_' + genID(4)
         this.geoEdge = new Map()
         this.isMerge = isMerge
-        let basicNodeList = basicData[this.galaxyvis.id].nodeList
-        let basicEdgeList = basicData[this.galaxyvis.id].edgeList
+        let { nodeList: basicNodeList, edgeList: basicEdgeList } = basicData[this.galaxyvis.id]
 
         if (type == 1) this.subNodes = new NodeList(galaxyvis, this.changed)
         else if (type == 2) this.subEdges = new EdgeList(galaxyvis, this.changed)
@@ -593,7 +592,7 @@ export class transformat<T, K> {
                                 })
                             }
                             // 处理边集合
-                            this.geoEdge?.forEach((item: any, key: any) => {
+                            this.geoEdge?.forEach((item: any, key: string) => {
 
                                 let target = isString(item.value?.target) ? item.getTarget() : item.value?.target
                                 let source = isString(item.value?.source) ? item.getSource() : item.value?.source

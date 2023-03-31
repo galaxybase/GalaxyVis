@@ -20,14 +20,27 @@ let glHeight = 800
 let atlas = 0
 let chars: any[] = []
 let graphId: string | null = null
+
+let charsMap = new Map()
+
 // 节流函数
 const throttled = throttle((graph, gl, texture) => {
     initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
     graph.render()
 }, 100)
 
+const throttledT = throttle((graph, gl, texture) => {
+    initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
+    graph.render()
+}, 10)
+
 export const clearChars = () => {
     chars = []
+    charsMap = new Map()
+}
+
+export const clearGraphChars = (id: string) => {
+    charsMap.delete(id);
 }
 
 export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = false) => {
@@ -48,17 +61,33 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
 
     const texture = gl.createTexture()
     let beforeNum = chars.length
-
+    let GraphSet = new Set()
     textSet.forEach(item => {
+        let arr = item.split("-");
+        if (item.substring(0, 1) == "-") {
+            arr[0] = "-"
+            arr[1] = arr[2]
+            arr[2] = arr[3]
+        }
         let flag = chars.find(charEle => {
-            return charEle.char == item.substring(0, 1) && charEle.style == item.substring(2)
+            return charEle.char == arr[0] && charEle.style == arr[1]
         })
         !flag &&
             chars.push({
-                char: item.substring(0, 1),
-                style: item.substring(2),
+                char: arr[0],
+                style: arr[1],
             })
+
+        !charsMap.has(arr[2]) && charsMap.set(arr[2], new Set())
+
+        let charSet = charsMap.get(arr[2])
+
+        if (!charSet.has(arr[0] + '-' +arr[1])) {
+            charSet.add(arr[0] + '-' + arr[1])
+            GraphSet.add(arr[2])
+        }
     })
+
     creatTextSDF()
     // 获取文字当前的RGBA的数值区块
     function makeRGBAImageData(alphaChannel: any, width: number, height: number) {
@@ -117,22 +146,25 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
 
     try {
         flag = false
-        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) { throttled(graph, gl, texture); }
+        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) {
+            throttled(graph, gl, texture);
+        }
         else {
             initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
-            // throttled(graph, gl, texture)
             if (Object.keys(instancesGL).length > 0) {
                 for (let i in instancesGL) {
-                    let gl = instancesGL[i]
-                    // initGlTextureBind(gl, gl.TEXTURE1, gl.createTexture(), sdfCanvas, false)
-                    throttled(graph, gl, gl.createTexture())
+                    let gl = instancesGL[i].gl
+                    if (GraphSet.has(instancesGL[i].id)) {
+                        // initGlTextureBind(gl, gl.TEXTURE1, gl.createTexture(), sdfCanvas, false)
+                        throttledT(instancesGL[i], gl, gl.createTexture())
+                    }
                 }
             }
 
         }
         graphId = graph.id
     } catch (err) {
-        console.log('文字生成失败')
+        console.warn('文字生成失败')
     }
 }
 

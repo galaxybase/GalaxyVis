@@ -1,6 +1,7 @@
+import { isString } from 'lodash'
 import { isIE } from '..'
 import { basicData, globalInfo } from '../../initial/globalProp'
-import { PlainObject } from '../../types'
+import { CsvExportOptions, ImageExportOptions, JsonExportOptions, PlainObject, SvgExportOptions, XlsxExportOptions } from '../../types'
 import { renderSVG } from './renderSVG'
 
 /**
@@ -10,18 +11,18 @@ import { renderSVG } from './renderSVG'
  * @param {graph} 画布
  * @param {options<any | undefined>} 配置参数
  */
-export function exportImageHandler(type: string, graph: any, options?: any) {
+export function exportImageHandler(type: string, graph: any, options?: ImageExportOptions) {
     return new Promise(async (resolve, reject) => {
         try {
             let canvas = graph.renderer === 'webgl' ? graph.gl.canvas : graph.ctx.canvas
             // 初始参数
             let filename = options?.filename || `graph.${type}`
-            let textWatermark = options?.textWatermark || null
-            let background = options?.background || null
+            let textWatermark = options?.textWatermark || undefined
+            let background = options?.background || undefined
             let scale = options?.scale || 1
             let download = true
             if (options && options.hasOwnProperty('download')) {
-                download = options.download
+                download = options.download as boolean
             }
             // 获取原始画布
             let originalCanvas = canvas
@@ -149,14 +150,14 @@ function downloadImage(
  * @param {graph<any>} 图上的点边数据
  * @param {options<any | undefined>} 配置参数
  */
-export function exportJsonHandler(graph: any, options?: any) {
+export function exportJsonHandler(graph: any, options?: JsonExportOptions) {
     return new Promise((resolve, reject) => {
         try {
             // 初始参数
             let filename = options?.filename || `graph.json`
             let download = true
             if (options && options.hasOwnProperty('download')) {
-                download = options.download
+                download = options.download as boolean
             }
             let { edgeList, nodeList } = basicData[graph.id]
             let graphData: any = {
@@ -165,25 +166,59 @@ export function exportJsonHandler(graph: any, options?: any) {
             }
 
             let IdColumnName = options?.IdColumnName || `id`
-
+            let nodeAttributes = options?.nodeAttributes || null
             nodeList.forEach((node: any) => {
+                let attributeObj: { [key: string]: any } = {}
+
+                if (nodeAttributes) {
+                    if (isString(nodeAttributes) && nodeAttributes == "all") {
+                        attributeObj = node.getAttribute()
+                    }
+                    else {
+                        for (let i = 0, len = nodeAttributes.length; i < len; i++) {
+                            let attr = nodeAttributes[i]
+                            attributeObj[attr] = node.getAttribute(attr)
+                        }
+                    }
+                }
+
                 graphData.nodes.push({
-                    attribute: {},
+                    attribute: attributeObj,
                     data:
-                        options.nodeData && node.value.data
+                        options?.nodeData && node.value.data
                             ? options.nodeData(node.value.data)
                             : node.value.data,
                     [IdColumnName]: node.value?.id,
                 })
             })
+
+            let edgeAttributes = options?.edgeAttributes || null
+
             edgeList.forEach((edge: any) => {
+
+                let attributeObj: { [key: string]: any } = {}
+
+                if (edgeAttributes) {
+                    if (isString(edgeAttributes) && edgeAttributes == "all") {
+                        attributeObj = edge.getAttribute()
+                    }
+                    else {
+                        for (let i = 0, len = edgeAttributes.length; i < len; i++) {
+                            let attr = edgeAttributes[i]
+                            attributeObj[attr] = edge.getAttribute(attr)
+                        }
+                    }
+                }
+
                 graphData.edges.push({
-                    attribute: {},
+                    attribute: attributeObj,
                     data:
-                        options.edgeData && edge.value.data
+                        options?.edgeData && edge.value.data
                             ? options.edgeData(edge.value.data)
                             : edge.value.data,
                     [IdColumnName]: edge.value?.id,
+                    source: edge.value?.source,
+                    target: edge.value?.target,
                 })
             })
             if (download) {
@@ -253,7 +288,7 @@ export function exportExcelHandler(graph: any, options?: any) {
             let skipHeader = options?.skipHeader || false
             let download = true
             if (options && options.hasOwnProperty('download')) {
-                download = options.download
+                download = options.download as boolean
             }
             let { edgeList, nodeList } = basicData[graph.id]
             let sheetDataList: any = [],
@@ -261,7 +296,7 @@ export function exportExcelHandler(graph: any, options?: any) {
             let IdColumnName = options?.IdColumnName || `id`
             nodeList.forEach((node: any) => {
                 let sheetName = options.tab.nodes(node) + ''
-                let data = options.nodeData
+                let data = options?.nodeData
                     ? {
                         [IdColumnName]: node.value.id,
                         ...options.nodeData(node.value.data),
@@ -281,7 +316,7 @@ export function exportExcelHandler(graph: any, options?: any) {
             edgeList.forEach((edge: any) => {
                 let sheetName = options.tab.edges(edge) + ''
                 let { id, source, target } = edge.value
-                let data = options.edgeData
+                let data = options?.edgeData
                     ? {
                         [IdColumnName]: id,
                         source,
@@ -423,7 +458,7 @@ function downloadExcel(blob: any, fileName: string) {
  * @param {graph<any>} 图上的点边数据
  * @param {options<any | undefined>} 配置参数
  */
-export function exportCsvHandler(graph: any, options?: any) {
+export function exportCsvHandler(graph: any, options?: CsvExportOptions) {
     return new Promise((resolve, reject) => {
         try {
             // 初始参数
@@ -432,7 +467,7 @@ export function exportCsvHandler(graph: any, options?: any) {
             let skipHeader = options?.skipHeader || false
             let download = true
             if (options && options.hasOwnProperty('download')) {
-                download = options.download
+                download = options.download as boolean
             }
 
             let nodeList = options?.nodes || basicData[graph.id].nodeList
@@ -441,28 +476,40 @@ export function exportCsvHandler(graph: any, options?: any) {
             let list: any = []
             let IdColumnName = options?.IdColumnName || `id`
 
-            if (options.what === 'nodes') {
+            if (options?.what === 'nodes') {
                 nodeList.forEach((node: any) => {
                     if (typeof node === "string") {
                         node = basicData[graph.id].nodeList.get(node)
                     }
-                    list.push({
-                        [IdColumnName]: node.value.id,
-                        ...options.nodeData(node.value.data),
-                    })
+                    if (options.nodeData)
+                        list.push({
+                            [IdColumnName]: node.value.id,
+                            ...options.nodeData(node.value.data),
+                        })
+                    else
+                        list.push({
+                            [IdColumnName]: node.value.id
+                        })
                 })
-            } else {
+            } else if (options?.what === 'edges') {
                 edgeList.forEach((edge: any) => {
                     if (typeof edge === "string") {
                         edge = basicData[graph.id].edgeList.get(edge)
                     }
                     let { id, source, target } = edge.value
-                    list.push({
-                        [IdColumnName]: id,
-                        source,
-                        target,
-                        ...options.edgeData(edge.value.data),
-                    })
+                    if (options.edgeData)
+                        list.push({
+                            [IdColumnName]: id,
+                            source,
+                            target,
+                            ...options.edgeData(edge.value.data),
+                        })
+                    else
+                        list.push({
+                            [IdColumnName]: id,
+                            source,
+                            target
+                        })
                 })
             }
             let header: any[] = [];
@@ -546,7 +593,7 @@ var XMLNS = 'http://www.w3.org/2000/svg'
  * @param options
  * @returns
  */
-export const exportSVGHandler = (type: string, graph: any, options?: any) => {
+export const exportSVGHandler = (type: string, graph: any, options?: SvgExportOptions) => {
     return new Promise(async (resolve, reject) => {
         try {
             let canvas = graph.renderer === 'webgl' ? graph.gl.canvas : graph.ctx.canvas
@@ -554,7 +601,7 @@ export const exportSVGHandler = (type: string, graph: any, options?: any) => {
             let filename = options?.filename || `graph.${type}`
             let download = true
             if (options && options.hasOwnProperty('download')) {
-                download = options.download
+                download = options.download as boolean
             }
 
             let width = options?.width || canvas?.width || 1000

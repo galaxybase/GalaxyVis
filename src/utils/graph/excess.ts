@@ -66,16 +66,16 @@ export const getRelationTable = (that: any) => {
  */
 var typeHash: any, baseTypeHash: any
 export const excessGetEdgeType = (that: any) => {
-    let edgeList = basicData[that.id].edgeList
-    let nodeList = basicData[that.id].nodeList
+    let GraphId = that.id;
+    let { edgeList, nodeList, relationTable } = basicData[GraphId]
     typeHash = new Map()
     baseTypeHash = new Map()
     for (let [key, item] of edgeList) {
         let attribute = item?.value?.attribute
         if (attribute) {
             let { type, source, target, isVisible, usedMerge, isFilter, isGroupEdge } = attribute
-            if ((usedMerge && globalInfo[that.id].mergeEdgesTransformat) ||
-                (isFilter && globalInfo[that.id].filterEdgesTransformat?.size)
+            if ((usedMerge && globalInfo[GraphId].mergeEdgesTransformat) ||
+                (isFilter && globalInfo[GraphId].filterEdgesTransformat?.size)
             ) {
                 isVisible = false
                 item.changeAttribute({
@@ -104,15 +104,15 @@ export const excessGetEdgeType = (that: any) => {
                 let { num: source_n } = nodeList.get(source)?.value
                 let { num: target_n } = nodeList.get(target)?.value
 
-                if (basicData[that.id].relationTable[source]) {
-                    basicData[that.id].relationTable[source].add(key)
-                } else if (!basicData[that.id].relationTable[source]) {
-                    basicData[that.id].relationTable[source] = new Set([key])
+                if (relationTable[source]) {
+                    relationTable[source].add(key)
+                } else if (!relationTable[source]) {
+                    relationTable[source] = new Set([key])
                 }
-                if (basicData[that.id].relationTable[target]) {
-                    basicData[that.id].relationTable[target].add(key)
-                } else if (!basicData[that.id].relationTable[target]) {
-                    basicData[that.id].relationTable[target] = new Set([key])
+                if (relationTable[target]) {
+                    relationTable[target].add(key)
+                } else if (!relationTable[target]) {
+                    relationTable[target] = new Set([key])
                 }
                 // 通过hashtable 计数
                 let n = hashNumber(source_n, target_n)
@@ -157,7 +157,7 @@ export const excessGetEdgeType = (that: any) => {
     return {
         typeHash,
         baseTypeHash,
-        relationTable: basicData[that.id].relationTable,
+        relationTable: basicData[GraphId].relationTable,
     }
 }
 /**
@@ -168,7 +168,8 @@ export const excessGetEdgeType = (that: any) => {
  */
 
 export const excessGetEdgeDrawVal = (that: any) => {
-    let { edgeList, nodeList, drawEdgeCount, drawEdgeList, informationNewEdge } = basicData[that.id]
+    let GraphId = that.id;
+    let { edgeList, nodeList, drawEdgeCount, drawEdgeList, informationNewEdge } = basicData[GraphId]
 
     drawEdgeList = new Map()
     informationNewEdge = new Map()
@@ -193,21 +194,21 @@ export const excessGetEdgeDrawVal = (that: any) => {
             if (!size) continue
             let lineNumber = [...hashSet.total].indexOf(key);
 
-            if(globalInfo[that.id].enabledNoStraightLine){
+            if (globalInfo[GraphId].enabledNoStraightLine) {
                 size == 1 && size++
                 size % 2 !== 0 && lineNumber++
             }
 
             let forward =
-                    lineNumber == 0
-                        ? 1
-                        : size % 2 == 0
-                            ? lineNumber % 2 == 1 && sourceNumber != forwardSource
-                                ? -1
-                                : 1
-                            : lineNumber % 2 == 0 && sourceNumber != forwardSource
-                                ? -1
-                                : 1,
+                lineNumber == 0
+                    ? 1
+                    : size % 2 == 0
+                        ? lineNumber % 2 == 1 && sourceNumber != forwardSource
+                            ? -1
+                            : 1
+                        : lineNumber % 2 == 0 && sourceNumber != forwardSource
+                            ? -1
+                            : 1,
                 { x: targetX, y: targetY, radius: targetSize, shape } = target_attribute,
                 { x: sourceX, y: sourceY, radius: sourceSize } = souce_attribute,
                 line;
@@ -215,9 +216,9 @@ export const excessGetEdgeDrawVal = (that: any) => {
                 val.changeAttribute({ isVisible: false })
                 continue
             } else {
-                let xyOffect = coordTransformation(that.id, sourceX, sourceY)
+                let xyOffect = coordTransformation(GraphId, sourceX, sourceY)
                     ; (sourceX = xyOffect[0]), (sourceY = xyOffect[1])
-                let xyOffect2 = coordTransformation(that.id, targetX, targetY)
+                let xyOffect2 = coordTransformation(GraphId, targetX, targetY)
                     ; (targetX = xyOffect2[0]), (targetY = xyOffect2[1])
                 if (type == 'basic') {
                     if (source != target) {
@@ -270,7 +271,7 @@ export const excessGetEdgeDrawVal = (that: any) => {
                 })
                 line.opacity = opacity
                 drawEdgeList.set(key, line)
-                basicData[that.id].edgeBoundBox.set(key, {
+                basicData[GraphId].edgeBoundBox.set(key, {
                     xmax: line.boundBox[0],
                     xmin: line.boundBox[1],
                     ymax: line.boundBox[2],
@@ -282,7 +283,7 @@ export const excessGetEdgeDrawVal = (that: any) => {
             }
         }
     }
-    basicData[that.id].informationNewEdge = informationNewEdge
+    basicData[GraphId].informationNewEdge = informationNewEdge
     forwadHashTable = null
     return drawEdgeList
 }
@@ -302,7 +303,7 @@ const excessGetEdge = (id: string, needFresh: any) => {
             union = new Set([...(union as Set<any>), ...needEdgeFresh])
         }
     })
-    union.forEach((value: any, key: any) => {
+    union.forEach((value: any, key: string) => {
         drawEdgeList.delete(key)
         let edge = edgeList.get(value)
         let attribute = edge?.getAttribute()
@@ -382,21 +383,22 @@ export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?:
     if (!typeHash || !baseTypeHash) {
         excessGetEdgeType(that)
     }
+    let GraphId = that.id;
     let count = 0,
         lineDrawCount: any[] = [],
         num = 0,
         plotNum = 0
-    if (!basicData[that.id]) return {
+    if (!basicData[GraphId]) return {
         lineDrawCount,
         num,
         plotNum,
     }
     if (Partial && needFresh?.size && !that.geo.enabled()) {
-        basicData[that.id].drawEdgeList = excessGetEdge(that.id, needFresh)
+        basicData[GraphId].drawEdgeList = excessGetEdge(GraphId, needFresh)
     } else {
-        basicData[that.id].drawEdgeList = excessGetEdgeDrawVal(that)
+        basicData[GraphId].drawEdgeList = excessGetEdgeDrawVal(that)
     }
-    for (let [key, val] of basicData[that.id].drawEdgeList) {
+    for (let [key, val] of basicData[GraphId].drawEdgeList) {
         const bezierNumber = val.bezierNumber
         if (bezierNumber == globalProp.edgeGroups) {
             num++
@@ -423,7 +425,7 @@ export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?:
  */
 export const graphFilterNodes = (that: any) => {
     let visibleNodeList = new Map()
-    basicData[that.id].nodeList.forEach((item: any, key: any) => {
+    basicData[that.id].nodeList.forEach((item: any, key: string) => {
         if (item.getAttribute('isVisible')) {
             visibleNodeList.set(key, item)
         }
@@ -436,7 +438,7 @@ export const graphFilterNodes = (that: any) => {
  */
 export const graphFilterEdges = (that: any) => {
     let visibleEdgeList = new Map()
-    basicData[that.id].edgeList.forEach((item: any, key: any) => {
+    basicData[that.id].edgeList.forEach((item: any, key: string) => {
         if (item.getAttribute('isVisible')) {
             visibleEdgeList.set(key, item)
         }
@@ -449,7 +451,8 @@ export const graphFilterEdges = (that: any) => {
  * @returns
  */
 export const graphGetOriginData = (that: any) => {
-    let nodeList = basicData[that.id].nodeList
+    let GraphId = that.id;
+    let nodeList = basicData[GraphId].nodeList
     let nodes = new Set()
     nodeList.forEach((item, key) => {
         if (item.getAttribute('isVisible')) {
@@ -467,13 +470,13 @@ export const graphGetOriginData = (that: any) => {
         }
     })
 
-    let edgeList = basicData[that.id].edgeList
+    let edgeList = basicData[GraphId].edgeList
     let edges = new Set()
     let filterEdges = new Set()
 
     try {
-        if (globalInfo[that.id].filterEdgesTransformat?.size) {
-            globalInfo[that.id].filterEdgesTransformat!.forEach(item => {
+        if (globalInfo[GraphId].filterEdgesTransformat?.size) {
+            globalInfo[GraphId].filterEdgesTransformat!.forEach(item => {
                 let result = item.transformat.subEdges.getId()
                 for (let i = 0, len = result.length; i < len; i++) {
                     filterEdges.add(result[i])

@@ -39,19 +39,19 @@ export class StyleRule<T, K> {
     public destroy = (update: boolean = true) => {
         return new Promise<void>((resolve, reject) => {
             try {
-                if (this.RuleOrClass == 2) globalInfo[this.galaxyvis.id].ruleList.delete(this.name)
-                if (basicData[this.galaxyvis.id]) {
-                    let { nodeList, edgeList } = basicData[this.galaxyvis.id]
-                    nodeList.forEach((item: any) => {
+                let GraphId = this.galaxyvis.id
+                if (!globalInfo[GraphId] || !basicData[GraphId]) return reject("获取不到当前图的点边列表")
+                if (this.RuleOrClass == 2) globalInfo[GraphId].ruleList.delete(this.name)
+                if (basicData[GraphId]) {
+                    let { nodeList, edgeList } = basicData[GraphId]
+                    nodeList.forEach(item => {
                         item.removeClass(this.name, this.RuleOrClass, false)
                     })
-                    edgeList.forEach((item: any) => {
+                    edgeList.forEach(item => {
                         item.removeClass(this.name, this.RuleOrClass, false)
                     })
                     if (update) this.galaxyvis.render()
                     resolve()
-                } else {
-                    reject("获取不到当前图的点边列表")
                 }
             } catch (err) {
                 reject(err)

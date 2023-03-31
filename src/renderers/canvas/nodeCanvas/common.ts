@@ -57,6 +57,7 @@ var imgCache: PlainObject<any> = {}
  * @returns
  */
 export const drawImage = (
+    graphId: string,
     node: any,
     x: number,
     y: number,
@@ -77,7 +78,7 @@ export const drawImage = (
         image.setAttribute('crossOrigin', imgCrossOrigin)
         image.src = url
         image.onload = function () {
-            event.trigger('renderCanvas')
+            event.trigger('renderCanvas', graphId)
         }
         imgCache[url] = image
     }
@@ -136,7 +137,7 @@ export const drawIcon = async (
         await document.fonts.load(checkFont)
     }
     // @ts-ignore
-    if(!document.fonts){
+    if (!document.fonts) {
         return
     }
     context.save()
@@ -145,13 +146,14 @@ export const drawIcon = async (
 
     try {
         // 兼容chrome57
-        let execFontSize = ((context.font as any).match(pattern) as Array<string | number>)[0]
-        if (`${fontSize}` !== execFontSize) {
+        let execFontSize = ((context.font as any).match(pattern))
+        execFontSize && execFontSize.length && (execFontSize = execFontSize[0]);
+        if (`${fontSize}` !== execFontSize && execFontSize?.length) {
             context.restore()
             return
         }
-    } catch { }
-    
+    } catch {}
+
     let textHeight = 0;
     if (context.measureText(text)?.actualBoundingBoxAscent) {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = context.measureText(text)

@@ -1,10 +1,10 @@
-import { AnimateType, LAYOUT_MESSAGE } from "../../types"
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
-import { tNode, tNodeList } from "./tclass";
+import { cleartNodeList, tNode, tNodeList } from "./tclass";
 import { isString } from "lodash";
 import bfaLayout from "./bfa";
 import { getContainerHeight, getContainerWidth } from "../../utils";
@@ -33,13 +33,13 @@ class BFALayout extends BaseLayout {
         this.edgeList = basicData[this.galaxyvis.id].edgeList
         this.nodeTable = this.galaxyvis.getNodeTable();
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 tNodeList[key] = new tNode(key, values.getAttribute())
                 tNodeList[key].updatePos()
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)
             })
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 let { inLinks, outLinks } = this.layoutInit(key)
                 tNodeList[key].updateLinks(
                     inLinks,
@@ -82,8 +82,8 @@ class BFALayout extends BaseLayout {
             outRelationTable
         } = this.nodeTable
         let edgeList = this.edgeList
-        let inLinks: Array<{ [key: string]: any }> = [],
-            outLinks: Array<{ [key: string]: any }> = [];
+        let inLinks: Array<PlainObject<any>> = [],
+            outLinks: Array<PlainObject<any>> = [];
         let originIn: string[] = [], originOut: string[] = [];
         if (inRelationTable[key])
             originIn = [...inRelationTable[key]]
@@ -157,10 +157,12 @@ class BFALayout extends BaseLayout {
                         that.data = event.data.data
                         animation(that, event, ids, 'bfa').then((data) => {
                             worker.terminate()
+                            cleartNodeList()
                             resolve(data)
                         })
                     } else {
                         worker.terminate()
+                        cleartNodeList()
                         reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
@@ -168,6 +170,7 @@ class BFALayout extends BaseLayout {
                 try {
                     this.data = this.execute(layoutsNodes)
                     animation(this, null, ids, 'bfa').then((data) => {
+                        cleartNodeList()
                         resolve(data)
                     })
                 } catch (err) {

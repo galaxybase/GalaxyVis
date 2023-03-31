@@ -31,6 +31,7 @@ import sphereLayout from '../../layouts/Geometrical/sphere'
 import fruchtermanReingoldLayout from '../../layouts/forceLink/fruchtermanReingold'
 import topoLayout from '../../layouts/hierarchy/topo'
 import noverlapLayout from '../../layouts/other/noverlap'
+import neuralLayout from '../../layouts/hierarchy/neural'
 
 const LAYOUT_MESSAGE = {
     // run layout
@@ -376,6 +377,21 @@ function handleLayoutMessage(event: any) {
                         ids.push(data[i].id)
                         positions.push({ ...data[i] })
                     }
+                break;
+            }
+            case 'neural': {
+                let {
+                    rDegree,
+                    maxTagLen,
+                    tagList
+                } = options
+                data = neuralLayout(rDegree, tagList, maxTagLen)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(i);
+                        positions.push({ ...data[i], id: i });
+                    }
+                break;
             }
             default:
                 break

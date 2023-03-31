@@ -19,7 +19,7 @@ class HiveLayout extends BaseLayout {
         let { nodes } = this.options;
         let ids = [];
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push({ key, x: 0, y: 0 });
                 ids.push(key)
             })

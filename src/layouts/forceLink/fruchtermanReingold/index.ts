@@ -1,4 +1,4 @@
-import { tNode } from "../../hierarchy/tclass";
+import { PlainObject, tNode } from "../../hierarchy/tclass";
 
 function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
@@ -102,7 +102,7 @@ function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links
 		}
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {

@@ -1,4 +1,4 @@
-import { AnimateType, LAYOUT_MESSAGE } from "../../types"
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
@@ -17,8 +17,8 @@ class frDirectLayout extends BaseLayout {
         super(galaxyvis, options)
     }
     /**
-     * 初始化
-     */
+ * 初始化
+ */
     init() {
         let nodeList = this.nodeList = this.galaxyvis.getFilterNode();
         let layoutsNodes = [], layoutEdges: { source: tNode; target: tNode; }[] = [];
@@ -28,13 +28,13 @@ class frDirectLayout extends BaseLayout {
         this.edgeList = basicData[this.galaxyvis.id].edgeList
         this.nodeTable = this.galaxyvis.getNodeTable();
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 tNodeList[key] = new tNode(key, values.getAttribute())
                 tNodeList[key].updatePos(index++)
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)
             })
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 let { inLinks, outLinks, edgeLinks } = this.layoutInit(key)
                 tNodeList[key].updateLinks(
                     inLinks,
@@ -91,8 +91,8 @@ class frDirectLayout extends BaseLayout {
             outRelationTable
         } = this.nodeTable
         let edgeList = this.edgeList
-        let inLinks: Array<{ [key: string]: any }> = [],
-            outLinks: Array<{ [key: string]: any }> = [],
+        let inLinks: Array<PlainObject<any>> = [],
+            outLinks: Array<PlainObject<any>> = [],
             edgeLinks: Array<any> = [];
         let originIn: string[] = [], originOut: string[] = [];
         if (inRelationTable[key])
@@ -171,10 +171,12 @@ class frDirectLayout extends BaseLayout {
                         that.data = event.data.data
                         animation(that, event, layoutsNodes, 'frDirected').then((data) => {
                             worker.terminate()
+                            cleartNodeList()
                             resolve(data)
                         })
                     } else {
                         worker.terminate()
+                        cleartNodeList()
                         reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
@@ -183,6 +185,7 @@ class frDirectLayout extends BaseLayout {
                     this.data = this.execute(layoutsNodes, layoutEdges)
     
                     animation(this, null, ids, 'frDirected').then((data) => {
+                        cleartNodeList()
                         resolve(data)
                     })
                 } catch (err) {

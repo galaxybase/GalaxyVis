@@ -35,6 +35,7 @@ import SphereLayout from '../layouts/Geometrical/SphereLayout'
 import FruchtermanReingoldLayout from '../layouts/forceLink/FruchtermanReingoldLayoutLayout'
 import topoCircleLayout from '../layouts/hierarchy/topoCircleLayout'
 import AvoidOverlapLayout from '../layouts/other/avoidOverlapLayout'
+import NeuralLayout from '../layouts/hierarchy/neuralLayout'
 
 /**
  * @class Layout
@@ -257,5 +258,14 @@ export default class Layout<T, K> {
      */
     public noverlap = (opts: noverlapType) => {
         return new AvoidOverlapLayout(this.galaxyvis, opts).layout()
+    }
+
+    /**
+     * 神经网络布局
+     * @param opts
+     * @returns
+     */
+    public neural = (opts: AnimateType) => {
+        return new NeuralLayout(this.galaxyvis, opts).layout()
     }
 }

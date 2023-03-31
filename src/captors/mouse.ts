@@ -169,7 +169,7 @@ class CaptorsMouse {
                     }
                     this.scene.selectMovefresh(false)
                 } else {
-                    // 当选中了点的时候
+                    // 当原先hover为空的时候
                     if (
                         !this.oldHoverTarget ||
                         (this.oldHoverTarget && id !== this.oldHoverTarget.getId())

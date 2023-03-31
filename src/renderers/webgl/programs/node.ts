@@ -114,7 +114,7 @@ export default class NodeProgram extends AbstractNodeProgram {
             })
             // 打包数据 => 变成vec4这类的
             const { packedBuffer, typesBuffer, offsetsBuffer, uvBuffer, colorBuffer } =
-                packCircleVertex(p, this.camera)
+                packCircleVertex(p)
 
             if (!isBadges) {
                 for (let i = 0; i < 4; i++) {

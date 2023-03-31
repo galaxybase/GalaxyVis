@@ -2,8 +2,6 @@ import { mat4, vec3 } from 'gl-matrix'
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
 import { getX, getY, vectorAngle } from '../utils'
 import { QuadTree } from '../utils/quadTree'
-import Event from '../utils/event'
-import { originInfo } from '../initial/originInitial'
 
 class Camera {
     public gl: WebGLRenderingContext
@@ -32,6 +30,7 @@ class Camera {
     public ratio: number = 0 //缩放比例
     public aspectRatio: number = 0
     public quad: any //四叉树
+    public events: any
     private thumbnail: boolean //缩略图模式
     private renderer: string //渲染类型
     private graphId: string
@@ -47,6 +46,7 @@ class Camera {
     constructor(
         graphId: string,
         gl: WebGLRenderingContext | CanvasRenderingContext2D,
+        events: any,
         thumbnail: boolean,
         position: vec3 = [0, 0, 3],
         worldUp: vec3 = [0, 1, 0],
@@ -56,6 +56,8 @@ class Camera {
         this.position = position
         this.thumbnail = thumbnail
         this.worldUp = worldUp
+        this.events = events;
+
         // @ts-ignore
         this.gl = gl
         this.Matrix = mat4.create()
@@ -77,14 +79,18 @@ class Camera {
         const viewMatrix = mat4.lookAt(mat4.create(), this.position, center, this.up)
         return viewMatrix
     }
-
+    /**
+     * 判断position中是否含有NaN
+     */
     isPositionNan() {
         if (isNaN(this.position[0]) || isNaN(this.position[1])) {
             this.position[0] = 0
             this.position[1] = 0
         }
     }
-
+    /**
+     * 更新transfrom
+     */
     updateTransform() {
         let graphId = this.graphId;
         let width = this.gl.canvas.width
@@ -203,13 +209,6 @@ class Camera {
                 let Matrix = mat4.create()
                 mat4.rotateZ(Matrix, Matrix, RANGLE)
 
-                // this.position = [
-                //     (this.position[0]) * Matrix[0] + (this.position[1]) * Matrix[4], 
-                //     (this.position[0]) * Matrix[1] + (this.position[1]) * Matrix[5], 
-                //     0
-                // ]
-                // this.updateCameraVectors()
-
                 let nodeList = basicData[this.graphId].nodeList
                 nodeList.forEach((item, key) => {
                     let { isVisible, x, y } = item.getAttribute()
@@ -220,7 +219,10 @@ class Camera {
                         })
                     }
                 })
-                Event.trigger('camerarefresh', false, true)
+                // Event.trigger('camerarefresh', false, true)
+                this.events.emit('camerarefresh', 
+                    false, true
+                )
             }
             this.startMouseX = pointX
             this.startMouseY = pointY
@@ -249,7 +251,10 @@ class Camera {
     updateCameraVectors(viewChange: boolean = false) {
         this.cameraChange = true
         this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
-        Event.trigger('camerarefresh', viewChange)
+        // Event.trigger('camerarefresh', viewChange)
+        this.events.emit('camerarefresh', 
+            viewChange
+        )
     }
 }
 

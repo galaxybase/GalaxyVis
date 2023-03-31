@@ -1,4 +1,4 @@
-import { tNode } from "../../hierarchy/tclass";
+import { PlainObject, tNode } from "../../hierarchy/tclass";
 
 function genericSpring2Layout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
@@ -86,7 +86,7 @@ function genericSpring2Layout(assign: any, _nodes: any, _links: any, options: an
         });
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {

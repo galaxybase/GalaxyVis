@@ -5,7 +5,7 @@ export const cleartNodeList = () => {
     tNodeList = {}
 }
 
-
+export type PlainObject<T = any> = { [k: string]: T }
 
 var initialRadius = 50,
     initialAngle = Math.PI * (3 - Math.sqrt(5));
@@ -15,20 +15,20 @@ export class tNode {
     id: string
     x: number = 0
     y: number = 0
-    inLinks: { [key: string]: any }[] = []
-    outLinks: { [key: string]: any }[] = []
+    inLinks: PlainObject<any>[] = []
+    outLinks: PlainObject<any>[] = []
     scaleX: number = 1
     radius: number = 25
     visible: boolean = true
 
-    constructor(id: string, attributes: { [key: string]: any }) {
+    constructor(id: string, attributes: PlainObject<any>) {
         this.id = id;
         let { radius, isVisible } = attributes
         this.radius = radius;
         this.visible = isVisible;
     }
 
-    updateLinks(inLinks: { [key: string]: any }[], outLinks: { [key: string]: any }[]) {
+    updateLinks(inLinks: PlainObject<any>[], outLinks: PlainObject<any>[]) {
         this.inLinks = inLinks;
         this.outLinks = outLinks;
     }

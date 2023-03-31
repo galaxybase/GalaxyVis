@@ -4,17 +4,19 @@
  * @param {galaxyvis<any>} 初始化
  */
 
+import { PlainObject } from "../types";
+
 class EventEmitter {
     _maxListeners: number
-    _events: any
+    _events: PlainObject<any>
 
     constructor() {
         this._events = Object.create(null)
         this._maxListeners = 50
     }
 
-    _bind(event: string | number, listener: { (...rest: any[]): void; fn: any }, method = 'push') {
-        ;(this._events[event] || (this._events[event] = []))[method](listener)
+    _bind(event: string | number, listener: Function, method = 'push') {
+        (this._events[event] || (this._events[event] = []))[method](listener);
         return this
     }
     /**
@@ -23,7 +25,7 @@ class EventEmitter {
      * @param listener
      * @returns
      */
-    addListener(event: any, listener: any) {
+    addListener(event: string, listener: Function) {
         return this._bind(event, listener)
     }
     /**
@@ -32,7 +34,7 @@ class EventEmitter {
      * @param listener
      * @returns
      */
-    on(event: any, listener: any) {
+    on(event: string, listener: Function) {
         return this.addListener(event, listener)
     }
     /**
@@ -40,7 +42,7 @@ class EventEmitter {
      * @param event
      * @param listener
      */
-    prependListener(event: any, listener: any) {
+    prependListener(event: string, listener: Function) {
         this._bind(event, listener, 'unshift')
     }
     /**
@@ -50,7 +52,7 @@ class EventEmitter {
      * @param method
      * @returns
      */
-    _once(event: any, listener: any, method = 'push') {
+    _once(event: string, listener: Function, method = 'push') {
         const foo = (...rest: any[]) => {
             this.removeListener(event, foo)
             listener.apply(this, rest)
@@ -67,7 +69,7 @@ class EventEmitter {
      * @param method
      * @returns
      */
-    once(event: any, listener: any) {
+    once(event: string, listener: Function) {
         return this._once(event, listener, 'push')
     }
     /**
@@ -76,7 +78,7 @@ class EventEmitter {
      * @param listener
      * @returns
      */
-    prependOnceListener(event: any, listener: any) {
+    prependOnceListener(event: string, listener: Function) {
         return this._once(event, listener, 'unshift')
     }
     /**
@@ -85,7 +87,7 @@ class EventEmitter {
      * @param listener
      * @returns
      */
-    removeListener(event: string | number, listener: { (...rest: any[]): void; fn: any }) {
+    removeListener(event: string | number, listener: Function) {
         if (!arguments.length) {
             this._events = Object.create(null)
 
@@ -99,7 +101,7 @@ class EventEmitter {
             this._events[event] = null
             return this
         }
-        this._events[event] = cbs.filter((cb: { fn: any }) => {
+        this._events[event] = cbs.filter((cb: any) => {
             return !(cb === listener || cb.fn === listener)
         })
 
@@ -111,7 +113,7 @@ class EventEmitter {
      * @param listener
      * @returns
      */
-    off(event: any, listener: any) {
+    off(event: string, listener: Function) {
         return this.removeListener(event, listener)
     }
     /**

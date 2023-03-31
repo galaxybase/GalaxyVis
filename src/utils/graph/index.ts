@@ -18,7 +18,7 @@ import { nodeInitAttribute } from '../node'
 import { edgeInitAttribute } from '../edge'
 import { transformatAddEdgeFilter, transformatAddNodeFilter } from '../transformations'
 import { clearChars } from '../tinySdf/sdfDrawText'
-import { clone, cloneDeep } from 'lodash'
+import { clone, cloneDeep, defaultsDeep, PartialObject } from 'lodash'
 import { cameraFram } from '../cameraAnimate'
 import { animateFram } from '../graphAnimate'
 import { cleartNodeList } from '../../layouts/hierarchy/tclass'
@@ -88,14 +88,14 @@ export const graphAddNodes = (
     that: any,
     nodes: Array<any>,
     update: boolean = true,
-): Promise<any> => {
-    return new Promise(resolve => {
+) => {
+    return new Promise(async resolve => {
         let temporaryNodes: any[] = []
         nodes.forEach(nodeInfo => {
             let node = graphAddNodeHandler(that, nodeInfo)
             node && temporaryNodes.push(node.getId())
         })
-        transformatStrategies['nodeFilter'](that)
+        await transformatStrategies['nodeFilter'](that)
         let nodeList = new NodeList(that, temporaryNodes)
         that.events.emit('addNodes', {
             nodes: nodeList,
@@ -112,9 +112,10 @@ export const graphAddNodes = (
  * @returns
  */
 const graphAddNodeHandler = (that: any, nodeInfo: NodeAttributes) => {
+    let GraphId = that.id;
     let node: any
     nodeInfo.id = nodeInfo?.id || genID(8)
-    let basicNodeList = basicData[that.id].nodeList
+    let basicNodeList = basicData[GraphId].nodeList
     if (
         !basicNodeList.has(nodeInfo.id) ||
         (!basicNodeList.get(nodeInfo.id).getAttribute('isVisible') &&
@@ -133,17 +134,23 @@ const graphAddNodeHandler = (that: any, nodeInfo: NodeAttributes) => {
         node = new Node(nodeAttr)
         // @ts-ignore
         node.__proto__ = that
-        basicData[that.id].nodeList.set(nodeInfo.id, node)
-        originInfo[that.id].nodeList.set(nodeInfo.id, attr)
+        basicData[GraphId].nodeList.set(nodeInfo.id, node)
+        originInfo[GraphId].nodeList.set(nodeInfo.id, attr)
         // canvas绘制顺序
         if (
             that.renderer === 'canvas' &&
-            !globalInfo[that.id].nodeOrder.has(nodeInfo.id as string)
+            !globalInfo[GraphId].nodeOrder.has(nodeInfo.id as string)
         ) {
-            globalInfo[that.id].nodeOrder.add(nodeInfo.id as string)
+            globalInfo[GraphId].nodeOrder.add(nodeInfo.id as string)
         }
-        globalInfo[that.id].ruleList.forEach((key, item) => {
-            node.addClass(item, 2, false)
+        globalInfo[GraphId].ruleList.forEach((key, item) => {
+            let { nodeSelector, nodeAttributes } = key
+            if (nodeSelector && nodeSelector(node)) {
+                node.addClass(item, 2, false)
+            }
+            if (!nodeSelector && nodeAttributes) {
+                node.addClass(item, 2, false)
+            }
         })
     }
 
@@ -179,8 +186,8 @@ export const graphAddEdges = (
     that: any,
     edges: Array<any>,
     update: boolean = true,
-): Promise<any> => {
-    return new Promise(resolve => {
+) => {
+    return new Promise(async resolve => {
         let temporaryEdges: any[] = []
 
         edges.forEach(edgeInfo => {
@@ -188,9 +195,9 @@ export const graphAddEdges = (
             edgeTarget && temporaryEdges.push(edgeTarget.getId())
         })
 
-        transformatStrategies['nodeFilter'](that)
-        transformatStrategies['edgeFilter'](that)
-        transformatStrategies['mergeEdge'](that)
+        await transformatStrategies['nodeFilter'](that)
+        await transformatStrategies['edgeFilter'](that)
+        await transformatStrategies['mergeEdge'](that)
         that.geo.enabled() && update && that.geo.layer.options.onUpdate(true)
         update && that.render()
         let edgeList = new EdgeList(that, temporaryEdges)
@@ -209,12 +216,14 @@ export const graphAddEdges = (
  */
 
 const graphAddEdgeHandler = (that: any, edgeInfo: edgeAttributes) => {
-    let edge: any
+    let GraphId = that.id;
+    let edge: any;
+    let { edgeList } = basicData[GraphId]
     edgeInfo.id = edgeInfo?.id || genID(8)
     if (
-        !basicData[that.id].edgeList.has(edgeInfo.id) ||
-        (!basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('isVisible') &&
-            !basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('useMergeEdge')
+        !edgeList.has(edgeInfo.id) ||
+        (!edgeList.get(edgeInfo.id).getAttribute('isVisible') &&
+            !edgeList.get(edgeInfo.id).getAttribute('useMergeEdge')
         )
     ) {
         let attribute = edgeInitAttribute(that, edgeInfo?.attribute || edgeInfo?.attributes)
@@ -239,29 +248,35 @@ const graphAddEdgeHandler = (that: any, edgeInfo: edgeAttributes) => {
         edge = new Edge(edgeAttr)
         // @ts-ignore
         edge.__proto__ = that
-        basicData[that.id].edgeList.set(edgeInfo.id, edge)
-        originInfo[that.id].edgeList.set(edgeInfo.id, attr)
+        edgeList.set(edgeInfo.id, edge)
+        originInfo[GraphId].edgeList.set(edgeInfo.id, attr)
 
         // canvas绘制顺序
         if (
             that.renderer === 'canvas' &&
-            !globalInfo[that.id].edgeOrder.has(edgeInfo.id as string)
+            !globalInfo[GraphId].edgeOrder.has(edgeInfo.id as string)
         ) {
-            globalInfo[that.id].edgeOrder.add(edgeInfo.id as string)
+            globalInfo[GraphId].edgeOrder.add(edgeInfo.id as string)
         }
-        globalInfo[that.id].ruleList.forEach((key, item) => {
-            edge.addClass(item, 2, false)
+        globalInfo[GraphId].ruleList.forEach((key, item) => {
+            let { edgeSelector, edgeAttributes } = key
+            if (edgeSelector && edgeSelector(edge)) {
+                edge.addClass(item, 2, false)
+            }
+            if (!edgeSelector && edgeAttributes) {
+                edge.addClass(item, 2, false)
+            }
         })
 
-        if (globalInfo[that.id].mergeEdgesTransformat) {
-            let { transformat } = globalInfo[that.id].mergeEdgesTransformat
+        if (globalInfo[GraphId].mergeEdgesTransformat) {
+            let { transformat } = globalInfo[GraphId].mergeEdgesTransformat
             let ids = transformat.subEdges.getId()
             if (ids && ids.indexOf(edgeInfo.id) != -1) {
                 return null
             }
         }
 
-        if (!basicData[that.id].edgeList.get(edgeInfo.id).getAttribute('isVisible')) {
+        if (!edgeList.get(edgeInfo.id).getAttribute('isVisible')) {
             return null
         }
 
@@ -285,9 +300,10 @@ export const graphGetDatas = (
     ids?: string[],
     getMerge?: boolean,
 ): any => {
+    let GraphId = that.id;
     let visibleList: string[] = []
     //@ts-ignore
-    basicData[that.id][listKey].forEach((item: any, key: any) => {
+    basicData[GraphId][listKey].forEach((item: any, key: string) => {
         if (!getMerge) {
             if (item.getAttribute('isVisible') || getHidden) {
                 visibleList.push(key)
@@ -295,7 +311,7 @@ export const graphGetDatas = (
         } else {
             if (
                 item.getAttribute('isVisible') ||
-                (globalInfo[that.id].mergeEdgesTransformat && item.getAttribute('usedMerge'))
+                (globalInfo[GraphId].mergeEdgesTransformat && item.getAttribute('usedMerge'))
             ) {
                 visibleList.push(key)
             }
@@ -342,7 +358,7 @@ export const graphGetSelectedNodes = (that: any) => {
     let newIds: string[] = [],
         { selectedNodes, selectedEdges } = basicData[that.id]
     if (selectedEdges.size === 0 && selectedNodes.size) {
-        selectedNodes.forEach((item: any, key: any) => {
+        selectedNodes.forEach((item: any, key: string) => {
             newIds.push(key)
         })
     }
@@ -375,7 +391,7 @@ export const graphGetSelectedEdges = (that: any) => {
     let newIds: any[] = [],
         { selectedEdges } = basicData[that.id]
     if (selectedEdges.size) {
-        selectedEdges.forEach((item: any, key: any) => {
+        selectedEdges.forEach((item: any, key: string) => {
             newIds.push(key)
         })
     }
@@ -406,22 +422,23 @@ export const graphGetNonSelectedEdges = (that: any) => {
  */
 export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: boolean) => {
     let relationTable = that.getRelationTable()
-
+    let GraphId = that.id;
     let edgelist = relationTable[nodeId]
-    let node = basicData[that.id].nodeList.get(nodeId)
+    let { nodeList, edgeList } = basicData[GraphId];
+    let node = nodeList.get(nodeId)
 
     if (node?.getAttribute('useMergeNode') || !node) return
 
     if (edgelist) {
         edgelist.forEach((item: any) => {
-            basicData[that.id].edgeList.delete(item)
-            originInfo[that.id].edgeList.delete(item)
+            edgeList.delete(item)
+            originInfo[GraphId].edgeList.delete(item)
         })
     }
 
     node?.setSelected(false)
-    basicData[that.id].nodeList.delete(nodeId)
-    originInfo[that.id].nodeList.delete(nodeId)
+    nodeList.delete(nodeId)
+    originInfo[GraphId].nodeList.delete(nodeId)
 
     if (isReFlash) {
         that.events.emit('removeNodes', {
@@ -460,19 +477,21 @@ export const graphRemoveNodes = (that: any, nodes: string[]) => {
  * @param isReFlash
  */
 export const graphRemoveEdge = async (that: any, edgeId: string, force: boolean, isReFlash: boolean) => {
-    let edge = basicData[that.id].edgeList.get(edgeId)
+    let GraphId = that.id;
+    let { edgeList } = basicData[GraphId]
+    let edge = edgeList.get(edgeId)
 
     if (
         !force &&
         edge &&
-        !globalInfo[that.id].mergeEdgesTransformat &&
+        !globalInfo[GraphId].mergeEdgesTransformat &&
         edge.getAttribute('usedMerge') == false
     )
         return
 
     edge?.setSelected(false)
-    basicData[that.id].edgeList.delete(edgeId)
-    originInfo[that.id].edgeList.delete(edgeId)
+    edgeList.delete(edgeId)
+    originInfo[GraphId].edgeList.delete(edgeId)
     if (isReFlash) {
         that.events.emit('removeEdges', {
             edges: new EdgeList(that, [edgeId]),
@@ -509,8 +528,8 @@ export const graphRemoveEdges = (that: any, edges: string[], force: boolean = tr
  * @param RawGraph
  * @returns
  */
-export const graphAddGraph = (that: any, RawGraph: { [key: string]: any[] }): Promise<any> => {
-    return new Promise(async (resolve: any, reject: any) => {
+export const graphAddGraph = (that: any, RawGraph: PartialObject<any>) => {
+    return new Promise(async (resolve, reject) => {
         let { nodes, edges } = RawGraph
         let nodelist, edgelist
         nodes && (nodelist = await that.addNodes(nodes, false))
@@ -544,19 +563,24 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
         ],
     ])
     globalProp.useIniticon = 0
+    const globalInfoGraph = globalInfo[graphId]
+    globalInfoGraph.mergeNodesTransformat = new Map()
+    globalInfoGraph.mergeEdgesTransformat = null
+    globalInfoGraph.filterNodesTransformat = new Map()
+    globalInfoGraph.filterEdgesTransformat = new Map()
 
-    globalInfo[graph.id].mergeNodesTransformat = new Map()
-    globalInfo[graph.id].mergeEdgesTransformat = null
-    globalInfo[graph.id].filterNodesTransformat = new Map()
-    globalInfo[graph.id].filterEdgesTransformat = new Map()
-    globalInfo[graph.id].edgeType = null
+    if (graph.overLay) {
+        graph.overLay.clear()
+    }
+
+    globalInfoGraph.edgeType = null
 
     if (graph.pulse) {
         graph.pulseCanvas.clear();
     }
 
     if (destory) {
-        globalInfo[graph.id].ruleList = new Map()
+        globalInfoGraph.ruleList = new Map()
     }
 
     if (cameraFram) {
@@ -582,22 +606,27 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
  * @returns
  */
 export const graphDestory = (that: any) => {
-    return new Promise((resolve: any, reject: any) => {
+    return new Promise((resolve, reject) => {
         try {
+            let GraphId = that.id;
             that.geo.enabled() && that.geo.disable()
 
-            if (thumbnailInfo[that.id] && that.thumbnail) {
-                thumbnailInfo[that.id] && delete thumbnailInfo[that.id]
+            if (thumbnailInfo[GraphId] && that.thumbnail) {
+                thumbnailInfo[GraphId] && delete thumbnailInfo[GraphId]
                 resolve(true)
                 return
             }
 
-            if (!(thumbnailInfo[that.id] && that.thumbnail)) {
+            if (!(thumbnailInfo[GraphId] && that.thumbnail)) {
                 // 清除数据
                 graphClearGraph(that)
                 clearChars()
-                globalProp.textureCtx = null
-                delete basicData[that.id]
+
+                if (Object.keys(instancesGL).length <= 1)
+                    globalProp.textureCtx = null
+                delete basicData[GraphId]
+                delete originInfo[GraphId]
+                delete globalInfo[GraphId]
 
                 // webgl上下文清除
                 var t = that.gl?.getExtension('WEBGL_lose_context')
@@ -611,9 +640,14 @@ export const graphDestory = (that: any) => {
                     that.pulseCanvas.destory();
                     that.pulseCanvas = null;
                 }
+                if (that.overLay) {
+                    that.overLay.destory()
+                    that.overLay = null;
+                }
+
             }
-            instancesGL[that.id] && delete instancesGL[that.id]
-            thumbnailInfo[that.id] && delete thumbnailInfo[that.id]
+            instancesGL[GraphId] && delete instancesGL[GraphId]
+            thumbnailInfo[GraphId] && delete thumbnailInfo[GraphId]
             // 清除graph 的 events
             let Graphevents = that.events._events
             for (let i in Graphevents) {
@@ -626,6 +660,12 @@ export const graphDestory = (that: any) => {
                 event.remove(i)
             }
 
+            for (let i in that) {
+                that[i] = null;
+                delete that[i]
+            }
+
+            that = null;
             resolve(true)
         } catch (err) {
             reject(err)

@@ -6,10 +6,10 @@ import EdgeList from '../../classes/edgeList'
 // 给点和边添加样式和触发回调
 export const nodeOrEdgeSelect = (
     scene: any,
-    list: any,
-    funcName: any,
+    list: Set<string>,
+    funcName: Function,
     emitName: string,
-    sel?: any,
+    sel?: string,
 ) => {
     if (list.size) {
         let { selectedNodes, unSelectedNodes, selectedEdges, unSelectedEdges } =
@@ -50,7 +50,7 @@ export const nodeOrEdgeSelect = (
 }
 
 // 给点添加mouse的select样式
-export const mouseAddClass = (graphId: any, list: any, sel?: any) => {
+export const mouseAddClass = (graphId: string, list: any, sel?: string) => {
     // 当点存在hover的样式
     let { nodeList } = basicData[graphId],
         hoverRule = null
@@ -69,7 +69,7 @@ export const mouseAddClass = (graphId: any, list: any, sel?: any) => {
 }
 
 // 给点移除mouse的select样式
-export const mouseRemoveClass = (graphId: any, list: any) => {
+export const mouseRemoveClass = (graphId: string, list: any) => {
     nodeOrEdgeAddOrRemoveClass(
         basicData[graphId].nodeList,
         globalInfo[graphId].nodeSelectStyle,
@@ -79,7 +79,7 @@ export const mouseRemoveClass = (graphId: any, list: any) => {
 }
 
 // 给边添加mouse的select样式
-export const mouseAddEdgeClass = (graphId: any, list: any, edgeSel?: any) => {
+export const mouseAddEdgeClass = (graphId: string, list: any, edgeSel?: string) => {
     const { nodeList, edgeList } = basicData[graphId],
         { edgeSelectStyle, nodeSelectStyle, edgeHoverStyle, nodeHoverStyle } = globalInfo[graphId]
     nodeOrEdgeAddOrRemoveClass(
@@ -114,7 +114,7 @@ export const mouseAddEdgeClass = (graphId: any, list: any, edgeSel?: any) => {
 }
 
 // 边添加或移除样式方法
-export const mouseRemoveEdgeClass = (graphId: any, list: any) => {
+export const mouseRemoveEdgeClass = (graphId: string, list: any) => {
     nodeOrEdgeAddOrRemoveClass(
         basicData[graphId].nodeList,
         globalInfo[graphId].nodeHoverStyle,
@@ -136,7 +136,7 @@ export const mouseRemoveEdgeClass = (graphId: any, list: any) => {
 }
 
 // 点或边添加或移除样式方法
-export const nodeOrEdgeAddOrRemoveClass = (list: any, style: any, ids: any, type: string) => {
+export const nodeOrEdgeAddOrRemoveClass = (list: any, style: any, ids: string[], type: string) => {
     if (Object.keys(style).length) {
         let { rule } = style
         for (let i = 0, len = ids.length; i < len; i++) {

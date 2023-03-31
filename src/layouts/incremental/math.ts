@@ -1,11 +1,13 @@
-export function SmallEnclDisk(x: any, y: any, radius: any[], unitArray?: any) {
+import { PlainObject } from "../../types"
+
+export function SmallEnclDisk(x: number[], y: number[], radius: number[], unitArray?: Uint32Array) {
     if (!unitArray) {
         unitArray = new Uint32Array(x.length)
         for (var i = 0, len = x.length; i < len; i++) {
             unitArray[i] = i
         }
     }
-    function initArray(unitArray: any) {
+    function initArray(unitArray: Uint32Array) {
         for (var i = unitArray.length - 1; i >= 0; i--) {
             var random = Math.floor(Math.random() * (i + 1))
             random = Math.max(Math.min(random, i), 0)
@@ -16,13 +18,13 @@ export function SmallEnclDisk(x: any, y: any, radius: any[], unitArray?: any) {
         return unitArray
     }
     function checkThreePoints(
-        unitArray: any,
+        unitArray: Uint32Array,
         result: string | any[],
-        xObject: { [x: string]: any },
-        yObject: { [x: string]: any },
-        radius: { [x: string]: any },
-        pointCenter: any,
-        minPointCenter: any,
+        xObject: PlainObject<any>,
+        yObject: PlainObject<any>,
+        radius: PlainObject<any>,
+        pointCenter: Function,
+        minPointCenter: Function,
     ) {
         var ans = null
         var len = result.length
@@ -54,15 +56,15 @@ export function SmallEnclDisk(x: any, y: any, radius: any[], unitArray?: any) {
     }
     // @ts-ignore
     function minDisk(
-        unitArray: any,
-        result: any[],
+        unitArray: Uint32Array,
+        result: number[],
         len: number,
-        xObject: { [x: string]: any },
-        yObject: { [x: string]: any },
-        radius: any[],
-        checkWay: any,
-        pointCenter: any,
-        minPointCenter: any,
+        xObject: PlainObject<any>,
+        yObject: PlainObject<any>,
+        radius: number[],
+        checkWay: Function,
+        pointCenter: Function,
+        minPointCenter: Function,
     ) {
         // debugger
         var ans = null
@@ -250,7 +252,7 @@ function check(threePoints: number[], x: number, y: number) {
     return Math.sqrt(disx * disx + disy * disy) < disr + 1e-12
 }
 
-export function isCrossOver(originPosition: any, t: any) {
+export function isCrossOver(originPosition: number[][], t: number[]) {
     var x = t[0]
     var y = t[1]
     var r = t[2]
@@ -363,7 +365,7 @@ export function convex(originPosition: any) {
 // function equal(a, b) {
 //     return a[0] == b[0] && a[1] == b[1];
 // }
-export function miniCal(mindisk: number[], t: any, r: any) {
+export function miniCal(mindisk: number[], t: any, r: number) {
     var i = Infinity
     var n, a
     for (var j = 1, len = t.length; j < len; j += 2) {
@@ -411,7 +413,7 @@ export function circleIntersectsBox(
     return centrifugalX * centrifugalX + centrifugalY * centrifugalY < offsetR * offsetR
 }
 
-export function createNewBound(mindiskx: any, mindisky: any, boundBox: any) {
+export function createNewBound(mindiskx: number, mindisky: number, boundBox: any) {
     var segmentRectangle = segmentRectangleIntersection(
         boundBox.cx,
         boundBox.cy,
@@ -521,8 +523,8 @@ function triangulation(
     num: number,
     floatArray: any,
     count: number,
-    floatArray4: any,
-    floatArray8: any,
+    floatArray4: Float64Array,
+    floatArray8: Float64Array,
 ) {
     let newA,
         newB,

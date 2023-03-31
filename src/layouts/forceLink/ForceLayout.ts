@@ -37,7 +37,7 @@ class ForceLayout extends BaseLayout {
             height
         let { nodes, useAnimation, withoutCenter } = this.options
         let layoutsNodes: any[] = []
-        var layoutsEdges = [], nodesData = [];
+        var layoutsEdges = [], nodesData: any[] = [];
         
         if (useAnimation == undefined) this.useAnimation = true
         else this.useAnimation = useAnimation
@@ -45,7 +45,7 @@ class ForceLayout extends BaseLayout {
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             let i = 0;
             let relationTable = this.galaxyvis.getEdgeType().relationTable
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push(key)
                 let needEdgeFresh = relationTable[layoutsNodes[i]]
                 nodesData[i++] = ({ id: key, isSingle: needEdgeFresh ? false : true })

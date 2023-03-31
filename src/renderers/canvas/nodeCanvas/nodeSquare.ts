@@ -60,6 +60,7 @@ export default function canvasNodeSquare(
         }
         // 加载图片
         drawImage(
+            graphId,
             data,
             x,
             y,

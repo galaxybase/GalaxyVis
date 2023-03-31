@@ -1,13 +1,13 @@
-import { tNode } from "../../hierarchy/tclass";
+import { PlainObject, tNode } from "../../hierarchy/tclass";
 
 function genericGatherLayout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
     var links = _links;
 
-    var SPEED_DIVISOR = 800;
-    var AREA_MULTIPLICATOR = 100000;
-    var area = options?.area || 3;
-    var speed = options?.speed || 5;
+    var SPEED_DIVISOR = 3000;
+    var AREA_MULTIPLICATOR = 1e5;
+    var area = options?.area || 3e2;
+    var speed = options?.speed || 80;
     var tickNum = options?.tickNum || 150;
 
     nodes.forEach(function (n: tNode) {
@@ -95,12 +95,12 @@ function genericGatherLayout(assign: any, _nodes: any, _links: any, options: any
         });
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {
-            x: n.x * 10,
-            y: n.y * 10,
+            x: n.x * 5,
+            y: n.y * 5,
             id: n.id
         }
     }

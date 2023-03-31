@@ -153,7 +153,7 @@ export default class tinySDF {
 }
 
 // 2D 欧几里得平面距离
-function edt(data: Float64Array, width: number, height: number, f: any, v: any, z: any) {
+function edt(data: Float64Array, width: number, height: number, f: Float64Array, v: Uint16Array, z: Float64Array) {
     for (let x = 0; x < width; x++) edt1d(data, x, width, height, f, v, z)
     for (let y = 0; y < height; y++) edt1d(data, y * width, 1, width, f, v, z)
 }
@@ -163,9 +163,9 @@ function edt1d(
     offset: number,
     stride: number,
     length: number,
-    f: number[],
-    v: any[],
-    z: number[],
+    f: Float64Array,
+    v: Uint16Array,
+    z: Float64Array,
 ) {
     v[0] = 0
     z[0] = -INF
@@ -199,7 +199,7 @@ function edt1d(
  * @param {*} char
  * @returns
  */
-function isCJK(char: any) {
-    char = char.charCodeAt(0)
-    return char >= 0x4e00 && char <= 0x9fff
+function isCJK(char: string) {
+    let cjkChar = char.charCodeAt(0)
+    return cjkChar >= 0x4e00 && cjkChar <= 0x9fff
 }

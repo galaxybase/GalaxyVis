@@ -3,7 +3,7 @@
  * @param {BasicSet} neighbors
  * @param {object}   object
  */
-function merge(neighbors: Set<any>, object: any) {
+function merge(neighbors: Set<string>, object: any) {
     if (typeof object === 'undefined') return
     object.forEach((element: string) => {
         neighbors.add(element)
@@ -46,7 +46,7 @@ function take(iterator: any, n: any) {
  * @return {Array}
  */
 export function createNeighborArrayForNode(nodeData: any) {
-    const neighbors = new Set()
+    const neighbors: Set<string> = new Set()
     merge(neighbors, nodeData)
     return take(neighbors.values(), neighbors.size)
 }

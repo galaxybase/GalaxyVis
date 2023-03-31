@@ -58,6 +58,7 @@ export default function canvasNodeDef(
         }
         // 绘制图片
         drawImage(
+            graphId,
             data,
             x,
             y,

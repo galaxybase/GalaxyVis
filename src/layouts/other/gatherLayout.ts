@@ -1,11 +1,11 @@
-import { AnimateType, LAYOUT_MESSAGE } from "../../types"
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
 import { isString } from "lodash";
-import { tNode, tNodeList } from "../hierarchy/tclass";
+import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
 import gatherTypeLayout from "./gather";
 import { EventType } from "../../utils/events";
 
@@ -30,13 +30,13 @@ class GatherLayout extends BaseLayout {
         this.edgeList = basicData[this.galaxyvis.id].edgeList
         this.nodeTable = this.galaxyvis.getNodeTable();
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 tNodeList[key] = new tNode(key, values.getAttribute())
                 tNodeList[key].updatePos()
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)
             })
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 let { inLinks, outLinks, edgeLinks } = this.layoutInit(key)
                 tNodeList[key].updateLinks(
                     inLinks,
@@ -103,8 +103,8 @@ class GatherLayout extends BaseLayout {
             outRelationTable
         } = this.nodeTable
         let edgeList = this.edgeList
-        let inLinks: Array<{ [key: string]: any }> = [],
-            outLinks: Array<{ [key: string]: any }> = [],
+        let inLinks: Array<PlainObject<any>> = [],
+            outLinks: Array<PlainObject<any>> = [],
             edgeLinks: Array<any> = [];
         let originIn: string[] = [], originOut: string[] = [];
         if (inRelationTable[key])
@@ -182,10 +182,12 @@ class GatherLayout extends BaseLayout {
                         that.data = event.data.data
                         animation(that, event, layoutsNodes, 'gather').then((data) => {
                             worker.terminate()
+                            cleartNodeList()
                             resolve(data)
                         })
                     } else {
                         worker.terminate()
+                        cleartNodeList()
                         reject(LAYOUT_MESSAGE.ERROR)
                     }
                 }
@@ -194,6 +196,7 @@ class GatherLayout extends BaseLayout {
                     this.data = this.execute(layoutsNodes, layoutEdges)
 
                     animation(this, null, ids, 'gather').then((data) => {
+                        cleartNodeList()
                         resolve(data)
                     })
                 } catch (err) {

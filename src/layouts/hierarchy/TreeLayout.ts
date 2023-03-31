@@ -24,11 +24,13 @@ class TreeLayout extends BaseLayout {
         let { nodes } = this.options
 
         if (!nodes) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push(key)
             })
         } else {
-            layoutsNodes = nodes
+            layoutsNodes = nodes.filter((item: any) => {
+                return nodeList.has(item)
+            })
         }
 
         // 那些边是需要传入计算引力的
@@ -127,6 +129,11 @@ class TreeLayout extends BaseLayout {
             }
 
             let { linksBak, nodesBak, layoutsNodes: layoutsNode } = await this.init()
+
+            if(layoutsNode.length <= 1){
+                return resolve({})
+            }
+
             if (this.options.useWebWorker != false && typeof Worker !== 'undefined') {
                 let allNodes = nodesBak
                 // @ts-ignore

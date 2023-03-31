@@ -45,12 +45,12 @@ export default class galaxyvis extends Graph {
     private textProgram!: sdfTextProgram | lableCanvas  //文字渲染器
     private edgeProgram!: edgeProgram | edgeCanvas  //边渲染器
     private haloProgram!: haloProgram | haloCanvas  //光环渲染器
-    private debounce: any // 防抖函数
+    private debounce!: Function // 防抖函数
     private localUpdate: boolean = true //开启局部更新
     private textStatus: boolean = true //是否渲染文字
-    private divContainer: any
+    private divContainer: HTMLElement | null | undefined
     private pulse: boolean = false //是否开启pulse模式
-    private pulseCanvas: any;
+    private pulseCanvas: pulseCanvas | undefined;
 
     constructor(args: {
         container: string | HTMLElement //容器 如果是dom节点就直接用没有的话生成
@@ -59,22 +59,22 @@ export default class galaxyvis extends Graph {
         renderer?: string // 渲染类型
     }) {
         super()
-        this.id = 'graph' + genID(0)
+        let id = this.id = 'graph' + genID(0)
         // option下args属性拆分加载
         const canvasBox = this.initArgs(args)
         if (this.renderer === 'webgl') {
             // 获取webgl上下文
             this.createWebGLContext(canvasBox, args.options as Options)
             // 加载相机
-            this.camera = new Camera(this.id, this.gl, this.thumbnail)
-            if (!this.thumbnail) instancesGL[this.id] = this.gl
+            this.camera = new Camera(id, this.gl, this.events, this.thumbnail)
+            if (!this.thumbnail) instancesGL[id] = this
             // 加载Programs
             this.initPrograms()
         } else {
             // 获取2d画布
             this.createCanvasContext(canvasBox, args.options as Options)
             // 加载相机
-            this.camera = new Camera(this.id, this.ctx, this.thumbnail)
+            this.camera = new Camera(id, this.ctx, this.events, this.thumbnail)
             // 挂载
             this.initCanvasRender()
         }
@@ -85,10 +85,10 @@ export default class galaxyvis extends Graph {
             this.initContainerListener()
             // 加载captors_mouse;
             this.mouseCaptor = new CaptorsMouse(this, this.camera, canvasBox)
-            globalInfo[this.id].canvasBox = canvasBox
+            globalInfo[id].canvasBox = canvasBox
         } else {
             this.mouseCaptor = null
-            thumbnailInfo[this.id] = this
+            thumbnailInfo[id] = this
         }
 
         // 初始调整大小
@@ -99,12 +99,13 @@ export default class galaxyvis extends Graph {
         if (this.renderer === 'webgl') {
             globalProp.iconMap.forEach((item, key) => {
                 initIconOrImage(this, {
-                    key,
+                    key: item.key,
                     type: item.type,
                     num: item.num,
                     style: item?.style,
                     scale: item?.scale,
                     font: item?.font,
+                    color: item?.color
                 })
             })
         }
@@ -135,10 +136,11 @@ export default class galaxyvis extends Graph {
                 height: 0,
             }
         } else {
-            this.thumbnail = false
-            basicData[this.id] = cloneDeep(basieciDataSetting)
-            originInfo[this.id] = cloneDeep(originInfoSetting)
-            globalInfo[this.id] = cloneDeep(globalInfoSetting)
+            this.thumbnail = false;
+            let id = this.id;
+            basicData[id] = cloneDeep(basieciDataSetting)
+            originInfo[id] = cloneDeep(originInfoSetting)
+            globalInfo[id] = cloneDeep(globalInfoSetting)
         }
         // zoom层级
         if (has(args, 'options.interactions.zoom')) {
@@ -154,15 +156,15 @@ export default class galaxyvis extends Graph {
             let { maxValue, minValue, defaultValue } = zoomInit
             if (maxValue < minValue) {
                 flag = false
-                console.log('zoom init happened maxValue < minValue')
+                console.warn('zoom init happened maxValue < minValue')
             }
             if (maxValue < 0 && maxValue > 180) {
                 flag = false
-                console.log('zoom maxValue should in 0 to 180')
+                console.warn('zoom maxValue should in 0 to 180')
             }
             if (minValue < 0 && minValue > 180) {
                 flag = false
-                console.log('zoom minValue should in 0 to 180')
+                console.warn('zoom minValue should in 0 to 180')
             }
             if (defaultValue < minValue && defaultValue > maxValue) {
                 defaultValue = (maxValue + minValue) / 2
@@ -216,7 +218,7 @@ export default class galaxyvis extends Graph {
                 floatColor: floatColor(options.backgroundColor).rgb,
                 color: options.backgroundColor,
             }
-            this.divContainer.style.backgroundColor = options.backgroundColor
+            this.divContainer!.style.backgroundColor = options.backgroundColor
         }
         // 清除缓冲区
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
@@ -230,7 +232,7 @@ export default class galaxyvis extends Graph {
             this.gl.ONE,
             this.gl.ONE_MINUS_SRC_ALPHA,
         )
-        let canvas: any = this.gl.canvas,
+        let canvas: HTMLCanvasElement = this.gl.canvas as HTMLCanvasElement,
             width = canvasBox.clientWidth || canvasBox.offsetWidth,
             height = canvasBox.clientHeight || canvasBox.offsetHeight
         // 设置宽高
@@ -271,7 +273,7 @@ export default class galaxyvis extends Graph {
         this.ctx = canvasBox.getContext('2d', contextOptions) as CanvasRenderingContext2D
 
         if (options?.backgroundColor) {
-            this.divContainer.style.backgroundColor = options.backgroundColor
+            this.divContainer!.style.backgroundColor = options.backgroundColor
             globalInfo[this.id].backgroundColor = {
                 floatColor: floatColor(options.backgroundColor).rgb,
                 color: options.backgroundColor,
@@ -358,31 +360,33 @@ export default class galaxyvis extends Graph {
     }
     // 订阅发布
     private initListener(): void {
-        event.listen('camerarefresh', (viewChange: boolean = false, refesh: boolean = false) => {
+        this.events.on('camerarefresh', (viewChange: boolean = false, refesh: boolean = false) => {
             if (refesh)
                 this.render()
             else
                 this.camerarefresh(viewChange)
         })
-        event.listen('renderCanvas', () => {
-            this.renderCanvas()
+        event.listen('renderCanvas', (GraphId: string) => {
+            if (GraphId == this.id) {
+                this.renderCanvas()
+            }
         })
         // 节流函数
         this.debounce = debounce(() => this.events.emit('viewChanged', { type: 'zoom' }), 200)
     }
     // 返回div对象
-    public getDivContainer(): void {
-        return this.divContainer
+    public getDivContainer(): HTMLElement {
+        return this.divContainer as HTMLElement
     }
     // 画布大小变化，重置视图
     public resize(): void {
         try {
             let gl = this.gl
-            let canvas: any = this.renderer === 'webgl' ? gl.canvas : this.ctx.canvas,
-                container: any = this.divContainer,
+            let canvas: HTMLCanvasElement = (this.renderer === 'webgl' ? gl.canvas : this.ctx.canvas) as HTMLCanvasElement,
+                container: HTMLElement = this.divContainer as HTMLElement,
                 width = getContainerWidth(container),
                 height = getContainerHeight(container)
-
+            let id = this.id;
             if (!width || !height) return
 
             if (this.renderer === 'webgl') {
@@ -417,25 +421,46 @@ export default class galaxyvis extends Graph {
                 }
             }
 
-            if (globalInfo[this.id].thumbnail && this.thumbnail) {
-                globalInfo[this.id].thumbnail!.width = width
-                globalInfo[this.id].thumbnail!.height = height
+            if (globalInfo[id].thumbnail && this.thumbnail) {
+                globalInfo[id].thumbnail!.width = width
+                globalInfo[id].thumbnail!.height = height
             } else {
-                globalInfo[this.id].BoxCanvas.setWidth = width
-                globalInfo[this.id].BoxCanvas.setHeight = height
+                globalInfo[id].BoxCanvas.setWidth = width
+                globalInfo[id].BoxCanvas.setHeight = height
             }
             // 重新渲染pulse
             if (this.pulse) {
-                const pulsePass = document.getElementById("pulse_" + this.id) as HTMLCanvasElement;
-                pulsePass.width = width;
-                pulsePass.height = height;
-                pulsePass.style.width = width + 'px'
-                pulsePass.style.height = height + 'px'
-                this.pulseCanvas.stop();
-                this.pulseCanvas.render()
+                this.resizeLayers(
+                    width, height,
+                    "pulse_" + id, "pulse"
+                )
+            }
+            if (this.overLay) {
+                this.resizeLayers(
+                    width, height,
+                    "overlayPass_" + id, "overlay"
+                )
             }
         } catch { }
     }
+
+    private resizeLayers(
+        width: number, height: number, id: string, type: string
+    ) {
+        const pass = document.getElementById(id) as HTMLCanvasElement;
+        pass.width = width;
+        pass.height = height;
+        pass.style.width = width + 'px'
+        pass.style.height = height + 'px'
+        if (type == "pulse") {
+            this.pulseCanvas!.stop();
+            this.pulseCanvas!.render()
+        } else if (type == "overlay") {
+            this.overLay.stop()
+            this.overLay.render()
+        }
+    }
+
     // 初始化着色器
     private initPrograms(): void {
         this.nodeProgram = this.fast ? new fastnodeProgram(this.gl) : new nodeProgram(this.gl)
@@ -460,7 +485,7 @@ export default class galaxyvis extends Graph {
     public clear(): void {
         if (this.renderer == 'webgl') {
             const textureCtx = globalProp.textureCtx as CanvasRenderingContext2D
-            textureCtx.clearRect(0, 0, textureCtx.canvas.width, textureCtx.canvas.height)
+            textureCtx && textureCtx.clearRect(0, 0, textureCtx.canvas.width, textureCtx.canvas.height)
             this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
             if (thumbnailInfo[this.id]) {
                 thumbnailInfo[this.id].gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
@@ -485,15 +510,16 @@ export default class galaxyvis extends Graph {
 
     // 更新渲染
     public async camerarefresh(viewChange: boolean = false): Promise<void> {
-        if (!basicData[this.id]) {
+        let GraphId = this.id;
+        if (!basicData[GraphId]) {
             return void 0
         }
         if (this.renderer !== 'webgl') {
             return this.renderCanvas(true, viewChange)
         }
 
-        if (thumbnailInfo[this.id] && !this.thumbnail) {
-            thumbnailInfo[this.id].camerarefresh(viewChange)
+        if (thumbnailInfo[GraphId] && !this.thumbnail) {
+            thumbnailInfo[GraphId].camerarefresh(viewChange)
         }
 
         const gl = this.gl
@@ -528,7 +554,7 @@ export default class galaxyvis extends Graph {
         }
         let i = 0
         function tickFrame() {
-            if (!basicData[that.id]) {
+            if (!basicData[GraphId]) {
                 cancelFrame(that.frameId);
                 that.frameId = null;
                 return void 0
@@ -543,15 +569,16 @@ export default class galaxyvis extends Graph {
     }
     // 单个或者少许更新
     public async selectMovefresh(boolean: boolean = false): Promise<void> {
-        if (!basicData[this.id]) {
+        let GraphId = this.id;
+        if (!basicData[GraphId]) {
             return void 0
         }
         if (this.renderer !== 'webgl') return this.renderCanvas(boolean)
-        if (this.thumbnail || globalInfo[this.id].thumbnail) return this.render()
+        if (this.thumbnail || globalInfo[GraphId].thumbnail) return this.render()
         if (!this.localUpdate || !this.textStatus) return this.render()
 
-        if (thumbnailInfo[this.id] && !this.thumbnail) {
-            thumbnailInfo[this.id].selectMovefresh(boolean)
+        if (thumbnailInfo[GraphId] && !this.thumbnail) {
+            thumbnailInfo[GraphId].selectMovefresh(boolean)
         }
 
         const gl = this.gl
@@ -590,7 +617,7 @@ export default class galaxyvis extends Graph {
 
         let i = 0
         function tickFrame() {
-            if (!basicData[that.id]) {
+            if (!basicData[GraphId]) {
                 cancelFrame(that.frameId);
                 that.frameId = null;
                 return void 0
@@ -605,7 +632,8 @@ export default class galaxyvis extends Graph {
         }
     }
     // 渲染
-    public async render(): Promise<any> {
+    public async render() {
+        let GraphId = this.id;
         if (!basicData[this.id]) {
             return void 0
         }
@@ -613,8 +641,8 @@ export default class galaxyvis extends Graph {
             return this.renderCanvas(true, true)
         }
 
-        if (thumbnailInfo[this.id] && !this.thumbnail) {
-            thumbnailInfo[this.id].render()
+        if (thumbnailInfo[GraphId] && !this.thumbnail) {
+            thumbnailInfo[GraphId].render()
         }
 
         const showText = this.textStatus
@@ -650,7 +678,7 @@ export default class galaxyvis extends Graph {
         this.frameId = await requestFrame(processTask)
         let i = 0
         function processTask(then: number) {
-            if (!basicData[that.id]) {
+            if (!basicData[GraphId]) {
                 cancelFrame(that.frameId);
                 that.frameId = null;
                 return void 0
@@ -663,13 +691,14 @@ export default class galaxyvis extends Graph {
         }
     }
     // 渲染
-    public async renderCanvas(boolean: boolean = true, viewChange: boolean = false): Promise<any> {
-        if (!basicData[this.id] || this.renderer == 'webgl') {
+    public async renderCanvas(boolean: boolean = true, viewChange: boolean = false) {
+        let GraphId = this.id;
+        if (!basicData[GraphId] || this.renderer == 'webgl') {
             return void 0
         }
 
-        if (thumbnailInfo[this.id] && !this.thumbnail) {
-            thumbnailInfo[this.id].renderCanvas(boolean, viewChange)
+        if (thumbnailInfo[GraphId] && !this.thumbnail) {
+            thumbnailInfo[GraphId].renderCanvas(boolean, viewChange)
         }
 
         const showText = this.textStatus
@@ -697,7 +726,7 @@ export default class galaxyvis extends Graph {
 
         let i = 0
         async function tickFrame(taskStartTime: number) {
-            if (!basicData[that.id]) {
+            if (!basicData[GraphId]) {
                 cancelFrame(that.frameId);
                 that.frameId = null;
                 return void 0

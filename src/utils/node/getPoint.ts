@@ -11,7 +11,7 @@ import { typeShape } from '../../types'
 export const getPoint = (
     graphId: string,
     attribute: any,
-    iconMap: Map<any, any>,
+    iconMap: Map<string | number, any>,
     transform: number,
 ) => {
     let {
@@ -36,7 +36,7 @@ export const getPoint = (
     let offsets: number[] = coordTransformation(graphId, x, y, transform)
     // 图标的类型
     let iconType = image.url ? 1 : icon.content != '' ? 2 : 3
-    let iconNum: number = image.url ? iconMap.get(image.url)?.num : iconMap.get(icon.content)?.num
+    let iconNum: number = image.url ? iconMap.get(image.url + color)?.num : iconMap.get(icon.content)?.num
     let iconColor = floatColor(icon.color || '#fff').rgb
     if (!iconNum) {
         iconNum = 0

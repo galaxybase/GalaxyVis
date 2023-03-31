@@ -17,7 +17,10 @@ export let cameraFram: number | null = null
 export function animateCamera(
     graph: any,
     targets: any,
-    opts: any = {},
+    opts: {
+        duration?: number
+        easing?: string
+    } | AnimateOptions,
     callback: () => void,
 ): () => void {
     let { duration, easing } = ANIMATE_DEFAULTS
@@ -35,7 +38,7 @@ export function animateCamera(
 
     const start = Date.now()
 
-    const startPositions: PlainObject<any> = {
+    const startPositions = {
         zoom: camera.zoom,
         position: camera.position,
     }

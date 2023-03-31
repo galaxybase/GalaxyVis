@@ -17,7 +17,10 @@ export let animateFram: number | null = null
 export function animateNodes(
     graph: any,
     targets: PlainObject<PlainObject<any>>,
-    opts: any,
+    opts: {
+        duration?: number,
+        easing?: string
+    },
     callback: () => void,
     isInLayout: boolean = true,
 ): () => void {

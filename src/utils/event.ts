@@ -5,7 +5,7 @@ class Event<T, K> {
     constructor() {
         this.clientList = {}
     }
-    listen(key: any, handler: any) {
+    listen(key: string, handler: Function) {
         if (!this.clientList[key]) {
             this.clientList[key] = []
         }
@@ -24,7 +24,7 @@ class Event<T, K> {
             handler.apply(null, args)
         }
     }
-    remove(key: any, handler: any) {
+    remove(key: string, handler: Function) {
         const handlers = this.clientList[key]
 
         if (!handlers) {

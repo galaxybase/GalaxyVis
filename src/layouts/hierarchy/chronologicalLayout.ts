@@ -235,7 +235,7 @@ class ChronologicallLayout extends BaseLayout {
     async execute(layoutMapNodes: Map<string, any>) {
         let nodeList = this.galaxyvis.getFilterNode();
         let arr: any = [], forceArray: any[] = []
-        nodeList.forEach((item: any, key: any) => {
+        nodeList.forEach((item: any, key: string) => {
             if (!layoutMapNodes.has(key)) {
                 arr.push({ id: key });
                 forceArray.push(key)
@@ -310,7 +310,7 @@ class ChronologicallLayout extends BaseLayout {
                     resolve(callbackNodes)
                 })
             } catch (err) {
-                console.log(err)
+                console.warn(err)
                 reject(LAYOUT_MESSAGE.ERROR)
             }
         })

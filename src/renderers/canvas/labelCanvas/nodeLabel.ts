@@ -105,8 +105,9 @@ export default function canvasLabelNode(
     context.save()
     try {
         // 兼容chrome57
-        let execFontSize = (pattern.exec(context.font) as Array<any>)[0]
-        if (`${fontSize}` !== execFontSize) {
+        let execFontSize = ((context.font as any).match(pattern))
+        execFontSize && execFontSize.length && (execFontSize = execFontSize[0]);
+        if (`${fontSize}` !== execFontSize && execFontSize?.length) {
             let execScale = Math.ceil(fontSize / execFontSize)
             let combinedRatio = Math.ceil((1 - execScale) / execScale)
             context.scale(execScale, execScale)
@@ -115,7 +116,7 @@ export default function canvasLabelNode(
                 baseY * combinedRatio,
             )
         }
-    } catch { }
+    } catch {}
 
     let maxLabelLength = width;
 

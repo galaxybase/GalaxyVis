@@ -7,7 +7,7 @@ export const unionEdges = (galaxyvis: any, layoutsNodes: any[], oneLine = true) 
     let layoutsEdges: any[] = []
     let relationTable = galaxyvis.getEdgeType().relationTable
     let union = new Set()
-    let nodesData: any = []
+    let nodesData = []
     let j = 0
     for (let i = 0, len = layoutsNodes.length; i < len; i++) {
         let needEdgeFresh = relationTable[layoutsNodes[i]]
@@ -33,8 +33,8 @@ export const unionEdges = (galaxyvis: any, layoutsNodes: any[], oneLine = true) 
             let edge = galaxyvis.getEdge(key)
             if (edge) {
                 let { source, target } = edge.value
-                let sourceInfo: any = nodeById.get(source)
-                let targetInfo: any = nodeById.get(target)
+                let sourceInfo = nodeById.get(source)
+                let targetInfo = nodeById.get(target)
                 let n
                 if (sourceInfo && targetInfo) {
                     n = hashNumber(sourceInfo.index, targetInfo.index)

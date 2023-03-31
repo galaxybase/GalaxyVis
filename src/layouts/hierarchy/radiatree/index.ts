@@ -1,3 +1,5 @@
+import { PlainObject } from "../tclass";
+
 let nodes: any = []
 let links: any = []
 let nodeIds: string[] = [];
@@ -90,7 +92,7 @@ function genericRadiaTreeLayout(assign: any, nodeList: any, linkList: any, optio
         }
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {
@@ -113,7 +115,7 @@ function newLayoutData() {
     return layoutData;
 }
 
-function checkHasCycle(node: { [key: string]: any }, pathNodes: any[]) {
+function checkHasCycle(node: PlainObject<any>, pathNodes: any[]) {
     (node.outLinks || []).forEach(function (_link: any) {
         var target = _link.target;
         if (node.id == target.id || pathNodes.indexOf(target.id) != -1) {
@@ -126,7 +128,7 @@ function checkHasCycle(node: { [key: string]: any }, pathNodes: any[]) {
     });
 };
 
-function initNodeNeighbers(node: { [key: string]: any }) {
+function initNodeNeighbers(node: PlainObject<any>) {
     var initNeighbers: any[] = [];
     var outLinks = node.outLinks || [];
     outLinks.forEach(function (link: any) {
@@ -138,7 +140,7 @@ function initNodeNeighbers(node: { [key: string]: any }) {
             var childNodes = nodeNeighbers[index] || [];
 
             var childNodeIds: string[] = [];
-            childNodes.forEach(function (n: { [key: string]: any }) {
+            childNodes.forEach(function (n: PlainObject<any>) {
                 childNodeIds.push(n.id);
             });
 
@@ -164,7 +166,7 @@ function buildTree() {
 
 function getRoots() {
     var roots: any[] = [];
-    nodes.forEach(function (node: { [key: string]: any }) {
+    nodes.forEach(function (node: PlainObject<any>) {
         if ((node.inLinks || []).length == 0) {
             roots.push(node);
         }
@@ -205,7 +207,7 @@ function calculateNodeX(node: { [x: string]: any; sizeT?: any; }) {
     return size;
 };
 
-function buildNodeTree(node: { [key: string]: any }, x: number) {
+function buildNodeTree(node: PlainObject<any>, x: number) {
     currentY += distY;
     currentX = x;
 
@@ -229,14 +231,14 @@ function buildNodeTree(node: { [key: string]: any }, x: number) {
     currentY -= distY;
 };
 
-function setCurrentPositionFor(node: { [key: string]: any }) {
+function setCurrentPositionFor(node: PlainObject<any>) {
     var x = currentX;
     var y = currentY;
     node.tempx = x;
     node.tempy = y;
 };
 
-function getSuccessors(node: { [key: string]: any }) {
+function getSuccessors(node: PlainObject<any>) {
     var index = nodeIds.indexOf(node.id);
     var childNodes = nodeNeighbers[index] || [];
     return childNodes;
@@ -249,7 +251,7 @@ function setRadialLocations() {
     var theta = 2 * Math.PI / maxx;
     var deltaRadius = maxx / 2 / maxy;
 
-    nodes.forEach(function (node: { [key: string]: any }) {
+    nodes.forEach(function (node: PlainObject<any>) {
         var _theta = node.tempx * theta;
         var _radius = (node.tempy - distY) * deltaRadius;
 
@@ -270,7 +272,7 @@ function setRadialLocations() {
 function getMaxXY() {
     var maxx = 0,
         maxy = 0;
-    nodes.forEach(function (node: { [key: string]: any }) {
+    nodes.forEach(function (node: PlainObject<any>) {
         if (!node.tempx) {
             node.tempx = currentX;
         }

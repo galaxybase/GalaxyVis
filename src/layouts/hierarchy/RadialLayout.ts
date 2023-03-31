@@ -29,7 +29,7 @@ class RadialLayout extends BaseLayout {
         this.options.height = height
 
         if (!nodes) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push(key)
             })
         } else {

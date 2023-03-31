@@ -24,7 +24,7 @@ class LayerCircleLayout extends BaseLayout {
         } = this.galaxyvis.getNodeTable();
 
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 let inLinks: string[] = [], outLinks: string[] = [];
                 if (inRelationTable[key])
                     inLinks = [...inRelationTable[key]]

@@ -156,7 +156,7 @@ export const renderSVG = (graph: any, svg: any) => {
     })
 }
 
-const renderNode = (graphId: any, nodeGroup: any) => {
+const renderNode = (graphId: string, nodeGroup: any) => {
     let nodesList = svgGraph.getFilterNode()
 
     let clipG = document.createElementNS(xmlns, 'g')
@@ -392,7 +392,7 @@ const renderNode = (graphId: any, nodeGroup: any) => {
     }
 }
 // 加载halo
-const renderNodeHalo = (graphId: any, nodeHaloGroup: any) => {
+const renderNodeHalo = (graphId: string, nodeHaloGroup: any) => {
     let nodesList = svgGraph.getFilterNode()
     nodesList.forEach((item: any, key: string) => {
         let attribute = item.getAttribute()
@@ -416,7 +416,7 @@ const renderNodeHalo = (graphId: any, nodeHaloGroup: any) => {
     })
 }
 //加载边
-const renderEdge = (graphId: any, edgeGroup: any) => {
+const renderEdge = (graphId: string, edgeGroup: any) => {
     let edgesList = svgGraph.getFilterEdges()
     let nodeList = svgGraph.getFilterNode()
     // 获取个边的类型

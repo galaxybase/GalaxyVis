@@ -87,28 +87,28 @@ export default class transformations<T, K> {
      */
     public getList = () => {
         let transforrmationArray: any[] = []
-
-        if (globalInfo[this.galaxyvis.id].filterNodesTransformat?.size) {
-            globalInfo[this.galaxyvis.id].filterNodesTransformat!.forEach(item => {
+        let GraphId = this.galaxyvis.id;
+        if (globalInfo[GraphId].filterNodesTransformat?.size) {
+            globalInfo[GraphId].filterNodesTransformat!.forEach(item => {
                 transforrmationArray.push(item.transformat)
             })
         }
 
-        if (globalInfo[this.galaxyvis.id].filterEdgesTransformat?.size) {
-            globalInfo[this.galaxyvis.id].filterEdgesTransformat!.forEach(item => {
+        if (globalInfo[GraphId].filterEdgesTransformat?.size) {
+            globalInfo[GraphId].filterEdgesTransformat!.forEach(item => {
                 transforrmationArray.push(item.transformat)
             })
         }
 
-        if (globalInfo[this.galaxyvis.id].mergeNodesTransformat?.size) {
-            globalInfo[this.galaxyvis.id].mergeNodesTransformat.forEach((item: any) => {
+        if (globalInfo[GraphId].mergeNodesTransformat?.size) {
+            globalInfo[GraphId].mergeNodesTransformat.forEach((item: any) => {
                 transforrmationArray.push(item.transformat)
             })
         }
 
-        if (globalInfo[this.galaxyvis.id].mergeEdgesTransformat) {
+        if (globalInfo[GraphId].mergeEdgesTransformat) {
             transforrmationArray.push(
-                globalInfo[this.galaxyvis.id].mergeEdgesTransformat.transformat,
+                globalInfo[GraphId].mergeEdgesTransformat.transformat,
             )
         }
 

@@ -8,11 +8,11 @@
  * @param {*} xAxis  x轴的初始 用于text
  * @returns
  */
- const getTextPixels = async function (
+const getTextPixels = async function (
     filterType: number,
     typeface: string,
-    written: any,
-    style: any,
+    written: string,
+    style: string,
     number: number,
     xAxis: number,
 ) {

@@ -1,3 +1,4 @@
+import { PlainObject } from "../../hierarchy/tclass";
 import Vector2 from "./Vector2";
 
 function genericForceDirectedLayout(assign: any, _nodes: any, _links: any, options: any) {
@@ -100,7 +101,7 @@ function genericForceDirectedLayout(assign: any, _nodes: any, _links: any, optio
         layout_iterations++;
     }
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {

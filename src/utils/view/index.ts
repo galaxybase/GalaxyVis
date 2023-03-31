@@ -18,7 +18,7 @@ export const viewZoomChange = (
             if (nowZoom < camera.minZoom && type == 1) nowZoom = camera.minZoom
             if (nowZoom > camera.maxZoom && type == -1) nowZoom = camera.maxZoom
             // 相机动画
-            animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts, () => {
+            animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts as AnimateOptions, () => {
                 resolve((): void => {})
             })
         } catch {
@@ -34,15 +34,16 @@ export const viewZoomChange = (
  */
 export const viewGet = (galaxyvis: any) => {
     let camera = galaxyvis.camera,
-        { zoom, position, ratio } = camera
+        { zoom, position, ratio } = camera;
+    let GraphId = galaxyvis.id;
     return {
         angle: 0, //暂不支持
         height: galaxyvis.thumbnail
-            ? globalInfo[galaxyvis.id].thumbnail?.height
-            : globalInfo[galaxyvis.id].BoxCanvas.getHeight,
+            ? globalInfo[GraphId].thumbnail?.height
+            : globalInfo[GraphId].BoxCanvas.getHeight,
         width: galaxyvis.thumbnail
-            ? globalInfo[galaxyvis.id].thumbnail?.width
-            : globalInfo[galaxyvis.id].BoxCanvas.getWidth,
+            ? globalInfo[GraphId].thumbnail?.width
+            : globalInfo[GraphId].BoxCanvas.getWidth,
         x: position[0],
         y: position[1],
         zoom,
@@ -73,9 +74,10 @@ export const viewGetZoom = (camera: any): number => {
  * @param options
  * @returns
  */
-export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => {
+export const viewLocateGraph = (galaxyvis: any, options?: any) => {
     return new Promise((resolve, reject) => {
-        let { thumbnail, BoxCanvas } = globalInfo[galaxyvis.id]
+        let GraphId = galaxyvis.id;
+        let { thumbnail, BoxCanvas } = globalInfo[GraphId]
 
         let renderType = galaxyvis.renderer
 
@@ -106,7 +108,7 @@ export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => 
         let coordMid_x = (coordRight + coordLeft) / 2,
             coordMid_y = (coordTop + coordBottom) / 2,
             nowPosition = [-coordMid_x, -coordMid_y, 3]
-        let transform = basicData[galaxyvis.id].transform,
+        let transform = basicData[GraphId].transform,
             viewHeight = Math.ceil((coordTop - coordBottom)),
             viewWidth = Math.ceil((coordRight - coordLeft)),
             useMatrix = viewHeight / BoxCanvas.getHeight > viewWidth / BoxCanvas.getWidth,
@@ -116,7 +118,7 @@ export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => 
             thubnailBasic;
 
         if (renderType == 'webgl') {
-            let offset = coordTransformation(galaxyvis.id, coordMid_x, coordMid_y)
+            let offset = coordTransformation(GraphId, coordMid_x, coordMid_y)
             nowPosition = [offset[0], offset[1], 3];
         }
 
@@ -127,7 +129,8 @@ export const viewLocateGraph = (galaxyvis: any, options?: any): Promise<any> => 
         );
 
         zoomratio = (thumbnail && galaxyvis.thumbnail) ?
-            (renderType == "webgl" ? zoomBasic - transform : thubnailBasic) :
+            // (renderType == "webgl" ? zoomBasic - transform : thubnailBasic) :
+            (renderType == "webgl" ? zoomBasic + transform / 2 : (1 - transform / 2 / zoomBasic) * thubnailBasic) :
             zoomBasic + transform
 
         let zoom = Math.ceil(((Math.atan2(maxratio, zoomratio) * 360) / Math.PI))

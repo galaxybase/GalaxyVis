@@ -1,4 +1,4 @@
-import { tNode } from "../tclass";
+import { PlainObject, tNode } from "../tclass";
 
 let neighborAttraction = 3.0;
 let attraction = 0.12;
@@ -58,7 +58,7 @@ function genericBFALayout(assign: any, nodeList: any, linkList: any, options: an
         });
     }
     let width = options?.width || 800, height = options?.height || 800
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.id] = {

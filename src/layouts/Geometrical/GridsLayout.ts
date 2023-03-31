@@ -26,7 +26,7 @@ class GridsLayout extends BaseLayout {
             height
 
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 layoutsNodes.push({ key, value: values.value })
             })
             width = globalInfo[this.galaxyvis.id].BoxCanvas.getWidth

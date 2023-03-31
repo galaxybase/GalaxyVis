@@ -1,4 +1,4 @@
-import { AnimateType, LAYOUT_MESSAGE } from "../../types"
+import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
@@ -28,12 +28,12 @@ class topoCircleLayout extends BaseLayout {
         this.edgeList = basicData[this.galaxyvis.id].edgeList
         this.nodeTable = this.galaxyvis.getNodeTable();
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 tNodeList[key] = new tNode(key, values.getAttribute())
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)
             })
-            nodeList.forEach((values: any, key: any) => {
+            nodeList.forEach((values: any, key: string) => {
                 let { inLinks, outLinks } = this.layoutInit(key)
                 tNodeList[key].updateLinks(
                     inLinks,
@@ -75,8 +75,8 @@ class topoCircleLayout extends BaseLayout {
             outRelationTable
         } = this.nodeTable
         let edgeList = this.edgeList
-        let inLinks: Array<{ [key: string]: any }> = [],
-            outLinks: Array<{ [key: string]: any }> = [],
+        let inLinks: Array<PlainObject<any>> = [],
+            outLinks: Array<PlainObject<any>> = [],
             edgeLinks: Array<any> = [];
         let originIn: string[] = [], originOut: string[] = [];
         if (inRelationTable[key])

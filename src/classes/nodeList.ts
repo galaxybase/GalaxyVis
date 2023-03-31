@@ -1,7 +1,7 @@
 import EdgeList from './edgeList'
 import { nodeListLocate } from '../utils/node'
 import { isArray } from 'lodash'
-import { AdjacencyOptions } from '../types'
+import { AdjacencyOptions, AnimateOptions } from '../types'
 import { ANIMATE_DEFAULTS, basicData } from '../initial/globalProp'
 
 /**
@@ -40,7 +40,7 @@ export default class NodeList {
      * @param options
      * @returns
      */
-    public locate = (options?: any) => {
+    public locate = (options?: AnimateOptions) => {
         options = Object.assign({}, ANIMATE_DEFAULTS, options)
         return nodeListLocate(this.galaxyvis, this.ids, options)
     }
@@ -150,7 +150,7 @@ export default class NodeList {
      * 检索节点的位置。它严格地等价于node.getAttributes ([' x ', ' y '])。
      */
     public getPosition = () => {
-        let list: any[] = []
+        let list: Array<{ x: number, y: number }> = []
         this.ids.forEach(id => {
             list.push(this.galaxyvis.getNode(id)?.getPosition())
         })
@@ -195,7 +195,7 @@ export default class NodeList {
             this.ids.forEach(id => {
                 id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges(options))
             })
-        } catch { }
+        } catch {}
 
         list = Array.from(new Set(list))
         return new EdgeList(this.galaxyvis, list)

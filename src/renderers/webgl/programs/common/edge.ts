@@ -43,7 +43,7 @@ export abstract class AbstractEdgeProgram extends AbstractProgram implements IEd
 
         //Uniform
         const background = gl.getUniformLocation(this.program, 'background')
-        if (background == null) console.log('Edge:  获取不到background')
+        if (background == null) console.warn('Edge:  获取不到background')
         this.background = background as WebGLUniformLocation
     }
 

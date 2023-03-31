@@ -2,13 +2,15 @@ import galaxyvis from "../src/galaxyVis";
 import * as dat from 'dat.gui';
 
 let iconStore = {
-    "icon1": "\ue63a",
-    "icon2": "\ue634",
-    "icon3": "\ue649"
+    "icon1": "\ue789",
+    "icon2": "\ue791",
+    "icon3": "\ue795"
 }
 
 let imageStore = {
     "image1": "/public/img/sky.jpg",
+    "image2": "/public/img/car.jpg",
+    "image3": "/public/img/jinji.jpg"
 }
 let baseObject = {
     "x": 0,
@@ -70,9 +72,26 @@ let badgesObject = {
 
 let galaxyVis = new galaxyvis({
     container: 'container',
+    renderer: "canvas"
+})
+
+let galaxyVis2 = new galaxyvis({
+    container: 'container2',
 })
 
 let gui = new dat.GUI();
+//@ts-ignore
+// let typeController = gui.addFolder('渲染类型控制器'),
+//     renderType = typeController.add(typeObject, "渲染类型", ["webgl", "canvas"])
+
+// renderType.onChange(() => {
+//     galaxyVis.destroy();
+//     galaxyVis = new galaxyVis({
+//         container: 'container',
+//         renderer: renderType.getValue()
+//     })
+//     nodeTest()
+// })
 
 // @ts-ignore
 let baseController = gui.addFolder('基础属性控制器'),
@@ -117,9 +136,9 @@ iconController.open()
 //@ts-ignore
 let imageController = gui.addFolder('image控制器'),
     useImage = imageController.add(imageObject, "开启image"),
-    image = imageController.add(imageObject, "image", ["image1"]);
+    image = imageController.add(imageObject, "image", ["image1", "image2", "image3"]);
 imageController.open()
-//@ts-ignorei
+//@ts-ignore
 let haloController = gui.addFolder('halo控制器'),
     haloColor = haloController.addColor(haloObject, "颜色"),
     haloWidth = haloController.add(haloObject, "宽", 0, 5, 0.5);
@@ -159,6 +178,7 @@ const nodeTest = () => {
                 },
                 icon: {
                     content: useIcon.getValue() ? iconStore[icon.getValue()] : "",
+                    font: 'iconfont'
                 },
                 image: {
                     url: useImage.getValue() ? imageStore[image.getValue()] : "",
@@ -175,16 +195,18 @@ const nodeTest = () => {
                 badges:
                     usebadge.getValue() ?
                         {
-                            color: badgeColor.getValue(),
-                            text: {
-                                font: 'iconfont',
-                                color: badgeTextColor.getValue(),
-                                content: iconStore[badgeIcon.getValue()],
-                                scale: .6
-                            },
-                            stroke: {
-                                color: '#fff',
-                                width: 1
+                            topRight: {
+                                color: badgeColor.getValue(),
+                                text: {
+                                    font: 'iconfont',
+                                    color: badgeTextColor.getValue(),
+                                    content: iconStore[badgeIcon.getValue()],
+                                    scale: .6
+                                },
+                                stroke: {
+                                    color: '#fff',
+                                    width: 1
+                                }
                             }
                         } : null,
             }

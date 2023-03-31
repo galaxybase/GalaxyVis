@@ -1,4 +1,4 @@
-import { tNode } from "../tclass";
+import { PlainObject, tNode } from "../tclass";
 
 function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
     var nodes = _nodes;
@@ -50,7 +50,7 @@ function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
             }
         }
 
-        let layoutNodes: { [key: string]: any } = {}
+        let layoutNodes: PlainObject<any> = {}
         for (let i = 0; i < nodes.length; i++) {
             var n = nodes[i];
             if (n.id != roots[0].id)
@@ -142,7 +142,7 @@ function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
         return roots;
     }
 
-    function checkHasCycle(node: { [key: string]: any }, pathNodes: any[]) {
+    function checkHasCycle(node: PlainObject<any>, pathNodes: any[]) {
         (node.outLinks || []).forEach(function (_link: any) {
             var target = _link.target;
             if (node.id == target.id || pathNodes.indexOf(target.id) != -1) {

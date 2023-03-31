@@ -392,6 +392,7 @@ export interface globalInfoData {
         isSafari: boolean
         edgeType: any
         enabledNoStraightLine: boolean
+        overlay: PlainObject<any>
     }
 }
 
@@ -420,6 +421,7 @@ export interface baseExportOptions {
     download?: boolean //是否下载
     filename?: string //文件名称
     background?: string //背景颜色
+    scale?: number //缩放
 }
 
 export interface ImageExportOptions extends baseExportOptions {
@@ -435,19 +437,27 @@ export interface ImageExportOptions extends baseExportOptions {
     }
 }
 
-export interface SvgExportOptions extends baseExportOptions { }
+export interface SvgExportOptions extends baseExportOptions { 
+    width?: number
+    height?: number
+    margin?: number[]
+}
 
 export interface JsonExportOptions extends baseExportOptions {
+    nodeAttributes?: string | Array<string>
+    edgeAttributes?: string | Array<string>
     nodeData?: Function //给定输入节点数据
     edgeData?: Function //给定输入边数据
     skipHeader?: boolean //是否自定义表头
     customisedHeader?: {[key: string]: any} //自定义表头
+    IdColumnName?: string
 }
 
 export interface CsvExportOptions extends JsonExportOptions {
     what?: string //指示是否到节点或者边
     edges?: string[]  //指定的边列表
     nodes?: string[] //指定的点列表
+    separator: string
 }
 
 export interface XlsxExportOptions extends JsonExportOptions {
@@ -678,6 +688,12 @@ export interface NodeHaloCollection {
     }
 }
 
+export interface NodeFastCollection {
+    [key: string]: {
+        floatData: any
+    }
+}
+
 export interface NodeLabelCollection {
     [key: string]: {
         labelFloat32Array: Float32Array,
@@ -697,4 +713,11 @@ export const LAYOUT_MESSAGE = {
     END: 'layoutEnd',
     // layout error
     ERROR: 'layoutError',
+}
+
+export interface IBound {
+    x: number,
+    y: number,
+    width: number,
+    height: number
 }

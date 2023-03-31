@@ -1,4 +1,4 @@
-import { tNode } from "../../hierarchy/tclass";
+import { PlainObject, tNode } from "../../hierarchy/tclass";
 
 function genericSphereLayout(assign: any, _nodes: any, options: any) {
     var nodes = _nodes;
@@ -66,7 +66,7 @@ function genericSphereLayout(assign: any, _nodes: any, options: any) {
     }
 
 
-    let layoutNodes: { [key: string]: any } = {}
+    let layoutNodes: PlainObject<any> = {}
     for (let i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         layoutNodes[n.key] = {

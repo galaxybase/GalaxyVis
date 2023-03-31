@@ -8,6 +8,7 @@ var noverlapLayout: any = function(nodes, options) {
 };
 
 noverlapLayout.prototype.runLayout = function() {
+    this.initAlgo();
     this.goAlgo();
     let nodes = this.nodes
     let layoutNodes: { [key: string]: any } = {}

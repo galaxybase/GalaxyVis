@@ -1,6 +1,6 @@
 import { floatColor } from '..'
 import { globalProp } from '../../initial/globalProp'
-import { position } from '../../types'
+import { PlainObject, position } from '../../types'
 
 /**
  * 把部分属性只是传1个或者2个的 整合在一起
@@ -13,7 +13,7 @@ const wid = 128
 const INT8 = new Int8Array(4)
 const INT32 = new Int32Array(INT8.buffer, 0, 1)
 
-export function packCircleVertex(props: any, camera: any) {
+export function packCircleVertex(props: any) {
     let {
         color,
         offsets,
@@ -34,7 +34,7 @@ export function packCircleVertex(props: any, camera: any) {
     let uvBuffer = []
     let colorBuffer = []
     let typesBuffer = []
-    let strokeColor: any = {}
+    let strokeColor: PlainObject<any> = {}
 
     colorBuffer.push(color)
 

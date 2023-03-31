@@ -1,4 +1,4 @@
-import { Settings } from '../types'
+import { PlainObject, Settings } from '../types'
 
 export const TEPLATE = {
     textTemplate: {
@@ -103,7 +103,7 @@ export const basieciDataSetting = {
     drawNodeLableList: new Map(), //绘制点文字列表
     drawEdgeLableList: new Map(), //绘制边文字列表
     drawEdgeCount: new Map(),
-    relationTable: {} as { [key: string]: any }, // 点关联的边
+    relationTable: {} as PlainObject<any>, // 点关联的边
     selectedTable: new Set() as Set<any>, //需要更新的点列表
     selectedEdgeTable: new Set() as Set<any>, //需要更新的边列表
     selectedNodes: new Set() as Set<any>, //选中的点
@@ -163,5 +163,6 @@ export const globalInfoSetting = {
     BoxCanvas: boxCanvas, //布局的画布
     canvasBox: document.createElement('canvas'), //整个canvas对象
     edgeType: null,
-    enabledNoStraightLine: false
+    enabledNoStraightLine: false,
+    overlay: {}
 }

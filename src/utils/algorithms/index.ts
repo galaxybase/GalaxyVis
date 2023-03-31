@@ -1,3 +1,4 @@
+import { PartialObject } from 'lodash'
 import { basicData } from '../../initial/globalProp'
 import { createNeighborArrayForNode } from './shortest-path'
 /**
@@ -10,17 +11,15 @@ export const algorithmsShortestPath = (
     galaxyvis: any,
     { source, target }: { source: string; target: string },
 ) => {
-    var sourceId = galaxyvis.getNode(source).getId(),
-        targetId = galaxyvis.getNode(target).getId()
-    if (sourceId === targetId) {
-        return { nodes: [sourceId] }
+    if (source === target) {
+        return { nodes: [source] }
     }
 
-    var predecessor: any = {},
-        successor: any = {}
+    var predecessor: PartialObject<any> = {},
+        successor: PartialObject<any> = {}
 
-    predecessor[sourceId] = null
-    successor[targetId] = null
+    predecessor[source] = null
+    successor[target] = null
 
     var forwardFringe = [source],
         reverseFringe = [target],
@@ -102,8 +101,7 @@ export const algorithmsShortestPath = (
     }
     // 有向边和无向边
     if (path.length) {
-        let relationTable = basicData[galaxyvis.id].relationTable
-        let allEdges = basicData[galaxyvis.id].edgeList
+        let { relationTable, edgeList: allEdges } = basicData[galaxyvis.id]
         for (let index = 0; index < path.length - 1; index++) {
             let node = path[index]
             let edgeList = [...relationTable[node]]
