@@ -98,7 +98,7 @@ export default class NodeList {
         try {
             for (let i = 0, len = this.ids.length; i < len; i++) {
                 let id = this.ids[i];
-                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentNodes(options))
+                id && this.galaxyvis.getNode(id) && list.push(...this.galaxyvis.getNode(id).getAdjacentNodes(options))
             }
         } catch { }
         list = Array.from(new Set(list))
@@ -193,7 +193,7 @@ export default class NodeList {
             return new NodeList(this.galaxyvis, list)
         try {
             this.ids.forEach(id => {
-                id && list.push(...this.galaxyvis.getNode(id)?.getAdjacentEdges(options))
+                id && this.galaxyvis.getNode(id) && list.push(...this.galaxyvis.getNode(id).getAdjacentEdges(options))
             })
         } catch {}
 
