@@ -4,8 +4,8 @@ import { getX, getY, vectorAngle } from '../utils'
 import { QuadTree } from '../utils/quadTree'
 import { throttle } from 'lodash'
 
-const Throttle = throttle((events, viewChange) => {
-    events.emit('camerarefresh', viewChange)
+const Throttle = throttle((events, viewChange, refesh = false) => {
+    events.emit('camerarefresh', viewChange, refesh)
 }, 16)
 
 class Camera {
@@ -224,10 +224,7 @@ class Camera {
                         })
                     }
                 })
-                // Event.trigger('camerarefresh', false, true)
-                this.events.emit('camerarefresh', 
-                    false, true
-                )
+                Throttle(this.events, false, true)
             }
             this.startMouseX = pointX
             this.startMouseY = pointY
