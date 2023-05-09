@@ -7,7 +7,7 @@ export interface IHaloProgram extends IProgram {
     render(params: any): void
 }
 
-const ATTRIBUTES = 7;
+const ATTRIBUTES = 6;
 export abstract class AbstractHaloProgram extends AbstractProgram implements IHaloProgram {
     public positionLocation: GLint //正方形的坐标
     public offesetLocation: GLint //纹理坐标
