@@ -2,6 +2,11 @@ import { mat4, vec3 } from 'gl-matrix'
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
 import { getX, getY, vectorAngle } from '../utils'
 import { QuadTree } from '../utils/quadTree'
+import { throttle } from 'lodash'
+
+const Throttle = throttle((events, viewChange, refesh = false) => {
+    events.emit('camerarefresh', viewChange, refesh)
+}, 16)
 
 class Camera {
     public gl: WebGLRenderingContext
@@ -219,10 +224,7 @@ class Camera {
                         })
                     }
                 })
-                // Event.trigger('camerarefresh', false, true)
-                this.events.emit('camerarefresh', 
-                    false, true
-                )
+                Throttle(this.events, false, true)
             }
             this.startMouseX = pointX
             this.startMouseY = pointY
@@ -251,10 +253,7 @@ class Camera {
     updateCameraVectors(viewChange: boolean = false) {
         this.cameraChange = true
         this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
-        // Event.trigger('camerarefresh', viewChange)
-        this.events.emit('camerarefresh', 
-            viewChange
-        )
+        Throttle(this.events, viewChange)
     }
 }
 
