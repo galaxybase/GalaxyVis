@@ -158,11 +158,11 @@ export default class galaxyvis extends Graph {
                 flag = false
                 console.warn('zoom init happened maxValue < minValue')
             }
-            if (maxValue < 0 && maxValue > 180) {
+            if (maxValue < 0 || maxValue > 180) {
                 flag = false
                 console.warn('zoom maxValue should in 0 to 180')
             }
-            if (minValue < 0 && minValue > 180) {
+            if (minValue < 0 || minValue > 180) {
                 flag = false
                 console.warn('zoom minValue should in 0 to 180')
             }
