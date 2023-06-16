@@ -1,19 +1,27 @@
 {
-    "name": "@galaxybase/galaxyvis",
-    "version": "1.0.4",
+    "name": "galaxyvisv2",
+    "version": "1.0.12",
     "description": "A High Performance Graph Visualization Framework in JavaScript",
     "homepage": "https://galaxyvis.com/",
-    "main": "index.js",
-    "author": "galaxybase",
+    "author": "singeonzz",
     "license": "Apache License 2.0",
+    "main": "lib/index.js",
+    "unpkg": "build/galaxyvis.min.js",
+    "files": [
+        "package.json",
+        "build",
+        "lib",
+        "LICENSE",
+        "README.md"
+      ],
     "scripts": {
         "examples": "webpack serve --config ./examples/webpack.config.js --progress",
         "build": "webpack --progress && webpack --progress --mode production",
         "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,less,md}\"",
-        "transpile": "tsc -p ./tsconfig.transpile.json -d && replace '\\.glsl' '.glsl.js' renderers -r && webpack --config ./webpack.programs.config.js",
-        "clean": "rimraf captors classes initial layouts renderers types utils index.js index.d.ts galaxyvis.js galaxyvis.d.ts",
+        "transpile": "tsc -p ./tsconfig.transpile.json -d && replace '\\glsl' '.glsl.js' renderers -r && webpack --config ./webpack.programs.config.js",
+        "clean": "rimraf build lib",
         "postpublish": "npm run clean",
-        "prepublishOnly": "npm run clean && npm run transpile"
+        "prepublishOnly": "npm run clean && npm run build && npm run transpile"
     },
     "devDependencies": {
         "@types/lodash": "^4.14.173",
@@ -32,6 +40,7 @@
     },
     "dependencies": {
         "dagre": "^0.8.5",
+        "galaxyvisv2": "^1.0.6",
         "gl-matrix": "^3.3.0",
         "lodash": "^4.17.21",
         "polyline-normals": "^2.0.0",

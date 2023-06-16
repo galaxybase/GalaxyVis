@@ -19,11 +19,11 @@ const moduleConfig = {
 
 module.exports = [{
   name: "galaxyvis",
-  mode: production ? "production" : "none",
+  mode: "production",
   entry: "./src/index.ts",
   target: ['web', 'es5'],
   output: {
-    filename: production ? "galaxyvis.min.js" : "galaxyvis.js",
+    filename: "galaxyvis.min.js",
     path: path.join(__dirname, "build"),
     library: "galaxyvis",
     libraryTarget: "umd",
