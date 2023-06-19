@@ -557,22 +557,7 @@ export const getNow = function () {
     return Date.now()
 }
 
-/**
- * 创建webWorker
- * @param  {function}  fn
- * @return {DOMString}
- */
-export const createWorker = (fn: any) => {
-    var xURL = window.URL || window.webkitURL
-    var code = fn.toString()
-    var objectUrl = xURL.createObjectURL(
-        new Blob(['(' + code + ').call(this);'], { type: 'text/javascript' }),
-    )
-    var worker = new Worker(objectUrl)
-    xURL.revokeObjectURL(objectUrl)
 
-    return worker
-}
 /**
  * webgl坐标转换
  * @param x

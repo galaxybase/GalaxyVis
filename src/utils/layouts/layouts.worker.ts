@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
     forceSimulation,
     forceLink,
@@ -42,12 +43,12 @@ const LAYOUT_MESSAGE = {
     ERROR: 'layoutError',
 }
 
-function handleLayoutMessage(event: any) {
+function handleLayoutMessage(event) {
     const { nodes, edges, layoutCfg = {} } = event.data
     const { type: layoutType, options, width, height, center, allNodes } = layoutCfg
-    let data: any,
-        ids: any[] = [],
-        positions: any[] = []
+    let data,
+        ids = [],
+        positions = []
     try {
         switch (layoutType) {
             case 'circular': {
@@ -60,10 +61,10 @@ function handleLayoutMessage(event: any) {
                 break
             }
             case 'concentric': {
-                let listConcen: any[] = []
+                let listConcen= []
                 try {
                     listConcen = floorBfs(nodes, edges, options.centralNode)
-                } catch (error: any) {
+                } catch (error) {
                     throw new Error(error)
                 }
 
@@ -91,7 +92,7 @@ function handleLayoutMessage(event: any) {
                     // 设置或获取link中节点的查找方式
                     .force(
                         'link',
-                        forceLink(edges).id((d: any) => d.id),
+                        forceLink(edges).id((d) => d.id),
                     )
                     .force('charge', forceManyBody())
                     // 整个实例中心
@@ -102,7 +103,7 @@ function handleLayoutMessage(event: any) {
                     .force('collide', forceCollide(repulsion || 40).iterations(1))
 
                 //作用力应用在所用的节点之间，当strength为正的时候可以模拟重力，当为负的时候可以模拟电荷力。
-                simulation.force('charge').strength((d: any) => {
+                simulation.force('charge').strength((d) => {
                     if (d.isSingle == true) {
                         return -150
                     }
@@ -120,7 +121,7 @@ function handleLayoutMessage(event: any) {
                 simulation.force('link').distance(distance || 250)
 
                 simulation.tick(tickNum || 150)
-                let force: { [key: string]: any } = {}
+                let force = {}
                 for (let i = 0, len = nodes.length; i < len; i++) {
                     // @ts-ignore
                     let { id, x, y } = nodes[i]
@@ -135,19 +136,19 @@ function handleLayoutMessage(event: any) {
                 break
             }
             case 'tree': {
-                let lis: any = []
+                let lis = []
                 let nodesBak = nodes,
                     linksBak = edges
                 try {
                     BFSTree(nodesBak, lis, linksBak, allNodes)
-                    nodesBak = nodesBak.filter((item: any) => {
+                    nodesBak = nodesBak.filter((item) => {
                         return !item.used
                     })
-                } catch (error: any) {
+                } catch (error) {
                     console.error(LAYOUT_MESSAGE.ERROR);
                 }
 
-                let result: any = []
+                let result = []
                 result = {
                     id: 'hierarchy_used_readOnly_by_cl',
                     children: nodesBak,
@@ -159,12 +160,12 @@ function handleLayoutMessage(event: any) {
                 let hierarchyData = hierarchy(result)
                 // @ts-ignore
                 let treeData = treeSimulation(hierarchyData)
-                let nodeDescendants: any = treeData.descendants()
+                let nodeDescendants = treeData.descendants()
 
-                let trees: { [key: string]: { x: number; y: number } } = {}
+                let trees = {}
                 for (let i = 1, len = nodeDescendants.length; i < len; i++) {
                     let { data, x, y } = nodeDescendants[i]
-                    let id: string | number = data?.id
+                    let id = data?.id
                     trees[id] = {
                         x: x - width,
                         y: y - height,
@@ -176,7 +177,7 @@ function handleLayoutMessage(event: any) {
                 break
             }
             case 'grid': {
-                let grid: any = {}
+                let grid = {}
 
                 let { cols, rows, columns } = options
                 if (nodes.length != 1) {
@@ -405,6 +406,6 @@ function handleLayoutMessage(event: any) {
     postMessage({ type: LAYOUT_MESSAGE.END, data, ids, positions })
 }
 // @ts-ignore
-onmessage = function (event: Event) {
+self.onmessage = function (event) {
     handleLayoutMessage(event)
 }

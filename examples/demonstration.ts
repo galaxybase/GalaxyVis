@@ -1,4 +1,6 @@
-import galaxyvis from "../src/galaxyVis";
+
+import galaxyvis from "galaxyvisv2";
+// import galaxyvis from "../build/galaxyvis.js"
 import * as dat from 'dat.gui';
 
 let galaxyVis = new galaxyvis({

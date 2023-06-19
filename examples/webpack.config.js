@@ -90,20 +90,6 @@ module.exports = {
                 exclude: /node_modules/,
                 loader: "raw-loader",
             },
-            {
-                test: /\.worker\.(c|m)?js$/i,
-                use: [
-                    {
-                        loader: "worker-loader",
-                    },
-                    {
-                        loader: "babel-loader",
-                        options: {
-                            presets: ["@babel/preset-env"],
-                        },
-                    },
-                ],
-            },
         ],
     },
     plugins,

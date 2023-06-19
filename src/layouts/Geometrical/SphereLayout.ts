@@ -3,7 +3,7 @@ import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 
 // @ts-ignore
-import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
+import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import sphereLayout from "./sphere";
 import { EventType } from "../../utils/events";
 

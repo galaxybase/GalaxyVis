@@ -1,7 +1,7 @@
 import { globalInfo } from '../../initial/globalProp'
 import { AnimateType, LAYOUT_MESSAGE } from '../../types'
 // @ts-ignore
-import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
+import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { EventType } from '../../utils/events'
 import { animation } from '../animation'
 import BaseLayout from '../baseLayout'
