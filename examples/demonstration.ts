@@ -1,4 +1,3 @@
-
 import galaxyvis from "../src/galaxyVis";
 import * as dat from 'dat.gui';
 
