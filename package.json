@@ -39,7 +39,6 @@
     },
     "dependencies": {
         "dagre": "^0.8.5",
-        "galaxyvisv2": "^1.0.33",
         "gl-matrix": "^3.3.0",
         "lodash": "^4.17.21",
         "polyline-normals": "^2.0.0",
