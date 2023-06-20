@@ -84,3 +84,15 @@
 - 修复geo模式的样式和style样式冲突的问题
 - 修复noverlap布局在非webworker环境下回执行两遍布局的问题
 
+## 1.0.5
+
+### Feat:
+
+- 修改打包脚本，默认引入打包后的文件
+- 修改woker-loader的inline内联方式支持webworker的布局
+
+
+### Fix:
+- 修复webgl的halo显示问题
+- 修复初始化相机zoom的min和max值混乱
+

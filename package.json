@@ -1,6 +1,6 @@
 {
     "name": "@galaxybase/galaxyvis",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "A High Performance Graph Visualization Framework in JavaScript",
     "homepage": "https://galaxyvis.com/",
     "author": "galaxybase",
