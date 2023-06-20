@@ -1,8 +1,5 @@
 const path = require("path");
 
-let production = process.argv.indexOf("--mode");
-production = production !== -1 ? process.argv[production + 1] === "production" : false;
-
 const moduleConfig = {
   rules: [{
       test: /\.glsl$/,
@@ -19,13 +16,12 @@ const moduleConfig = {
 
 module.exports = [{
   name: "galaxyvis",
-  mode: production ? "production" : "none",
+  mode: "production",
   entry: "./src/index.ts",
   target: ['web', 'es5'],
   output: {
-    filename: production ? "galaxyvis.min.js" : "galaxyvis.js",
+    filename: "galaxyvis.js",
     path: path.join(__dirname, "build"),
-    library: "galaxyvis",
     libraryTarget: "umd",
   },
   resolve: {

@@ -1,6 +1,6 @@
 import { AnimateType, LAYOUT_MESSAGE } from '../../types'
 // @ts-ignore
-import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
+import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { unionEdges } from '../../utils/layouts/common'
 import { EventType } from '../../utils/events'
 import { globalInfo } from '../../initial/globalProp'
