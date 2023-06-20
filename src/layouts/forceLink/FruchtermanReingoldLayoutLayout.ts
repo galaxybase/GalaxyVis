@@ -2,7 +2,7 @@ import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
-import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
+import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
 import { isString } from "lodash";
 import { basicData } from "../../initial/globalProp";

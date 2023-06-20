@@ -2,7 +2,7 @@ import { AnimateType, LAYOUT_MESSAGE, PlainObject } from "../../types"
 import { animation } from "../animation";
 import BaseLayout from "../baseLayout"
 // @ts-ignore
-import LayoutWorker from 'worker-loader!../../utils/layouts/layouts.worker'
+import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
 import { isString } from "lodash";
 import radiatreeLayout, { initRadiaTree } from "./radiatree";
