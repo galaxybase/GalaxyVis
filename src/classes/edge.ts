@@ -3,6 +3,7 @@ import { edgeAttributes } from '../types'
 import { hashNumber } from '../utils'
 import {
     edgeChangeAttribute,
+    edgeChangeAttributes,
     edgeGetMiddlePoint,
     edgeInitAttribute,
     edgeSetSelected,
@@ -141,6 +142,10 @@ export default class Edge {
     public changeAttribute = (attribute: any, useSet: boolean = false) => {
         return edgeChangeAttribute(this, attribute, useSet)
     }
+    
+    public changeAttributes = (attribute: any)=>{
+        return edgeChangeAttributes(this, attribute)
+    }
     /**
      * 初始化属性
      * @param attribute 初始化的属性
@@ -176,7 +181,7 @@ export default class Edge {
     public getTarget = () => {
         let target = this.value.target
         // @ts-ignore
-        return basicData[this.id].nodeList.get(target)
+        return basicData[this.id].nodeList.get(target) || target
     }
     /**
      * 获取中心点坐标
@@ -196,9 +201,9 @@ export default class Edge {
         return hasClass(this, className)
     }
 
-    public getParallelEdges = async () => {
+    public getParallelEdges = () => {
         // @ts-ignore
-        const { typeHash, baseTypeHash } = await this.getEdgeType()
+        const { typeHash, baseTypeHash } = this.getEdgeType()
         let source = this.getSource()
         let target = this.getTarget()
         let sourceNumber = source.value.num;

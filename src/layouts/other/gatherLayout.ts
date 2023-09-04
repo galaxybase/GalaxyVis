@@ -4,7 +4,7 @@ import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
 import gatherTypeLayout from "./gather";
 import { EventType } from "../../utils/events";
@@ -24,14 +24,15 @@ class GatherLayout extends BaseLayout {
     init() {
         let nodeList = this.nodeList = this.galaxyvis.getFilterNode();
         let layoutsNodes = [], layoutEdges: { source: tNode; target: tNode; }[] = [];
-        let { nodes } = this.options;
+        let { nodes, clusterType } = this.options;
         let ids = [];
         let used = new Set(), index = 0
+        !clusterType && (clusterType = "color")
         this.edgeList = basicData[this.galaxyvis.id].edgeList
         this.nodeTable = this.galaxyvis.getNodeTable();
         if (!nodes || nodes?.length == nodeList?.size || nodes.length == 0) {
             nodeList.forEach((values: any, key: string) => {
-                tNodeList[key] = new tNode(key, values.getAttribute())
+                tNodeList[key] = new tNode(key, {...values.getAttribute(), cluster: values.getData(clusterType)})
                 tNodeList[key].updatePos()
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)
@@ -58,7 +59,8 @@ class GatherLayout extends BaseLayout {
         } else {
             for (let i in nodes) {
                 let key = nodes[i];
-                tNodeList[key] = new tNode(key, nodeList.get(key).getAttribute())
+                let values = nodeList.get(key)
+                tNodeList[key] = new tNode(key, {...values.getAttribute(),cluster: values.getData(clusterType)})
                 tNodeList[key].updatePos()
                 layoutsNodes.push(tNodeList[key])
                 ids.push(key)

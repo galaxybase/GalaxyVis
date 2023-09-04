@@ -64,12 +64,12 @@ export const getRelationTable = (that: any) => {
  * @param that
  * @returns
  */
-var typeHash: any, baseTypeHash: any
+var typeHash:{[key:string]: any} = {}, baseTypeHash:{[key:string]: any} = {}
 export const excessGetEdgeType = (that: any) => {
     let GraphId = that.id;
     let { edgeList, nodeList, relationTable } = basicData[GraphId]
-    typeHash = new Map()
-    baseTypeHash = new Map()
+    typeHash[GraphId] = new Map()
+    baseTypeHash[GraphId] = new Map()
     for (let [key, item] of edgeList) {
         let attribute = item?.value?.attribute
         if (attribute) {
@@ -83,18 +83,20 @@ export const excessGetEdgeType = (that: any) => {
                 })
             }
 
-            if (isGroupEdge) {
+            if (isGroupEdge && isVisible) {
                 let children = item.value.children;
                 let cnt = 0
-                for (let j = 0; j < children.length; j++) {
-                    let edge = edgeList.get(children[j])
-                    if (edge && edge.getAttribute('isVisible')) cnt++
-                }
-                if (cnt == children.length) {
-                    isVisible = false
-                    item.changeAttribute({
-                        isVisible: false,
-                    })
+                if(children){
+                    for (let j = 0; j < children.length; j++) {
+                        let edge = edgeList.get(children[j])
+                        if (edge && edge.getAttribute('isVisible')) cnt++
+                    }
+                    if (cnt == children.length) {
+                        isVisible = false
+                        item.changeAttribute({
+                            isVisible: false,
+                        })
+                    }
                 }
             }
 
@@ -121,28 +123,28 @@ export const excessGetEdgeType = (that: any) => {
                         if (source == target) {
                             throw Error('该类型不支持起点和终点是同一个')
                         }
-                        if (typeHash.has(n)) {
-                            let total: any = typeHash.get(n).total
-                            typeHash.set(n, {
-                                num: typeHash.get(n).num + 1,
+                        if (typeHash[GraphId].has(n)) {
+                            let total: any = typeHash[GraphId].get(n).total
+                            typeHash[GraphId].set(n, {
+                                num: typeHash[GraphId].get(n).num + 1,
                                 total: total.add(key),
                             })
                         } else {
-                            typeHash.set(n, {
+                            typeHash[GraphId].set(n, {
                                 num: 1,
                                 total: new Set().add(key),
                             })
                         }
                         break
                     case 'basic':
-                        if (baseTypeHash.has(n)) {
-                            let total: any = baseTypeHash.get(n).total
-                            baseTypeHash.set(n, {
-                                num: baseTypeHash.get(n).num + 1,
+                        if (baseTypeHash[GraphId].has(n)) {
+                            let total: any = baseTypeHash[GraphId].get(n).total
+                            baseTypeHash[GraphId].set(n, {
+                                num: baseTypeHash[GraphId].get(n).num + 1,
                                 total: total.add(key),
                             })
                         } else {
-                            baseTypeHash.set(n, {
+                            baseTypeHash[GraphId].set(n, {
                                 num: 1,
                                 total: new Set().add(key),
                             })
@@ -155,11 +157,30 @@ export const excessGetEdgeType = (that: any) => {
         }
     }
     return {
-        typeHash,
-        baseTypeHash,
+        typeHash: typeHash[GraphId],
+        baseTypeHash: baseTypeHash[GraphId],
         relationTable: basicData[GraphId].relationTable,
     }
 }
+
+export const getTypeHash = (GraphId:string) => {
+    return typeHash[GraphId]
+}
+
+export const getbashTypeHash = (GraphId:string) => {
+    return baseTypeHash[GraphId]
+}
+
+export const clearTypeHash = (GraphId:string) => {
+    typeHash[GraphId] = null;
+    delete typeHash[GraphId]
+}
+
+export const clearbashTypeHash = (GraphId:string) => {
+    baseTypeHash[GraphId] = null;
+    delete baseTypeHash[GraphId]
+}
+
 /**
  * 获取要在webgl绘制的值
  * @param that
@@ -189,7 +210,7 @@ export const excessGetEdgeDrawVal = (that: any) => {
             // 通过hashtable 计数
             let hash = hashNumber(sourceNumber, targetNumber), //两点之间的hash值
                 forwardSource = forwadHashTable?.get(hash)?.sourceNumber,
-                hashSet = type == 'basic' ? baseTypeHash.get(hash) : typeHash.get(hash), //两点之间hash表
+                hashSet = type == 'basic' ? baseTypeHash[GraphId].get(hash) : typeHash[GraphId].get(hash), //两点之间hash表
                 size = hashSet?.num
             if (!size) continue
             let lineNumber = [...hashSet.total].indexOf(key);
@@ -380,10 +401,11 @@ const excessGetEdge = (id: string, needFresh: any) => {
  * @returns
  */
 export const excessGetEdgeWithArrow = (that: any, Partial?: boolean, needFresh?: any) => {
-    if (!typeHash || !baseTypeHash) {
+    let GraphId = that.id;
+
+    if (!typeHash[GraphId] || !baseTypeHash[GraphId]) {
         excessGetEdgeType(that)
     }
-    let GraphId = that.id;
     let count = 0,
         lineDrawCount: any[] = [],
         num = 0,

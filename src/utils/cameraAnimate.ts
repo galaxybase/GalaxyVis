@@ -1,10 +1,8 @@
-import { PlainObject } from '../types'
 import { cancelFrame, requestFrame } from './index'
 import { AnimateOptions } from '../types'
 import { ANIMATE_DEFAULTS } from '../initial/globalProp'
 import easings from './easings'
 
-export let cameraFram: number | null = null
 
 /**
  * 动画的过度效果
@@ -23,6 +21,11 @@ export function animateCamera(
     } | AnimateOptions,
     callback: () => void,
 ): () => void {
+    
+    if (graph.cameraFram){
+        cancelFrame(graph.cameraFram)
+    }
+
     let { duration, easing } = ANIMATE_DEFAULTS
     let camera = graph.camera
     opts.duration = opts.duration || duration
@@ -43,7 +46,7 @@ export function animateCamera(
         position: camera.position,
     }
 
-    cameraFram = null;
+    graph.cameraFram = null;
 
     const step = () => {
         let p = (Date.now() - start) / options.duration
@@ -57,7 +60,8 @@ export function animateCamera(
             camera.ratio = 2 * (targets.position[2] * Math.tan((targets.zoom * Math.PI) / 360))
 
             graph.camerarefresh(true)
-
+            graph.cameraFram = null;
+            
             if (typeof callback === 'function') callback()
 
             return
@@ -76,12 +80,12 @@ export function animateCamera(
 
         graph.camerarefresh(true)
         // 执行下一帧动画
-        cameraFram = requestFrame(step)
+        graph.cameraFram = requestFrame(step)
     }
 
     step()
 
     return () => {
-        if (cameraFram) cancelFrame(cameraFram)
+        if (graph.cameraFram) cancelFrame(graph.cameraFram)
     }
 }

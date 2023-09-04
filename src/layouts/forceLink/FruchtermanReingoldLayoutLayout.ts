@@ -4,7 +4,7 @@ import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import { basicData } from "../../initial/globalProp";
 import fruchtermanReingoldLayout from "./fruchtermanReingold";
 

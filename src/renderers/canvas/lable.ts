@@ -1,4 +1,4 @@
-import { clone } from 'lodash'
+import clone from 'lodash/clone'
 import EdgeList from '../../classes/edgeList'
 import NodeList from '../../classes/nodeList'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'

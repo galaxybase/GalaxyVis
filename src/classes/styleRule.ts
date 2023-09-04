@@ -1,4 +1,4 @@
-import { merge } from 'lodash'
+import merge from 'lodash/merge'
 import { basicData, globalInfo } from '../initial/globalProp'
 import { RuleOptions } from '../types'
 

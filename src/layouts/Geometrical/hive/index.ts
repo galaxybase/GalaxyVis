@@ -5,10 +5,16 @@ let intSteps = 50;
 let inited = false
 let nlines = 5
 
+/**
+ * 放射布局
+ * @param assign 
+ * @param nodes 
+ * @param options 
+ */
 function genericHiveLayout(assign: any, nodes: any, options: any) {
-    nlines = options?.nlines || 5;
-    margin = options?.margin || 0;
-    radius = options?.radius || 50;
+    nlines = options?.nlines || 5;  //指定放射条数
+    margin = options?.margin || 0;  //点与点之间的距离
+    radius = options?.radius || 50; //点大小
 
     var nodeCount = 
         nodes.length > 25 ?

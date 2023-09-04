@@ -1,6 +1,13 @@
 import { floydWarshall, getAdjMatrix } from '../../math'
 import RadialNonoverlapForce from './radialNonoverlapForce'
-
+/**
+ * 辐射布局
+ * @param assign 
+ * @param nodes 
+ * @param edges 
+ * @param options 
+ * @returns 
+ */
 function genericRadialLayout(assign: any, nodes: any, edges: any, options: any) {
     let {
         centralNode: focusNode,

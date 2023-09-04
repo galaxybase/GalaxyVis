@@ -2,7 +2,7 @@ import { genID } from '..'
 import { ClassOptions, PlainObject, RuleOptions } from '../../types'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import { StyleRule } from '../../classes/styleRule'
-import { merge } from 'lodash'
+import merge from 'lodash/merge'
 import { StyleClass } from '../../classes/styleClass'
 
 let classList: { [key: string]: any } = {}

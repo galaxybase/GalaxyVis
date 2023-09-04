@@ -8,9 +8,16 @@ let TWO_PI = Math.PI * 2;
 let intSteps = 50;
 let positionSide = "inside";
 
+/**
+ * 双圆环布局
+ * @param assign 
+ * @param nodes 
+ * @param options 
+ */
 function genericduailCircleLayout(assign: any, nodes: any, options: any) {
     positionSide = options.position || 'inside';
-    secondarynodecount = options.secondarynodecount || 15;
+    secondarynodecount = options.secondarynodecount || 15; //内核数
+    // 内核展示在外环or内环
     if (positionSide == 'inside') {
         highdegreeoutside = false;
     } else {
@@ -47,13 +54,14 @@ function genericduailCircleLayout(assign: any, nodes: any, options: any) {
     for (var i = 0; i < nodeCounts; i++) {
         var n = nodes[i];
         var noderadius = n.scaleX * n.radius;
+        // 计算内外核圆的大小
         if (i < secondarynodecount) {
             tmpsecondarycirc += noderadius * 2.0;
         } else {
             tmpprimarycirc += noderadius * 2.0;
         }
     }
-
+    // 内外核圆大小比例,是否需要翻转
     var circum_ratio = tmpprimarycirc / tmpsecondarycirc;
     if (circum_ratio < 2) {
         primary_scale = 2 / circum_ratio;
@@ -78,7 +86,7 @@ function genericduailCircleLayout(assign: any, nodes: any, options: any) {
     for (var i = 0; i < nodeCounts; i++) {
         var n = nodes[i];
         var noderadius = n.scaleX * n.radius;
-
+        // 内核环位置
         if (i < secondarynodecount) {
             if (secondry_scale > 2) {
                 noderadius = tmpsecondarycirc / ((2 * secondarynodecount) * secondry_scale * 1.2);
@@ -91,6 +99,7 @@ function genericduailCircleLayout(assign: any, nodes: any, options: any) {
             nodeCoords = cartCoors(secondaryradius, 1, (lasttheta + noderadian) - correct_theta);
             lasttheta += noderadius * 2 * secondary_theta * 1.2 * secondry_scale;
         } else {
+            // 外核环位置
             var noderadian = primary_theta * noderadius * 1.2 * primary_scale;
             if (i == secondarynodecount) {
                 lasttheta = 0;
@@ -167,7 +176,7 @@ function newLayoutData() {
     };
     return layoutData;
 }
-
+// 计算当前点坐标位置
 function cartCoors(radius: number, whichInt: number, theta: number) {
     var coOrds = [];
     coOrds[0] = (radius * Math.cos(theta * whichInt + Math.PI / 2));

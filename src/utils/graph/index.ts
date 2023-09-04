@@ -1,9 +1,9 @@
 import Node from '../../classes/node'
 import Edge from '../../classes/edge'
-import { cancelFrame, genID } from '..'
+import { cancelFrame, genID, removeITextureGL } from '..'
 import { basieciDataSetting, DEFAULT_SETTINGS, originInfoSetting } from '../../initial/settings'
 import { originInfo, originInitial } from '../../initial/originInitial'
-import { edgeAttributes, LAYOUT_MESSAGE, NodeAttributes } from '../../types'
+import { edgeAttributes, NodeAttributes } from '../../types'
 import {
     globalProp,
     basicData,
@@ -14,14 +14,15 @@ import {
 import NodeList from '../../classes/nodeList'
 import EdgeList from '../../classes/edgeList'
 import event from '../event'
-import { nodeInitAttribute } from '../node'
+import { graphTextureMap, nodeInitAttribute } from '../node'
 import { edgeInitAttribute } from '../edge'
 import { transformatAddEdgeFilter, transformatAddNodeFilter } from '../transformations'
-import { clearChars } from '../tinySdf/sdfDrawText'
-import { clone, cloneDeep, defaultsDeep, PartialObject } from 'lodash'
-import { cameraFram } from '../cameraAnimate'
-import { animateFram } from '../graphAnimate'
+import { clearChars, removeTextureGL } from '../tinySdf/sdfDrawText'
+import cloneDeep from 'lodash/cloneDeep'
 import { cleartNodeList } from '../../layouts/hierarchy/tclass'
+import { clearbashTypeHash, clearTypeHash } from './excess'
+
+type PartialObject<T> = { [P in keyof T]?: T[P] | undefined; }
 
 const transformatStrategies = {
     nodeFilter: (that: any) => {
@@ -130,6 +131,7 @@ const graphAddNodeHandler = (that: any, nodeInfo: NodeAttributes) => {
             num: originInitial.graphIndex++,
             data: nodeInfo?.data,
             classList: nodeInfo?.class,
+            children: nodeInfo?.children
         }
         node = new Node(nodeAttr)
         // @ts-ignore
@@ -243,6 +245,7 @@ const graphAddEdgeHandler = (that: any, edgeInfo: edgeAttributes) => {
             data: edgeInfo?.data,
             classList: edgeInfo?.class || [],
             num: originInitial.graphIndex++,
+            children: edgeInfo?.children
         }
 
         edge = new Edge(edgeAttr)
@@ -439,13 +442,13 @@ export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: bool
     node?.setSelected(false)
     nodeList.delete(nodeId)
     originInfo[GraphId].nodeList.delete(nodeId)
-
     if (isReFlash) {
         that.events.emit('removeNodes', {
             nodes: new NodeList(that, [nodeId]),
         })
         await that.render()
     }
+    return nodeId
 }
 /**
  * 删除多点
@@ -456,10 +459,12 @@ export const graphRemoveNode = async (that: any, nodeId: string, isReFlash: bool
 export const graphRemoveNodes = (that: any, nodes: string[]) => {
     return new Promise(async (resolve, reject) => {
         try {
+            const removeNodes = []
             for (let index = 0, len = nodes.length; index < len; index++) {
-                that.removeNode(nodes[index], false)
+               let id = that.removeNode(nodes[index], false)
+               if(id) removeNodes.push(id)
             }
-            let nodeList = new NodeList(that, nodes)
+            let nodeList = new NodeList(that, removeNodes)
             that.events.emit('removeNodes', {
                 nodes: nodeList,
             })
@@ -481,11 +486,24 @@ export const graphRemoveEdge = async (that: any, edgeId: string, force: boolean,
     let { edgeList } = basicData[GraphId]
     let edge = edgeList.get(edgeId)
 
+    if (!edge) return
+ 
     if (
         !force &&
         edge &&
         !globalInfo[GraphId].mergeEdgesTransformat &&
         edge.getAttribute('usedMerge') == false
+    )
+        return
+
+    if (
+        (
+            globalInfo[GraphId].mergeEdgesTransformat &&
+            edge.getAttribute('usedMerge')
+        ) || (
+            globalInfo[GraphId].mergeNodesTransformat &&
+            edge.getAttribute('useMergeEdge')
+        )
     )
         return
 
@@ -498,6 +516,8 @@ export const graphRemoveEdge = async (that: any, edgeId: string, force: boolean,
         })
         await that.render()
     }
+
+    return edgeId
 }
 /**
  * 删除多条边
@@ -508,10 +528,12 @@ export const graphRemoveEdge = async (that: any, edgeId: string, force: boolean,
 export const graphRemoveEdges = (that: any, edges: string[], force: boolean = true) => {
     return new Promise(async (resolve, reject) => {
         try {
+            const removeEdges = []
             for (let index = 0, len = edges.length; index < len; index++) {
-                that.removeEdge(edges[index], force, false)
+                let id = that.removeEdge(edges[index], force, false)
+                if(id) removeEdges.push(id)
             }
-            let edgeList = new EdgeList(that, edges)
+            let edgeList = new EdgeList(that, removeEdges)
             that.events.emit('removeEdges', {
                 edges: edgeList,
             })
@@ -528,14 +550,14 @@ export const graphRemoveEdges = (that: any, edges: string[], force: boolean = tr
  * @param RawGraph
  * @returns
  */
-export const graphAddGraph = (that: any, RawGraph: PartialObject<any>) => {
+export const graphAddGraph = (that: any, RawGraph: PartialObject<any>, needFresh: boolean = true) => {
     return new Promise(async (resolve, reject) => {
         let { nodes, edges } = RawGraph
         let nodelist, edgelist
         nodes && (nodelist = await that.addNodes(nodes, false))
         edges && (edgelist = await that.addEdges(edges, false))
         that.geo.enabled() && that.geo.layer.options.onUpdate(true)
-        that.render()
+        needFresh && that.render()
         resolve({
             nodes: nodelist,
             edges: edgelist,
@@ -548,21 +570,21 @@ export const graphAddGraph = (that: any, RawGraph: PartialObject<any>) => {
  * @param destory = true 是否销毁实例
  * @returns
  */
-export const graphClearGraph = (graph: any, destory: boolean = true) => {
+export const graphClearGraph = (graph: any, needClear: boolean = true, destory: boolean = true) => {
+
+    if (graph.cameraFram) {
+        cancelFrame(graph.cameraFram)
+    }
+
+    if (graph.animateFram) {
+        cancelFrame(graph.animateFram)
+        graph.textStatus = true;
+    }
+
     const graphId = graph.id
     basicData[graphId] = cloneDeep(basieciDataSetting)
     originInfo[graphId] = cloneDeep(originInfoSetting)
-    globalProp.iconMap = new Map([
-        [
-            '',
-            {
-                num: 0,
-                style: 'normal',
-                scale: 0.5,
-            },
-        ],
-    ])
-    globalProp.useIniticon = 0
+
     const globalInfoGraph = globalInfo[graphId]
     globalInfoGraph.mergeNodesTransformat = new Map()
     globalInfoGraph.mergeEdgesTransformat = null
@@ -583,22 +605,14 @@ export const graphClearGraph = (graph: any, destory: boolean = true) => {
         globalInfoGraph.ruleList = new Map()
     }
 
-    if (cameraFram) {
-        cancelFrame(cameraFram)
-    }
-
-    if (animateFram) {
-        cancelFrame(animateFram)
-        graph.textStatus = true;
-        graph.events.emit(
-            LAYOUT_MESSAGE.END,
-            () => { }
-        )
-    }
+    clearTypeHash(graphId)
+    clearbashTypeHash(graphId)
 
     cleartNodeList()
     graph.camera.updateTransform()
-    graph.clear()
+    graph.camera.quad.clear()
+    if(needClear)
+        graph.clear()
 }
 /**
  * 销毁graph对象
@@ -611,6 +625,9 @@ export const graphDestory = (that: any) => {
             let GraphId = that.id;
             that.geo.enabled() && that.geo.disable()
 
+            // 移除监听事件
+            window.removeEventListener('resize', that.resizeFuc);
+
             if (thumbnailInfo[GraphId] && that.thumbnail) {
                 thumbnailInfo[GraphId] && delete thumbnailInfo[GraphId]
                 resolve(true)
@@ -622,11 +639,19 @@ export const graphDestory = (that: any) => {
                 graphClearGraph(that)
                 clearChars()
 
-                if (Object.keys(instancesGL).length <= 1)
+                if (Object.keys(instancesGL).length <= 1){
+                    // @ts-ignore
+                    globalProp.iconMap = null
+                    globalProp.useIniticon = 0
                     globalProp.textureCtx = null
+
+                }
                 delete basicData[GraphId]
                 delete originInfo[GraphId]
                 delete globalInfo[GraphId]
+
+                removeTextureGL(that)
+                removeITextureGL(that)
 
                 // webgl上下文清除
                 var t = that.gl?.getExtension('WEBGL_lose_context')
@@ -646,6 +671,7 @@ export const graphDestory = (that: any) => {
                 }
 
             }
+            graphTextureMap[GraphId] && delete graphTextureMap[GraphId]
             instancesGL[GraphId] && delete instancesGL[GraphId]
             thumbnailInfo[GraphId] && delete thumbnailInfo[GraphId]
             // 清除graph 的 events
@@ -665,6 +691,7 @@ export const graphDestory = (that: any) => {
                 delete that[i]
             }
 
+            // Object.setPrototypeOf(that, null);
             that = null;
             resolve(true)
         } catch (err) {

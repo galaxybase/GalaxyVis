@@ -1,8 +1,9 @@
 import Camera from '../classes/camera'
 import galaxyvis from '../galaxyVis'
 import NodeList from '../classes/nodeList'
-import { debounce } from 'lodash'
-import { computeArea, disPoint, getX, getY, isInside } from '../utils'
+import debounce from 'lodash/debounce'
+
+import { disPoint, getX, getY, isInside } from '../utils'
 import { globalProp, basicData, globalInfo } from '../initial/globalProp'
 import {
     nodeOrEdgeSelect,
@@ -44,7 +45,9 @@ class CaptorsMouse {
         // canvas外层div
         this.divBox = canvas.parentNode as HTMLElement
         // 节流函数
-        this.throttled = debounce(() => this.scene.events.emit('viewChanged', { type: 'pan' }), 200)
+        this.throttled = debounce(() => 
+            this.scene.events && this.scene.events.emit('viewChanged', { type: 'pan' })
+        , 200)
         this.renderType = scene.renderer
         this.geoEnable = true
     }
@@ -399,6 +402,8 @@ class CaptorsMouse {
             selected && this.selectTarget && this.selectTarget.isNode() && this.selectTarget.getId(),
         )
 
+        this.scene.events.emit('mouseunSelectEdges', unSelectedEdges)
+
         basicData[this.scene.id].unSelectedNodes = new Set()
         basicData[this.scene.id].unSelectedEdges = new Set()
 
@@ -566,8 +571,8 @@ class CaptorsMouse {
         */
     private checkNode = (x: number, y: number) => {
         const graphId = this.scene.id
-        let width = 0.1,
-            height = 0.1,
+        let width = 1,
+            height = 1,
             position = this.camera.position,
             map = this.checkQuad(x + position[0], y + position[1], true, width, height),
             items = [...map.values()];
@@ -579,17 +584,7 @@ class CaptorsMouse {
             if (node?.getAttribute('opacity') == 0.0 || !node?.getAttribute('isVisible'))
                 continue
             // 计算碰撞
-            let area = computeArea(
-                x - width / 2 + position[0],
-                y + height / 2 + position[1],
-                x + width / 2 + position[0],
-                y - height / 2 + position[1],
-
-                item.x - item.width / 2,
-                item.y + item.height / 2,
-                item.x + item.width / 2,
-                item.y - item.height / 2,
-            )
+            let area = item.area
             // 碰撞大于0说明碰撞的盒子碰到了
             if (area > 0 && node) {
                 // 获取当前点的顺序
@@ -603,7 +598,8 @@ class CaptorsMouse {
                 }
             }
         }
-        if (!sel.id && (!map.size || oldId)) {
+        let quad = this.camera.quad      
+        if ((!quad.data().length || oldId) && (sel.id == null)) {
             let boundBox = basicData[graphId].boundBox
             let position = this.camera.position
             let strategies: { [key: string]: Function } = {
@@ -695,8 +691,8 @@ class CaptorsMouse {
      */
     private checkEdge = (x: number, y: number) => {
         const graphId = this.scene.id
-        let width = 0.1,
-            height = 0.1,
+        let width = 1,
+            height = 1,
             position = this.camera.position,
             map = this.checkQuad(x + position[0], y + position[1], false, width, height),
             items = [...map.values()]
@@ -707,17 +703,7 @@ class CaptorsMouse {
             if (edge?.getAttribute('opacity') == 0.0 || !edge?.getAttribute('isVisible'))
                 continue
             // 计算碰撞
-            let area = computeArea(
-                x - width / 2 + position[0],
-                y + height / 2 + position[1],
-                x + width / 2 + position[0],
-                y - height / 2 + position[1],
-
-                item.x - item.width / 2,
-                item.y + item.height / 2,
-                item.x + item.width / 2,
-                item.y - item.height / 2,
-            )
+            let area = item.area
             // 碰撞面积大于0等于盒子碰撞了
             if (area > 0 && edge) {
                 let index = edge.value.num;
@@ -731,14 +717,12 @@ class CaptorsMouse {
             }
         }
 
-        let quad = this.camera.quad.root
+        let quad = this.camera.quad
         let edgeBoundBox = basicData[this.scene.id].edgeBoundBox
         if (
             edgeBoundBox.size &&
             !edgeSel.id &&
-            !quad.children.length &&
-            !quad._stuckChildren.length &&
-            !quad.nodes.length
+            !quad.data().length
         ) {
             for (let [key, val] of edgeBoundBox) {
                 let { xmax, xmin, ymax, ymin, points } = val
@@ -822,17 +806,7 @@ class CaptorsMouse {
             )
                 continue
             // 计算碰撞
-            let area = computeArea(
-                x - width / 2,
-                y + height / 2,
-                x + width / 2,
-                y - height / 2,
-
-                item.x - item.width / 2,
-                item.y + item.height / 2,
-                item.x + item.width / 2,
-                item.y - item.height / 2,
-            )
+            let area = item.area
             // 碰撞大于0说明碰撞的盒子碰到了
             if (area > 0 && node) {
                 // 获取当前点的顺序
@@ -883,17 +857,7 @@ class CaptorsMouse {
             )
                 continue
             // 计算碰撞
-            let area = computeArea(
-                x - width / 2,
-                y + height / 2,
-                x + width / 2,
-                y - height / 2,
-
-                item.x - item.width / 2,
-                item.y + item.height / 2,
-                item.x + item.width / 2,
-                item.y - item.height / 2,
-            )
+            let area = item.area
             // 碰撞面积大于0等于盒子碰撞了
             if (area > 0 && edge) {
                 let index = edgeOrder.indexOf(item.id)

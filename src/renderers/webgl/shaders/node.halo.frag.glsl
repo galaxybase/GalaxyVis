@@ -50,10 +50,11 @@ void main(void) {
     vec4 col = gl_FragColor;
     col = mix(col, backgroundColor, 1.0-smoothstep(0.0, fwdis, abs(dis)));
 
-    col = mix(backgroundColor,col, opacity);
+    col = mix( col, backgroundColor, 1.0-smoothstep(0.0, 0.01, abs(dis)) );
+
     if(sign(dis)>0.0)
         col = col - sign(dis)*vec4(vec3(.0),1.0);
-    col = mix( col, backgroundColor, 1.0-smoothstep(0.0, fwdis, abs(dis)) );
+
     gl_FragColor = col;
 
     if(u_progress != 1.0){

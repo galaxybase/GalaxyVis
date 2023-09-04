@@ -1,13 +1,107 @@
-import { coordTransformation } from '..'
-import { basicData, globalInfo } from '../../initial/globalProp'
-import { AnimateOptions } from '../../types'
+import cloneDeep from 'lodash/cloneDeep'
+import { coordTransformation, roundedNum } from '..'
+import { basicData, globalInfo, globalProp } from '../../initial/globalProp'
 import { animateCamera } from '../cameraAnimate'
+
+export const GraphToScreenCoordinates = (
+    that: any,
+    evt: any
+) => {
+    let graph = that
+    let graphId = graph.id;
+    let camera = graph.camera;
+    let position = cloneDeep(camera.position);
+    let ratio = camera.ratio;
+    let scale = (globalProp.globalScale / ratio) * 2.0
+    let renderType = graph.getRenderType();
+    let transform = 1
+    let width = globalInfo[graphId].BoxCanvas.getWidth,
+        height = globalInfo[graphId].BoxCanvas.getHeight;
+    if (renderType === "webgl") {
+        scale *= height / window.outerHeight;
+        // graph.camera.updateTransform()
+        // 更新比例
+        if (graph.geo.enabled())
+            graph.geo.getGeoTransform()
+        else
+            camera.updateTransform()
+        transform = basicData[graphId]?.transform || 223
+        position[0] *= -transform;
+        position[1] *= transform;
+    }
+    let { x, y } = evt;
+
+    x += position[0];
+    y += position[1];
+
+    x *= scale / 2.0
+    y *= scale / 2.0
+
+    x = roundedNum((x += width / 2))
+    y = roundedNum((y += height / 2))
+    return {
+        x,
+        y,
+    }
+}
+
+export const ScreenToGraphCoordinates = (
+    that: any,
+    evt: any
+) => {
+    let graph = that
+    let camera = graph.camera
+    // 获取当前缩放
+    let ratio = camera.ratio
+    // 获取相机当前位置
+    let position = cloneDeep(camera.position)
+
+    let graphId = graph.id;
+
+    let scale = (globalProp.globalScale / ratio) * 2.0
+
+    let width = globalInfo[graphId].BoxCanvas.getWidth,
+        height = globalInfo[graphId].BoxCanvas.getHeight;
+
+    let { x, y } = evt;
+
+    let renderType = graph.getRenderType();
+    let transform = 1
+    if (renderType === "webgl") {
+
+        scale *= height / window.outerHeight;
+
+        // graph.camera.updateTransform()
+        if (graph.geo.enabled())
+            graph.geo.getGeoTransform()
+        else
+            camera.updateTransform()
+
+        transform = basicData[graphId]?.transform || 223
+
+        position[0] *= -transform;
+        position[1] *= transform;
+    }
+
+    x = roundedNum(x -= width / 2)
+    y = roundedNum(y -= height / 2)
+
+    x /= scale / 2.0;
+    y /= scale / 2.0;
+
+    x -= position[0];
+    y -= position[1];
+
+    return {
+        x, y
+    }
+}
 
 export const viewZoomChange = (
     type: number, //1 in ,-1 out
     galaxyvis: any,
     scale?: number, // 缩放比
-    opts?: AnimateOptions,
+    opts?: any,
 ) => {
     return new Promise((resolve, reject) => {
         try {
@@ -17,9 +111,10 @@ export const viewZoomChange = (
                 nowPosition = camera.position //获取当前相机位置
             if (nowZoom < camera.minZoom && type == 1) nowZoom = camera.minZoom
             if (nowZoom > camera.maxZoom && type == -1) nowZoom = camera.maxZoom
+            if (!opts) opts = {}
             // 相机动画
-            animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts as AnimateOptions, () => {
-                resolve((): void => {})
+            animateCamera(galaxyvis, { zoom: nowZoom, position: nowPosition }, opts, () => {
+                resolve((): void => { })
             })
         } catch {
             reject('ZoomChange Fail')
@@ -118,6 +213,23 @@ export const viewLocateGraph = (galaxyvis: any, options?: any) => {
             thubnailBasic;
 
         if (renderType == 'webgl') {
+
+            const innerWidth = window.outerWidth
+            const innerHeight = window.outerHeight
+            const dsr = (BoxCanvas.getWidth / BoxCanvas.getHeight) / (innerWidth / innerHeight)
+
+            useMatrix = viewHeight / innerHeight > viewWidth / innerWidth;
+            maxratio = useMatrix ? viewHeight : viewWidth;
+            zoomBasic = (useMatrix ? innerHeight : innerWidth);
+
+            if (!galaxyvis.thumbnail && useMatrix && dsr <= 1.0) {
+                zoomBasic *= dsr;
+            } else if (dsr <= 1.0 && !useMatrix) {
+                zoomBasic *= dsr
+            } else if (dsr > 1) {
+                transform *= dsr
+            }
+
             let offset = coordTransformation(GraphId, coordMid_x, coordMid_y)
             nowPosition = [offset[0], offset[1], 3];
         }
@@ -129,8 +241,7 @@ export const viewLocateGraph = (galaxyvis: any, options?: any) => {
         );
 
         zoomratio = (thumbnail && galaxyvis.thumbnail) ?
-            // (renderType == "webgl" ? zoomBasic - transform : thubnailBasic) :
-            (renderType == "webgl" ? zoomBasic + transform / 2 : (1 - transform / 2 / zoomBasic) * thubnailBasic) :
+            (renderType == "webgl" ? zoomBasic : (1 - transform / 2 / zoomBasic) * thubnailBasic) :
             zoomBasic + transform
 
         let zoom = Math.ceil(((Math.atan2(maxratio, zoomratio) * 360) / Math.PI))

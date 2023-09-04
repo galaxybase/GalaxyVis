@@ -28,6 +28,7 @@ export const svgEdgeDef = (
     num: number, //这两个点之间第几条边
     forward: number, //是否换向
     thumbnail: boolean,
+    dsr: number = 1
 ) => {
     xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     let { color, width: lineWidth, shape, text } = data
@@ -61,6 +62,7 @@ export const svgEdgeDef = (
         num,
         po,
         forward,
+        dsr
     );
     sourceX = calcSourceX,
         sourceY = calcSourceY,
@@ -163,9 +165,18 @@ export const svgEdgeDef = (
             content,
             style = 'normal',
             fontFamily = 'Arial',
+            minVisibleSize
         } = text
 
         if (content) {
+
+            // 缩放文字大小
+            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
+
+            if (fontSize <= minVisibleSize) {
+                return
+            }
+
             originalNode.x = midx + -1 * moveX * c
             originalNode.y = midy + -1 * moveY * c
 
@@ -214,8 +225,6 @@ export const svgEdgeDef = (
                         : bezierMid.y + moveY * c2 * r * change * Direction,
                 ANGLE: (Math.atan2(targetY - sourceY, targetX - sourceX) * 180) / Math.PI,
             }
-            // 缩放文字大小
-            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
 
             let textG = textBaseSvgSetAttribute(fontFamily, fontSize, style, textColor, background)
             // 先平移后旋转
@@ -259,10 +268,11 @@ export const svgEdgeSelf = (
     sourceSize: number, //起始点大小
     num: number, //对于这个点来说这是第几条边
     thumbnail: boolean,
+    dsr: number = 1
 ) => {
     xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     // 根据默认比例缩放当前点的大小
-    let scale = (globalProp.globalScale / ratio) * 2.0,
+    let scale = (globalProp.globalScale / ratio) * 2.0 * dsr,
         // 根据相机位置更改点的初始位置
         coord = transformCanvasCoord(graphId, sourceX, sourceY, position, scale, thumbnail)
         ; (sourceX = coord.x), (sourceY = coord.y)
@@ -394,9 +404,17 @@ export const svgEdgeSelf = (
             content,
             style = 'normal',
             fontFamily = 'Arial',
+            minVisibleSize
         } = text
 
         if (content) {
+
+            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
+
+            if (fontSize <= minVisibleSize) {
+                return
+            }
+
             // 计算边的中点位置用于计算文字位置
             let bezierMid = bezier3(
                 0.5,
@@ -430,7 +448,6 @@ export const svgEdgeSelf = (
                 y: text?.position === 'center' ? bezierMid.y : (bezierleft.y + bezierright.y) / 2,
                 ANGLE: (ANGLE * 180) / Math.PI,
             }
-            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
 
             let textG = textBaseSvgSetAttribute(fontFamily, fontSize, style, textColor, background)
             textG.setAttributeNS(
@@ -477,6 +494,7 @@ export const svgEdgeParallel = (
     sourceSize: number, //起始点大小
     targetSize: number, //终止点大小
     thumbnail: boolean,
+    dsr: number = 1
 ) => {
     xmlns = isIE() ? 'http://www.w3.org/2000/svg' : 'xmlns'
     let { color, width: lineWidth, shape, text } = data
@@ -506,6 +524,7 @@ export const svgEdgeParallel = (
         num,
         po,
         forward,
+        dsr
     );
     sourceX = calcSourceX,
         sourceY = calcSourceY,
@@ -589,9 +608,16 @@ export const svgEdgeParallel = (
             content,
             style = 'normal',
             fontFamily = 'Arial',
+            minVisibleSize
         } = text
 
         if (content) {
+            // 缩放文字
+            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
+            
+            if (fontSize <= minVisibleSize) {
+                return
+            }
             // 计算线的中心位置用来给文字
             let bezierMid = bezier2(
                 0.5,
@@ -632,8 +658,6 @@ export const svgEdgeParallel = (
                 y: text?.position === 'center' ? bezierMid.y + yp : bezierMid.y + yp2 * Direction,
                 ANGLE: (Math.atan2(targetY - sourceY, targetX - sourceX) * 180) / Math.PI,
             }
-            // 缩放文字
-            fontSize = Math.ceil(fontSize * (scale / 2) * 1e2) / 1e2
 
             let textG = textBaseSvgSetAttribute(fontFamily, fontSize, style, textColor, background)
             textG.setAttributeNS(

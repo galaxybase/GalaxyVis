@@ -5,7 +5,14 @@ import { initText, updateSDFTextData } from '..'
 import { drawText } from '../tinySdf/sdfDrawText'
 import { initWebglAttribute } from '../node'
 import { DEFAULT_SETTINGS } from '../../initial/settings'
-import { defaultsDeep, has, get, merge, cloneDeep, unionBy, throttle, set } from 'lodash'
+import defaultsDeep from 'lodash/defaultsDeep'
+import unionBy from 'lodash/unionBy'
+import throttle from 'lodash/throttle'
+import cloneDeep from 'lodash/cloneDeep'
+import get from 'lodash/get'
+import has from 'lodash/has'
+import set from 'lodash/set'
+import merge from 'lodash/merge'
 
 // 节流函数
 const throttled = throttle((that) => {

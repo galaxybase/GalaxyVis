@@ -60,7 +60,7 @@ export const incrementalLayout = (
     var originNodesPositions = originNodes
         .getPosition()
         .map(function (item: { x: number; y: number }) {
-            return [item.x, item.y]
+            return [item.x +  Math.random(), item.y +  Math.random()]
         })
 
     var incrementalBoundBox = incrementalNodes.getBoundingBox(
@@ -126,7 +126,6 @@ export const incrementalLayout = (
                 empty = largestEmptyCircle(originNodes.getPosition(), 10, mindiskr, triangles, hull)
 
             let E = minCal([mindiskx, mindisky], hull, mindiskr) //偏移量
-
             if (empty.length > 0) {
                 for (
                     var i = Math.pow(mindiskx - E[0], 2) + Math.pow(mindisky - E[1], 2),

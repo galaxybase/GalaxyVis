@@ -8,6 +8,13 @@ let forceCutoff = 10.0;
 let neighbers = {};
 let tickNum = 100;
 let nodes: any[] = [], links: any[] = []
+/**
+ * 球面布局
+ * @param assign 
+ * @param nodeList 
+ * @param linkList 
+ * @param options 
+ */
 function genericBFALayout(assign: any, nodeList: any, linkList: any, options: any) {
 
     nodes = nodeList, links = linkList;

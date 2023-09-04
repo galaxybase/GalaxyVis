@@ -20,6 +20,9 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
         if (viewMatrixLocation == null) throw new Error('EdgeHalo: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
+
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initCollection() {
@@ -114,6 +117,7 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
                             forward,
                         )
                     } else {
+                        lineNumber++
                         line = loopLineMesh(
                             'webgl',
                             sourceX,
@@ -180,32 +184,6 @@ export default class edgeHaloProgram extends AbstractEdgeProgram {
     }
 
     moveRefresh(): void {
-        let { relationTable, edgeList, selectedTable: needFresh } = basicData[this.graph.id]
-        let union: Set<any> | null = new Set()
-        // 获取需要更新的集合
-        needFresh.forEach((value: any) => {
-            let needEdgeFresh: any = new Set(relationTable[value])
-            if (needEdgeFresh) {
-                needEdgeFresh.forEach((item: string) => {
-                    let edge = edgeList.get(item)
-                    let renderHalo = edge?.getAttribute('halo')
-                    if (
-                        !edge?.getAttribute('isVisible') ||
-                        !renderHalo ||
-                        (renderHalo && renderHalo.width == 0)
-                    ) {
-                        needEdgeFresh.delete(item)
-                    }
-                })
-                union = new Set([...(union as Set<any>), ...needEdgeFresh])
-            }
-        })
-
-        if (!union.size) {
-            this.refreshProcess()
-            return
-        }
-        union = null
         this.process()
         return
     }

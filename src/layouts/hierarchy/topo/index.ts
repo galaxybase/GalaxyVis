@@ -1,5 +1,11 @@
 import { PlainObject, tNode } from "../tclass";
-
+/**
+ * 对称圆布局
+ * @param assign 
+ * @param _nodes 
+ * @param options 
+ * @returns 
+ */
 function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
     var nodes = _nodes;
     var radius = options?.radius || 50
@@ -12,15 +18,18 @@ function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
     roots[0].tempX = roots[0].x = 0;
     roots[0].tempY = roots[0].y = 0;
     countRadius(roots[0], radius);
-
     layout(roots[0], radius * 3);
+
     if (!hasCycle) {
         var position = null;
         var length = nodes.length;
-        for (var i = 0; i < length; i++) {
+        for (var i = 0, j = 0; i < length; i++) {
             var n = nodes[i];
             position = n.layoutData;
             if (position == null) {
+                n.x = j * radius / intSteps;
+                n.y = j * radius / intSteps;
+                j++;
                 continue;
             }
             if (boolTransition) {
@@ -143,16 +152,20 @@ function genericTopoCircleLayout(assign: any, _nodes: any, options?: any) {
     }
 
     function checkHasCycle(node: PlainObject<any>, pathNodes: any[]) {
+        let newOutLinks: any[] = [];
         (node.outLinks || []).forEach(function (_link: any) {
             var target = _link.target;
             if (node.id == target.id || pathNodes.indexOf(target.id) != -1) {
-                hasCycle = true;
-                console.warn("topo can't have rings")
-                return;
+                // hasCycle = true;
+                console.warn("topoCircle can't have rings");
+                // return;
+            } else {
+                newOutLinks.push(_link);
+                pathNodes.push(target.id);
+                checkHasCycle(target, pathNodes);
             }
-            pathNodes.push(target.id);
-            checkHasCycle(target, pathNodes);
         });
+        node.outLinks = newOutLinks;
     };
 
     function getSuccessors(node: tNode) {

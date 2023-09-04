@@ -1,5 +1,12 @@
 import { PlainObject, tNode } from "../../hierarchy/tclass";
 
+/**
+ * 球形布局
+ * @param assign 
+ * @param _nodes 
+ * @param options 
+ * @returns 
+ */
 function genericSphereLayout(assign: any, _nodes: any, options: any) {
     var nodes = _nodes;
     var radius = options?.radius || 500;
@@ -9,6 +16,7 @@ function genericSphereLayout(assign: any, _nodes: any, options: any) {
 
     var nodeCount = nodes.length;
     var area = 0;
+    // 斐波那契网格公式
     nodes.forEach(function (n: tNode, i: number) {
         var phi = Math.acos(-1 + (2 * i) / nodeCount);
         var theta = Math.sqrt(nodeCount * Math.PI) * phi;

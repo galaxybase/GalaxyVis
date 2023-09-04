@@ -1,5 +1,12 @@
 import dagre from 'dagre'
-
+/**
+ * 层次布局
+ * @param assign 
+ * @param nodes 
+ * @param edges 
+ * @param options 
+ * @returns 
+ */
 function genericDagrelLayout(assign: any, nodes: any, edges: any, options: any) {
     let {
         nodeSize,

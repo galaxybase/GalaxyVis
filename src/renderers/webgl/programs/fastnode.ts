@@ -4,7 +4,7 @@ import { glMatrix, mat4 } from 'gl-matrix'
 import { coordTransformation, floatColor, isSameSet } from '../../../utils'
 import { basicData, globalProp } from '../../../initial/globalProp'
 import { NodeFastCollection } from '../../../types'
-import { clone } from 'lodash'
+import clone from 'lodash/clone'
 import { AbstractFastProgram } from './common/fast'
 
 let fastnodeCollection: NodeFastCollection = {}
@@ -30,6 +30,8 @@ export default class fastnodeProgram extends AbstractFastProgram {
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
         if (viewMatrixLocation == null) throw new Error('Fast: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initCollection(size = 0) {
@@ -109,7 +111,7 @@ export default class fastnodeProgram extends AbstractFastProgram {
             (collection.floatData as Float32Array).set(this.plotting32Nodes, 0)
             for (let key in this.quad) {
                 if (nodeList.get(key)?.getAttribute('isVisible'))
-                    this.camera.quad.insert(this.quad[key])
+                    this.camera.quad.add(this.quad[key])
             }
             boundBox = this.boundBox
             let plottingInfo = this.plottingNodes(updateNodes, this.len)
@@ -170,7 +172,7 @@ export default class fastnodeProgram extends AbstractFastProgram {
                     isNode: true,
                     shape: attributes.shape,
                 }
-                this.camera.quad.insert(this.quad[key])
+                this.camera.quad.add(this.quad[key])
             }
             // 打包数据 => 变成vec4这类的
             const Buffer = packCircleVertex(p)

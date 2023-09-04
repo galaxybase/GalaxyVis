@@ -1,4 +1,4 @@
-import { findIndex } from 'lodash'
+import findIndex from 'lodash/findIndex'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import NodeList from '../../classes/nodeList'
 import EdgeList from '../../classes/edgeList'

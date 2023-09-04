@@ -46,7 +46,7 @@ export default function canvasNodeRhombus(
 
     context.globalAlpha = opacity
 
-    if (image.url != '') {
+    if (image.url != '' && image.url != null) {
         if (opacity != 1.0) {
             drawMainPart(context, x, y, size, globalInfo[graphId].backgroundColor.color, gradient)
         }
@@ -63,7 +63,7 @@ export default function canvasNodeRhombus(
                 rhombusGraphic(context, x, y, size)
             },
         )
-    } else if (icon.content != '') {
+    } else if (icon.content != '' && icon.content != null) {
         // 绘制icon
         drawIcon(data, x, y, size, context)
     }

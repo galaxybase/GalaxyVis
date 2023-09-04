@@ -1,5 +1,12 @@
 import { PlainObject, tNode } from "../../hierarchy/tclass";
 
+/**
+ * 弹性布局spring2
+ * @param assign 
+ * @param _nodes 
+ * @param _links 
+ * @param options 
+ */
 function genericSpring2Layout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
     var links = _links;

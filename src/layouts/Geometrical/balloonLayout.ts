@@ -5,7 +5,7 @@ import BaseLayout from "../baseLayout"
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
 import { basicData } from "../../initial/globalProp";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import balloonLayout from "./balloon";
 import { EventType } from "../../utils/events";
 

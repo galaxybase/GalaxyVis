@@ -1,6 +1,6 @@
-import { cloneDeep } from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
 import { hashNumber, isIE, transformCanvasCoord } from '..'
-import { globalInfo, globalProp } from '../../initial/globalProp'
+import { basicData, globalInfo, globalProp } from '../../initial/globalProp'
 import { getLines } from '../../renderers/canvas/labelCanvas/common'
 import {
     clipPathSvg,
@@ -39,15 +39,27 @@ export const renderSVG = (graph: any, svg: any) => {
     ratio = graph.camera.ratio
     // 获取相机当前位置
     position = cloneDeep(graph.camera.position)
+    // 获取相机缩放比
+    scale = (globalProp.globalScale / ratio) * 2.0
     // 适配postion和zoom
+    let dsr = 1;
     if (graph.renderer === 'webgl') {
+        // let width = globalInfo[graph.id].BoxCanvas.getWidth,
+        //     height = globalInfo[graph.id].BoxCanvas.getHeight,
+        //     unitWidth = width / ratio,
+        //     unitHeight = height / ratio,
+        //     aspectRatio = width / height
+        // position[0] = (-position[0] / aspectRatio) * unitWidth
+        // position[1] = position[1] * unitHeight
+
         let width = globalInfo[graph.id].BoxCanvas.getWidth,
-            height = globalInfo[graph.id].BoxCanvas.getHeight,
-            unitWidth = width / ratio,
-            unitHeight = height / ratio,
-            aspectRatio = width / height
-        position[0] = (-position[0] / aspectRatio) * unitWidth
-        position[1] = position[1] * unitHeight
+            height = globalInfo[graph.id].BoxCanvas.getHeight;
+        const transform = basicData[graph.id]?.transform || 223
+        dsr = height / window.outerHeight
+        scale *= dsr;
+
+        position[0] *= -transform;
+        position[1] *= transform;
 
         let svgCanvas = document.createElement('canvas')
         svgCanvas.style.width = width + 'px'
@@ -58,8 +70,7 @@ export const renderSVG = (graph: any, svg: any) => {
     } else {
         svgContent = svgGraph?.ctx
     }
-    // 获取相机缩放比
-    scale = (globalProp.globalScale / ratio) * 2.0
+
     thumbnail = graph.thumbnail
     // svg.setAttributeNS('http://www.w3.org/2000/xmlns/', xmlns, 'http://www.w3.org/2000/svg');
     // svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
@@ -140,7 +151,7 @@ export const renderSVG = (graph: any, svg: any) => {
                 renderNodeHalo(graph.id, nodeHaloGroup)
                 svg.appendChild(nodeHaloGroup)
                 // edge
-                renderEdge(graph.id, edgeGroup)
+                renderEdge(graph.id, edgeGroup, dsr)
                 svg.appendChild(edgeGroup)
                 // node
                 renderNode(graph.id, nodeGroup)
@@ -208,7 +219,7 @@ const renderNode = (graphId: string, nodeGroup: any) => {
         node.appendChild(nodePath)
 
         // 图片地址
-        if (image.url != '') {
+        if (image.url != '' && image.url != null) {
             imageNumer++
             let imageSvg = imageSvgSetAttribute(
                 x - (size + (borderSize / 0.2) * size),
@@ -232,7 +243,7 @@ const renderNode = (graphId: string, nodeGroup: any) => {
             imageCreated.src = image.url
 
             node.appendChild(imageSvg)
-        } else if (icon.content != '') {
+        } else if (icon.content != '' && icon.content != null) {
             let g = iconSvgSetAttribute(icon, size, x, y)
             node.appendChild(g)
         }
@@ -327,6 +338,7 @@ const renderNode = (graphId: string, nodeGroup: any) => {
             content: textLabel,
             style = 'normal',
             fontFamily = 'Arial',
+            minVisibleSize
         } = text
 
         if (textLabel && textLabel != '') {
@@ -337,6 +349,11 @@ const renderNode = (graphId: string, nodeGroup: any) => {
             labelOffsetY = textFontSize / 3
 
             textFontSize = Math.ceil(textFontSize * (scale / 2))
+
+            if (textFontSize <= minVisibleSize) {
+                nodeGroup.appendChild(node)
+                continue;
+            }
 
             let textG = textBaseSvgSetAttribute(
                 fontFamily,
@@ -416,7 +433,7 @@ const renderNodeHalo = (graphId: string, nodeHaloGroup: any) => {
     })
 }
 //加载边
-const renderEdge = (graphId: string, edgeGroup: any) => {
+const renderEdge = (graphId: string, edgeGroup: any, dsr:number) => {
     let edgesList = svgGraph.getFilterEdges()
     let nodeList = svgGraph.getFilterNode()
     // 获取个边的类型
@@ -459,6 +476,7 @@ const renderEdge = (graphId: string, edgeGroup: any) => {
                     num,
                     forward,
                     thumbnail,
+                    dsr
                 )
             } else {
                 // 自环边
@@ -473,6 +491,7 @@ const renderEdge = (graphId: string, edgeGroup: any) => {
                     sourceSize,
                     num,
                     thumbnail,
+                    dsr
                 )
             }
         },
@@ -510,6 +529,7 @@ const renderEdge = (graphId: string, edgeGroup: any) => {
                     sourceSize,
                     targetSize,
                     thumbnail,
+                    dsr
                 )
             }
         },

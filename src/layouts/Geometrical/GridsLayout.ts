@@ -39,7 +39,7 @@ class GridsLayout extends BaseLayout {
                         y = value.getAttribute('y')
                     center = [x, y]
                 }
-            } catch { }
+            } catch {}
         } else {
             for (let i in nodes) {
                 layoutsNodes.push({

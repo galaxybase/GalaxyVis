@@ -1,4 +1,8 @@
-import { cloneDeep, defaultsDeep, find, isString, merge } from 'lodash'
+import isString from 'lodash/isString'
+import defaultsDeep from 'lodash/defaultsDeep'
+import find from 'lodash/find'
+import cloneDeep from 'lodash/cloneDeep'
+import merge from 'lodash/merge'
 import { genID, hashNumber } from '..'
 import { originInfo, originInitial } from '../../initial/originInitial'
 import { DEFAULT_SETTINGS } from '../../initial/settings'
@@ -24,9 +28,9 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
     let { nodeList, edgeList, selectedTable, selectedNodes, selectedEdgeTable, selectedEdges } = basicData[GraphId],
         relationTable = galaxyvis.getEdgeType().relationTable, //获取关联表
         changedTable: string[] = [] //更改的数据id表
-    nodeList.forEach((item: any, key: string) => {
+    nodeList.forEach((NodeItem: any, key: string) => {
         // 匹配规则
-        if (!criteria(item) && item.getAttribute('isVisible')) {
+        if (!criteria(NodeItem) && NodeItem.getAttribute('isVisible')) {
             // 获取当前边的关联关系
             let edgelist = relationTable[key]
             if (edgelist) {
@@ -34,32 +38,54 @@ export const transformatAddNodeFilter = (galaxyvis: any, criteria: Function, isR
                     if (edgeList.has(item)) {
                         // 获取起始点和终止点
                         let { source, target } = edgeList.get(item).getAttribute()
-                        nodeList.get(source).setSelected(false, false, true)
+                        let sourceNode = nodeList.get(source)
+                        let isSelectedSource = sourceNode.getAttribute('isSelect')
+
+                        sourceNode.setSelected(false, false, true)
                         selectedTable.delete(source)
                         selectedNodes.delete(source)
-                        nodeList.get(target).setSelected(false, false, true)
+
+                        let targetNode = nodeList.get(target)
+                        let isSelectedTarget= targetNode.getAttribute('isSelect')
+                        targetNode.setSelected(false, false, true)
                         selectedTable.delete(target)
                         selectedNodes.delete(target)
                         // 是否是从过滤点那边影响到的隐藏边
-                        edgeList.get(item).changeAttribute({
+                        let edge = edgeList.get(item)
+                        edge.changeAttribute({
                             isVisible: false,
                             isFilterNode: true,
                             isSelect: false,
                         })
-                        edgeList.get(item).setSelected(false, false, true)
+                        edge.setSelected(false, false, true)
                         selectedEdgeTable.delete(item)
                         selectedEdges.delete(item)
+
+                        if(
+                            NodeItem.getId() != sourceNode.getId() &&
+                            NodeItem.getId() == targetNode.getId() &&
+                            isSelectedSource
+                        ){
+                            sourceNode.setSelected(true, false, true)
+                        } else if(
+                            NodeItem.getId() != targetNode.getId() &&
+                            NodeItem.getId() == sourceNode.getId() &&
+                            isSelectedTarget
+                        ){
+                            targetNode.setSelected(true, false, true)
+                        }
+
                     }
                 })
             }
             // 设置为不可见
-            item.changeAttribute({
+            NodeItem.changeAttribute({
                 isVisible: false,
                 isFilter: true
             })
             galaxyvis.mouseCaptor.selected = false
             //把当前更改的点id传入到changedTable
-            changedTable[changedTable.length] = item.getId()
+            changedTable[changedTable.length] = NodeItem.getId()
         }
     })
     if (isRender) galaxyvis.render()
@@ -83,10 +109,16 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
             if ((!item.getAttribute('isFilter') &&
                 !item.getAttribute('usedMerge'))) {
                 let { source, target } = item.getAttribute()
-                nodeList.get(source).setSelected(false, false, true)
+                let sourceNode = nodeList.get(source)
+                let isSelectedSource = sourceNode.getAttribute('isSelect')
+
+                sourceNode.setSelected(false, false, true)
                 selectedTable.delete(source)
                 selectedNodes.delete(source)
-                nodeList.get(target).setSelected(false, false, true)
+
+                let targetNode = nodeList.get(target)
+                let isSelectedTarget= targetNode.getAttribute('isSelect')
+                targetNode.setSelected(false, false, true)
                 selectedTable.delete(target)
                 selectedNodes.delete(target)
                 // 是否是从过滤点那边影响到的隐藏边
@@ -98,6 +130,15 @@ export const transformatAddEdgeFilter = (galaxyvis: any, criteria: Function, isR
                 edgeList.get(key).setSelected(false, false, true)
                 selectedEdgeTable.delete(key)
                 selectedEdges.delete(key)
+
+                if(isSelectedSource){
+                    sourceNode.setSelected(true, false, true)
+                }
+
+                if(isSelectedTarget){
+                    targetNode.setSelected(true, false, true)
+                }
+
                 // 添加到可更改表
                 changedTable[changedTable.length] = item.getId()
             }
@@ -496,7 +537,6 @@ export const transformatNodeGroup = (galaxyvis: any, opts?: any) => {
                                                         })
                                                     }
                                                 } catch { }
-
                                             }
                                         }
                                     }
@@ -732,7 +772,7 @@ export const transformatEdgeGroup = (galaxyvis: any, opts?: any, isRender = true
                             }
                             if (children.length > 1) {
                                 // 创建唯一id
-                                let id = `gen_group_edge_${key}`,
+                                let id = `gen_group_edge_${genID(4)}`,
                                     creatAttribute = {
                                         attribute: {
                                             ...DEFAULT_SETTINGS.edgeAttribute,

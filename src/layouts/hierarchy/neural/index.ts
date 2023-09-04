@@ -1,7 +1,14 @@
 import { PlainObject } from '../../../types'
 
 const NODE_SIZE = 30
-
+/**
+ * 神经网络布局
+ * @param assign 
+ * @param rDegree 
+ * @param tagList 
+ * @param maxTagLen 
+ * @returns 
+ */
 function genericNeuralLayout(assign: any,rDegree: string[], tagList: { [key: string]: any }, maxTagLen: number) {
     const NODE_SIZE = 30
     const n = maxTagLen * NODE_SIZE * 5 / 2;

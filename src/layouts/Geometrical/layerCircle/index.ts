@@ -6,9 +6,15 @@ let boolTransition = true;
 let intSteps = 50;
 let inited = false;
 
+/**
+ * 多圆环布局
+ * @param assign 
+ * @param nodes 
+ * @param options 
+ */
 function genericLayerCircleLayout(assign: any, nodes: any, options: any) {
-    outCircleNodes = options?.outCircleNodes || 11;
-    layerDistance = options?.layerDistance || 30;
+    outCircleNodes = options?.outCircleNodes || 11; // 外圆点个数
+    layerDistance = options?.layerDistance || 30; // 层级之间距离
     var nodeCount = nodes.length;
     var innerCircleradius = 0,
         nextLayerRoundLong = 0,

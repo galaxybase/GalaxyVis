@@ -20,6 +20,7 @@ export const TEPLATE = {
     imageTemplate: {
         url: '', //image地址
         scale: 1.0, //缩放
+        color: "rgba(255,255,255,0)"
     }, //图片模板
     innerTemplate: {
         width: 2, //环宽
@@ -39,13 +40,18 @@ export const TEPLATE = {
         style: undefined, //dash
     }, //线类型模板
     pulseTemplate: {
-        range: [0,0,0], // 波的条数
+        range: [0, 0, 0], // 波的条数
         width: 5, // 波的线宽
         duration: 1000, // 整个波时间
         interval: 10, // 波与波之间的间距
         startColor: "#6cf", // 颜色
         scale: 0.5,
         startRatio: 1.0 /// 波开始的位置
+    },
+    particleTemplate: {
+        size: 5, //粒子大小
+        speed: 50, //粒子速度
+        index: 0
     }
 }
 
@@ -87,6 +93,7 @@ export const DEFAULT_SETTINGS: Settings = {
         type: 'basic', //线类型 basic parallel
         location: 'lowerLeft', // lowerLeft upperLeft  lowerRight  upperRight
         halo: TEPLATE.haloTemplate,
+        particle: TEPLATE.particleTemplate
     },
 }
 

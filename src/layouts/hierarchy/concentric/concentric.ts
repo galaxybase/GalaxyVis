@@ -5,9 +5,15 @@ const center = [0, 0],
     tau = Math.PI * 2,
     startAngle = (3 / 2) * Math.PI,
     nodeSpace = 20
-
+/**
+ * 圆形深度布局
+ * @param assign 
+ * @param nodes 
+ * @param options 
+ * @returns 
+ */
 function genericConcentricLayout(assign: any, nodes: any, options: any) {
-    let { circleHopRatio, repulsion } = options,
+    let { circleHopRatio, repulsion, fixRadius } = options,
         positions: PlainObject<any> = {},
         centerX,
         centerY
@@ -22,15 +28,20 @@ function genericConcentricLayout(assign: any, nodes: any, options: any) {
     let r = 0
     nodes.forEach((level: any, i: number) => {
         const sweep = 2 * Math.PI - tau / level.length,
-            dTheta = (level.dTheta = sweep / Math.max(1, level.length - 1))
-        if (level.length > 1) {
-            const dcos = Math.cos(dTheta) - 1
-            const dsin = Math.sin(dTheta)
-            const rMin = Math.sqrt((minDist * minDist) / (dcos * dcos + dsin * dsin))
-            r = Math.max(rMin, r)
+        dTheta = (level.dTheta = sweep / Math.max(1, level.length - 1))
+        if (!fixRadius) {
+            if (level.length > 1) {
+                const dcos = Math.cos(dTheta) - 1
+                const dsin = Math.sin(dTheta)
+                const rMin = Math.sqrt((minDist * minDist) / (dcos * dcos + dsin * dsin))
+                r = Math.max(rMin, r)
+            }
+            level.r = r
+            r += minDist + circleHopRatio
+        }else{
+            level.r = r
+            r += minDist + circleHopRatio
         }
-        level.r = r
-        r += minDist + circleHopRatio
     })
 
     nodes.forEach((level: any) => {

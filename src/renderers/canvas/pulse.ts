@@ -1,4 +1,4 @@
-import { clone } from "lodash";
+import clone from 'lodash/clone'
 import NodeList from "../../classes/nodeList";
 import { basicData, globalProp } from "../../initial/globalProp";
 import { cancelFrame, getContainerHeight, getContainerWidth, mixColor, requestFrame, transformCanvasCoord, translateColor } from "../../utils";
@@ -22,10 +22,7 @@ export default class pulseCanvas {
         const graph = self.graph
         const graphId = graph.id;
         const camera = graph.camera;
-        // 更新比例
-        camera.updateTransform()
 
-        const transform = basicData[graphId]?.transform || 223
         let width = getContainerWidth(self.canvas),
             height = getContainerHeight(self.canvas);
 
@@ -42,6 +39,13 @@ export default class pulseCanvas {
         })
 
         function tickFrame() {
+            // 更新比例
+            if (graph.geo.enabled())
+                graph.geo.getGeoTransform()
+            else
+                camera.updateTransform()
+            const transform = (basicData[graphId]?.transform || 223)
+
             let { selectedNodes, nodeList } = basicData[graphId]
             if (selectedNodes.size) {
                 self.ctx.clearRect(0, 0, width, height);
@@ -50,9 +54,12 @@ export default class pulseCanvas {
                 let ratio = camera.ratio;
                 let scale = (globalProp.globalScale / ratio) * 2.0
                 if (renderType === "webgl") {
+                    if (!graph.geo.enabled())
+                        scale *= height / window.outerHeight;
                     position[0] *= -transform;
                     position[1] *= transform;
                 }
+
                 selectedNodes.forEach((key: string) => {
                     let node = nodeList.get(key);
                     let {
@@ -107,7 +114,9 @@ export default class pulseCanvas {
     // 绘制pulse
     drawPulse(range: number, x: number, y: number, scale: number, radius: number, pulse: { [key: string]: any }) {
         const ctx = this.ctx;
-        const graphId = this.graph.id;
+        const graph = this.graph;
+        if(graph.geo.enabled())                     
+            scale /= graph.geo.getGeoDsr()
         let {
             startColor,
             width,
@@ -115,7 +124,7 @@ export default class pulseCanvas {
         } = pulse;
         radius *= scale;
         width *= scale / 20;
-        if(width == 0) return;
+        if (width == 0) return;
         // 颜色转rgba
         let rgba = translateColor(startColor)
         ctx.beginPath();

@@ -99,8 +99,8 @@ export default class Graph {
      * @param RawGraph
      * @returns
      */
-    addGraph(RawGraph: PlainObject<any[]>) {
-        return graphAddGraph(this, RawGraph)
+    addGraph(RawGraph: PlainObject<any[]>, needRender: boolean = true) {
+        return graphAddGraph(this, RawGraph, needRender)
     }
 
     /**
@@ -253,8 +253,8 @@ export default class Graph {
      * 清空图数据
      * @returns
      */
-    clearGraph = () => {
-        return graphClearGraph(this, false)
+    clearGraph = (needClear: boolean = true) => {
+        return graphClearGraph(this, needClear, false)
     }
     /**
      * 销毁实例
@@ -283,10 +283,37 @@ export default class Graph {
      */
     refreshRender(timeout: number = 500) {
         this.textStatus = false
+        this.render()
         setTimeout(() => {
             this.textStatus = true
             this.render()
             return true
         }, timeout)
+    }
+
+    updateZoom({
+        minValue,
+        maxValue,
+        defaultValue
+    }: {
+        minValue?: number,
+        maxValue?: number,
+        defaultValue?: number
+    }){
+        let {
+            maxValue: cMaxZoom, 
+            minValue: cMinZoom,
+            defaultValue: cDefaultZoom
+        } = this.camera.updateZoom({
+            minValue,
+            maxValue,
+            defaultValue
+        })
+        this.maxValue = cMaxZoom;
+        this.minValue = cMinZoom;
+        this.defaultValue = cDefaultZoom;
+
+        this.render()
+        return true
     }
 }

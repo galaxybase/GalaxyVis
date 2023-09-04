@@ -6,7 +6,7 @@ import canvasNodeDef from './nodeCanvas/nodesDef'
 import canvasNodeTriangle from './nodeCanvas/nodeTriangle'
 import canvasNodeRhombus from './nodeCanvas/nodeRhombus'
 import canvasNodeBadges from './nodeCanvas/nodeBadges'
-import { clone } from 'lodash'
+import clone from 'lodash/clone'
 
 export default class nodeCanvas {
     // 整个graph对象
@@ -98,7 +98,6 @@ export default class nodeCanvas {
         this.thumbnail = graph.thumbnail
         this.scale = (globalProp.globalScale / ratio) * 2.0
         this.position = graph.camera.position
-
         if (graph.mouseCaptor?.draggable|| graph.geo.enabled() || this.thumbnail) {
             viewChange = true;
             graph.geo.enabled() && (boolean = true)
@@ -123,7 +122,7 @@ export default class nodeCanvas {
             let nodeList = basicData[graphId].nodeList
             for (let key in this.quad) {
                 if (nodeList.get(key)?.getAttribute('isVisible'))
-                    graph.camera.quad.insert(this.quad[key])
+                    graph.camera.quad.add(this.quad[key])
             }
             graph.ctx.drawImage(this.frameCanvas, 0, 0)
             this.context = graph.ctx;
@@ -176,7 +175,7 @@ export default class nodeCanvas {
                         isNode: true,
                         shape: renderShape,
                     }
-                    graph.camera.quad.insert(this.quad[key])
+                    graph.camera.quad.add(this.quad[key])
                 }
             }
         }

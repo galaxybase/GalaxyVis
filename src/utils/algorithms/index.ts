@@ -1,6 +1,6 @@
-import { PartialObject } from 'lodash'
 import { basicData } from '../../initial/globalProp'
 import { createNeighborArrayForNode } from './shortest-path'
+type PartialObject<T> = { [P in keyof T]?: T[P] | undefined; }
 /**
  * 计算最短路径
  * @param galaxyvis

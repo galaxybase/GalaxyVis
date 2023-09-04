@@ -20,6 +20,9 @@ export default class EdgeProgram extends AbstractEdgeProgram {
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
         if (viewMatrixLocation == null) throw new Error('edge: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
+        
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initCollection(num = 0, plotNum = 0) {
@@ -69,7 +72,7 @@ export default class EdgeProgram extends AbstractEdgeProgram {
             let id = item[3]
             let edgeBound = basicData[graphId].edgeBoundBox.get(id)
             if (this.graph.textStatus && !this.graph.thumbnail) {
-                this.camera.quad.insert({
+                this.camera.quad.add({
                     x: (edgeBound.xmax + edgeBound.xmin) / 2,
                     y: (edgeBound.ymax + edgeBound.ymin) / 2,
                     width: edgeBound.xmax - edgeBound.xmin,

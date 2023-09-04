@@ -62,6 +62,7 @@ export interface concentricType extends baseLayoutType {
     [x: string]: any
     centralNode?: any //中心点
     circleHopRatio?: number //圆的大小
+    fixRadius?: boolean //是否严格执行遵守circleHopRatio
 }
 
 export interface forceType extends baseLayoutType {
@@ -213,6 +214,7 @@ export interface gatherType extends baseLayoutType {
     area?: number //间距
     speed?: number //移动速度
     tickNum?: number //迭代次数
+    clusterType?: string
 }
 
 export interface sphereType extends baseLayoutType {
@@ -254,9 +256,11 @@ export interface Options {
             defaultValue?: string | number
         },
         pulse?: boolean,  //pulse交互模式
+        particle?: boolean //particle交互模式
     }
     useLocalUpdate?: boolean //是否开启局部更新
     thumbnail?: boolean //缩略图
+    thumbnailId?: string //缩略图指定ID主图
     fast?: boolean //快速模式
 }
 
@@ -549,6 +553,10 @@ export interface edgeAttribute extends baseAttribute {
     type?: string
     location?: string //自环边类型
     selectedColor?: string //选中颜色
+    particle?: {
+        size?: number //粒子大小
+        speed?: number //粒子速度
+    }
 }
 
 export interface NodeAttributes {

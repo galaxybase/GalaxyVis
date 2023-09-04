@@ -1,6 +1,6 @@
 import { ANIMATE_DEFAULTS } from '../initial/globalProp'
 import { AnimateOptions } from '../types'
-import { viewGet, viewGetZoom, viewLocateGraph, viewSet, viewZoomChange } from '../utils/view'
+import { GraphToScreenCoordinates, ScreenToGraphCoordinates, viewGet, viewGetZoom, viewLocateGraph, viewSet, viewZoomChange } from '../utils/view'
 
 /**
  * @class view 样式
@@ -79,5 +79,13 @@ export default class view<T, K> {
     public forceResize = () => {
         this.galaxyvis.resize()
         this.galaxyvis.render()
+    }
+
+    public screenToGraphCoordinates = (evt: any) =>{
+        return ScreenToGraphCoordinates(this.galaxyvis, evt)
+    }
+
+    public graphToScreenCoordinates = (evt: any) =>{
+        return GraphToScreenCoordinates(this.galaxyvis, evt)
     }
 }

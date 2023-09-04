@@ -46,7 +46,7 @@ export default function canvasNodeSquare(
         borderSize ? ((borderSize / 2 + 0.015) / 0.4) * size : 0,
     )
     context.globalAlpha = opacity
-    if (image.url != '') {
+    if (image.url != '' && image.url != null) {
         if (opacity != 1.0) {
             drawMainPart(
                 context,
@@ -71,7 +71,7 @@ export default function canvasNodeSquare(
                 squareGraphic(context, x, y, size)
             },
         )
-    } else if (icon.content != '') {
+    } else if (icon.content != '' && icon.content != null) {
         // 加载icon
         drawIcon(data, x, y, size / 1.41, context)
     }

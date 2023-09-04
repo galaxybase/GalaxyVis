@@ -1,5 +1,13 @@
 import { PlainObject, tNode } from "../../hierarchy/tclass";
 
+/**
+ * 圆形树状布局
+ * @param assign 
+ * @param _nodes 
+ * @param _links 
+ * @param options 
+ * @returns 
+ */
 function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: any) {
 
     let nodes = _nodes;
@@ -82,12 +90,12 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
         nodeNeighbers = []
         nodes.forEach((node: tNode) => {
             nodeIds.push(node.id)
-            var neighbers = initNodeNeighbers(node);
+            var neighbers = initNodeNeighbers(node); // 计算该点的邻点
             nodeNeighbers.push(neighbers);
-            checkHasCycle(node, [])
+            checkHasCycle(node, [])  // 判断环
         });
-        buildTree()
-        setRootPolars()
+        buildTree() // 建树
+        setRootPolars() // 设置根节点
     }
 
     function initNodeNeighbers(node: tNode) {
@@ -98,13 +106,13 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
             var target = link.target;
             var source = link.source;
 
-            if (source.id != target.id && source.visible && target.visible) {
+            if (source && target && source.id != target.id && source.visible && target.visible) {
 
                 var index = nodeIds.indexOf(target.id);
                 var childNodes = nodeNeighbers[index] || [];
 
                 var childNodeIds: string[] = [];
-                childNodes.forEach(function (n: tNode) {
+                childNodes.length && childNodes.forEach(function (n: tNode) {
                     childNodeIds.push(n.id);
                 });
 
@@ -124,10 +132,11 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
             ydistance: 0
         }
     }
-
+    // 建树
     function buildTree() {
         var roots = getRoots();
         if (roots.length > 0) {
+            // 计算
             calculateRootsX(roots);
             roots.forEach(function (node: tNode) {
                 calculateNodeX(node);
@@ -147,7 +156,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
         root.x = 10;
         root.y = 10;
     }
-
+    // 设置根节点
     function setPolars(kids: any[], parentLocation: { x: number, y: number }, parentRadius: number) {
         var childCount = kids.length;
         if (childCount == 0) {
@@ -187,7 +196,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
             setPolars(childNodes, p, childRadius);
         }
     }
-
+    // 获取根节点
     function getRoots() {
         var roots: any = [];
         nodes.forEach(function (node: tNode) {
@@ -197,7 +206,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
         });
         return roots;
     }
-
+    // 获取中心
     function getCenter(node: tNode) {
         var parent = getParent(node);
         if (parent == null) {
@@ -215,7 +224,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
             y: 0
         };
     }
-
+    // 获取父节点
     function getParent(node: tNode) {
         var inLinks = node.inLinks || [];
         if (inLinks.length > 0) {
@@ -223,7 +232,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
         }
         return null;
     }
-
+    // 计算根节点坐标
     function calculateRootsX(roots: any[]) {
         var size = 0;
         roots.forEach(function (node) {
@@ -240,7 +249,7 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
         });
         return size;
     }
-
+    // 计算节点坐标
     function calculateNodeX(node: tNode) {
         var size = 0;
         var childNodes = getSuccessors(node);
@@ -291,16 +300,20 @@ function genericBalloonLayout(assign: any, _nodes: any, _links: any, options: an
     }
 
     function checkHasCycle(node: tNode, pathNodes: any) {
-        (node.outLinks || []).forEach(function (_link) {
+        let newOutLinks: PlainObject<tNode>[] = [];
+        (node.outLinks || []).forEach(function (_link: any) {
             var target = _link.target;
             if (node.id == target.id || pathNodes.indexOf(target.id) != -1) {
-                hasCycle = true;
-                console.warn("balloon can't have rings")
-                return;
+                // hasCycle = true;
+                console.warn("balloon can't have rings");
+                // return;
+            } else {
+                newOutLinks.push(_link);
+                pathNodes.push(target.id);
+                checkHasCycle(target, pathNodes);
             }
-            pathNodes.push(target.id);
-            checkHasCycle(target, pathNodes);
         });
+        node.outLinks = newOutLinks;
     }
 }
 

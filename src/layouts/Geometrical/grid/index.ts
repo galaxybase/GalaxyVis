@@ -1,7 +1,13 @@
 import { PlainObject } from "../../../types"
 
 const nodeSize = 100
-
+/**
+ * 网格布局
+ * @param assign 
+ * @param nodes 
+ * @param options 
+ * @returns 
+ */
 function genericGridLayout(assign: any, nodes: any, options: any) {
     var positions: PlainObject<any> = {}
 

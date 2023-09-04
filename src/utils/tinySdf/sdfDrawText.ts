@@ -19,20 +19,17 @@ let glWidth = 800
 let glHeight = 800
 let atlas = 0
 let chars: any[] = []
-let graphId: string | null = null
+// let graphId: string | null = null
 
 let charsMap = new Map()
 
 // 节流函数
-const throttled = throttle((graph, gl, texture) => {
-    initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
-    graph.render()
-}, 100)
+let throttled: { [key: string]: Function } = {};
 
-const throttledT = throttle((graph, gl, texture) => {
-    initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
-    graph.render()
-}, 10)
+// const throttledT = throttle((graph, gl, texture) => {
+//     initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
+//     graph.render()
+// }, 10)
 
 export const clearChars = () => {
     chars = []
@@ -41,15 +38,16 @@ export const clearChars = () => {
 
 export const clearGraphChars = (id: string) => {
     charsMap.delete(id);
+
+    throttled.delete(id);
 }
 
 export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = false) => {
     if (thumbnail) return
 
-    let gl = graph.gl
     if (flag) {
-        glWidth = gl.canvas.width || 800
-        glHeight = gl.canvas.height || 800
+        glWidth = window.outerWidth
+        glHeight = window.outerHeight
         // 创建透视矩阵
         mat4.ortho(pMatrix, 0, glWidth, glHeight, 0, 0, -1)
         mat4.multiply(mvpMatrix, pMatrix, mvMatrix)
@@ -59,9 +57,14 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
         sdfCtx.canvas.height = Math.floor(atlas * 64)
     }
 
-    const texture = gl.createTexture()
+    !throttled[graph.id] && (throttled[graph.id] = throttle((graph, gl, texture) => {
+        initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
+        graph.webGLChangeLabel(false)
+        graph.render()
+    }), 100)
+
     let beforeNum = chars.length
-    let GraphSet = new Set()
+    let needCreate = false
     textSet.forEach(item => {
         let arr = item.split("-");
         if (item.substring(0, 1) == "-") {
@@ -76,19 +79,10 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
             chars.push({
                 char: arr[0],
                 style: arr[1],
-            })
-
-        !charsMap.has(arr[2]) && charsMap.set(arr[2], new Set())
-
-        let charSet = charsMap.get(arr[2])
-
-        if (!charSet.has(arr[0] + '-' +arr[1])) {
-            charSet.add(arr[0] + '-' + arr[1])
-            GraphSet.add(arr[2])
-        }
+            }) && (needCreate = true)
     })
 
-    creatTextSDF()
+    needCreate && creatTextSDF()
     // 获取文字当前的RGBA的数值区块
     function makeRGBAImageData(alphaChannel: any, width: number, height: number) {
         const imageData = sdfCtx.createImageData(width, height)
@@ -144,28 +138,34 @@ export const sdfCreate = (graph: any, textSet: Set<any>, thumbnail: boolean = fa
         }
     }
 
-    try {
-        flag = false
-        if (graph.id === graphId && Object.keys(instancesGL).length <= 1) {
-            throttled(graph, gl, texture);
-        }
-        else {
-            initGlTextureBind(gl, gl.TEXTURE1, texture, sdfCanvas, false)
-            if (Object.keys(instancesGL).length > 0) {
-                for (let i in instancesGL) {
-                    let gl = instancesGL[i].gl
-                    if (GraphSet.has(instancesGL[i].id)) {
-                        // initGlTextureBind(gl, gl.TEXTURE1, gl.createTexture(), sdfCanvas, false)
-                        throttledT(instancesGL[i], gl, gl.createTexture())
-                    }
-                }
-            }
+    flag = false
 
-        }
-        graphId = graph.id
+    try {
+        graph.webGLChangeLabel(true)
     } catch (err) {
         console.warn('文字生成失败')
     }
+}
+
+let textureGL:{[key:string]: WebGLTexture} = {};
+
+export const removeTextureGL = (graph: any) => {
+    let gl = graph.gl;
+    let id = graph.id + graph.thumbnail;
+
+    textureGL[id] && gl.deleteTexture(textureGL[id]) && delete textureGL[id]
+}
+
+export const rBound = (graph: any) =>{
+    let gl = graph.gl;
+    let id = graph.id + graph.thumbnail;
+
+    if(!textureGL[id]){
+        textureGL[id] = gl.createTexture()
+    }
+    const texture = textureGL[id]
+
+    throttled[graph.id] && throttled[graph.id](graph, gl, texture);
 }
 
 export function drawText(size: number, str: string, maxLength: number, style: string = 'normal') {
@@ -269,25 +269,25 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
         let xyOffect = coordTransformation(graphId, x, y)
             ; (x = xyOffect[0]), (y = xyOffect[1])
     }
-    const transform = (basicData[graphId]?.transform || 223)
+    const sdfTransform = window.outerHeight / globalProp.globalScale
 
     let postionState: { [key: string]: Function } = {
         bottom: () => {
             return [
                 margin[0] + x,
-                margin[1] + y - (radius * 2 + result.Occupy - 3) / transform,
+                margin[1] + y - (radius * 2 + result.Occupy - 3) / sdfTransform,
                 angle]
         },
         right: () => {
             return [
-                margin[0] + x + (radius * 2 + 6) / transform + (result.sum * mvpMatrix[0]) / 2,
+                margin[0] + x + (radius * 2 + 6) / sdfTransform + (result.sum * mvpMatrix[0]) / 2,
                 margin[1] + y + height,
                 angle,
             ]
         },
         left: () => {
             return [
-                margin[0] + x - (radius * 2 + 6) / transform - (result.sum * mvpMatrix[0]) / 2,
+                margin[0] + x - (radius * 2 + 6) / sdfTransform - (result.sum * mvpMatrix[0]) / 2,
                 margin[1] + y + height,
                 angle,
             ]
@@ -297,7 +297,7 @@ export const sdfDrawTextNew = (graphId: string, attribute: any, angle: number, t
                 (result.nlines) * (result.Occupy) : 0
             return [
                 margin[0] + x,
-                margin[1] + y + (radius * 2 + result.Occupy + 3 + 2 * topGap) / transform,
+                margin[1] + y + (radius * 2 + result.Occupy + 3 + 2 * topGap) / sdfTransform,
                 angle,
             ]
         },

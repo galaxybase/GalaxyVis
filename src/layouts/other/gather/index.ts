@@ -1,5 +1,11 @@
 import { PlainObject, tNode } from "../../hierarchy/tclass";
-
+/**
+ * 群体分组布局
+ * @param assign 
+ * @param _nodes 
+ * @param _links 
+ * @param options 
+ */
 function genericGatherLayout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
     var links = _links;

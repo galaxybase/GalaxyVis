@@ -20,7 +20,7 @@ import radialLayout from '../../layouts/hierarchy/radial/radial'
 import radiatreeLayout from '../../layouts/hierarchy/radiatree'
 import tree from '../../layouts/hierarchy/tree'
 import KKFaLayout from '../../layouts/forceLink/kk'
-import { BFSTree, floorBfs } from './bfsTree'
+import { BFSTree, floorBfs, initTree } from './bfsTree'
 import HierarchicalLayout from '../../layouts/hierarchy/hubsize'
 import balloonLayout from '../../layouts/Geometrical/balloon'
 import forceDirectedLayout from '../../layouts/forceLink/forceDirected'
@@ -32,6 +32,8 @@ import fruchtermanReingoldLayout from '../../layouts/forceLink/fruchtermanReingo
 import topoLayout from '../../layouts/hierarchy/topo'
 import noverlapLayout from '../../layouts/other/noverlap'
 import neuralLayout from '../../layouts/hierarchy/neural'
+import forceTreeLayout from '../../layouts/hierarchy/forceTree'
+import dagre from 'dagre'
 
 const LAYOUT_MESSAGE = {
     // run layout
@@ -253,7 +255,7 @@ function handleLayoutMessage(event: any) {
                 break;
             }
             case 'radiatree': {
-                data = radiatreeLayout(nodes, options)
+                data = radiatreeLayout(nodes, [], options)
                 if (options?.incremental)
                     for (let i in data) {
                         ids.push(data[i].id)
@@ -393,11 +395,37 @@ function handleLayoutMessage(event: any) {
                     }
                 break;
             }
+
+            case 'forceTree': {
+                let { 
+                    nodesBak,linksBak
+                } = layoutCfg
+
+                const g = new dagre.graphlib.Graph()
+
+                nodesBak.forEach((node: any) => {
+                    g.setNode(node.id)
+                })
+                linksBak.forEach((edge: any) => {
+                    g.setEdge(edge.source.id, edge.target.id)
+                })
+
+                let treeNodes = initTree(g, nodesBak, options.clusterCenter)
+
+                data = forceTreeLayout(treeNodes, options)
+                if (options?.incremental)
+                    for (let i in data) {
+                        ids.push(i);
+                        positions.push({ ...data[i], id: i });
+                    }
+                break;
+            }
+
             default:
                 break
         }
     } catch (err) {
-        console.error(LAYOUT_MESSAGE.ERROR);
+        console.error(LAYOUT_MESSAGE.ERROR, err);
         // @ts-ignore
         postMessage({ type: LAYOUT_MESSAGE.ERROR })
     }

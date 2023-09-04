@@ -1,6 +1,6 @@
 {
     "name": "@galaxybase/galaxyvis",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "A High Performance Graph Visualization Framework in JavaScript",
     "homepage": "https://galaxyvis.com/",
     "author": "galaxybase",
@@ -38,6 +38,7 @@
         "webpack-dev-server": "^3.11.2"
     },
     "dependencies": {
+        "d3-quadtree": "^3.0.1",
         "dagre": "^0.8.5",
         "gl-matrix": "^3.3.0",
         "lodash": "^4.17.21",

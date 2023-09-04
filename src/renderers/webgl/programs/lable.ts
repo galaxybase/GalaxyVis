@@ -5,7 +5,7 @@ import { sdfDrawTextNew } from '../../../utils/tinySdf/sdfDrawText'
 import { glMatrix, mat4 } from 'gl-matrix'
 import { EdgeLabelCollection, NodeLabelCollection } from '../../../types'
 import { globalProp, basicData } from '../../../initial/globalProp'
-import { isInSceen } from '../../../utils'
+import { getContainerHeight, isInSceen } from '../../../utils'
 
 let drawNum: number = 0
 
@@ -30,6 +30,8 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         const zoomLevelLocation = gl.getUniformLocation(this.program, 'zoomLevel')
         if (zoomLevelLocation == null) throw new Error('Text: 获取不到zoomLevel')
         this.zoomLevelLocation = zoomLevelLocation
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initNodeCollection(size = 0) {
@@ -63,7 +65,10 @@ export default class SdfTextProgram extends AbstractSDFProgram {
         let collection = nodeLabelCollection[graphId]
         let drawNodeLableList = new Map()
         let float32Labels: any = new Map()
-        const scale = globalProp.globalScale / this.camera.ratio
+
+        const height = getContainerHeight(this.graph.divContainer);
+        const dsr = height / window.outerHeight || 1;
+        const scale = globalProp.globalScale / this.camera.ratio * dsr
         let labelLength = 0
         for (let [key, val] of drawNodeList) {
             let value = nodeList.get(key)?.value
@@ -152,7 +157,11 @@ export default class SdfTextProgram extends AbstractSDFProgram {
             edgeLabelCollection[graphId] = collection
             return
         }
-        const scale = globalProp.globalScale / this.camera.ratio
+
+        const height = getContainerHeight(this.graph.divContainer);
+        const dsr = height / window.outerHeight || 1;
+        const scale = globalProp.globalScale / this.camera.ratio * dsr
+
         let labelLength = 0
         for (let [key, val] of drawEdgeList) {
             let text = val.text
@@ -231,7 +240,9 @@ export default class SdfTextProgram extends AbstractSDFProgram {
             100,
         )
         const view = this.camera.getViewMatrix()
-        const scale = (globalProp.globalScale / this.camera.ratio) * 2.0
+        const height = getContainerHeight(this.graph.divContainer);
+        const dsr = height / window.outerHeight || 1;
+        const scale = (globalProp.globalScale / this.camera.ratio) * 2.0 * dsr
         // 视图矩阵 * 透视矩阵
         gl.useProgram(program)
         gl.uniform1f(this.zoomLevelLocation as WebGLUniformLocation, scale)

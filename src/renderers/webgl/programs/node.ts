@@ -20,6 +20,9 @@ export default class NodeProgram extends AbstractNodeProgram {
         const viewMatrixLocation = gl.getUniformLocation(this.program, 'aXformMatrix')
         if (viewMatrixLocation == null) throw new Error('Node: 获取不到viewMatrix')
         this.viewMatrixLocation = viewMatrixLocation
+
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initCollection(size = 0) {
@@ -91,7 +94,7 @@ export default class NodeProgram extends AbstractNodeProgram {
             const isBadges = attributes.badges ? true : false
             let p: any = getPoint(graphId, attributes, iconMap, transform)
             if (this.graph.textStatus && !this.graph.thumbnail) {
-                this.camera.quad.insert({
+                this.camera.quad.add({
                     x: p.offsets[0],
                     y: p.offsets[1],
                     height: p.zoomResults * 0.2,
@@ -199,7 +202,7 @@ export default class NodeProgram extends AbstractNodeProgram {
         )
         const view = this.camera.getViewMatrix()
 
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)    
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
         // 视图矩阵 * 透视矩阵
         gl.uniformMatrix4fv(this.projectMatirxLocation, false, projection)

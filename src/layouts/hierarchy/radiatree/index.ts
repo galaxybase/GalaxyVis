@@ -30,12 +30,20 @@ export const initRadiaTree = () => {
     hasCycle = false;
     inited = false;
 }
-
+/**
+ * 径向布局
+ * @param assign 
+ * @param nodeList 
+ * @param linkList 
+ * @param options 
+ * @returns 
+ */
 function genericRadiaTreeLayout(assign: any, nodeList: any, linkList: any, options?: any) {
     nodes = nodeList;
     links = linkList;
     distX = options?.distX || 50;
     distY = options?.distY || 50;
+    intSteps = options?.intSteps || 50;
     nodeIds = [];
     nodeNeighbers = [];
     nodes.forEach(function (node: any) {
@@ -116,16 +124,20 @@ function newLayoutData() {
 }
 
 function checkHasCycle(node: PlainObject<any>, pathNodes: any[]) {
+    let newOutLinks: any[] = [];
     (node.outLinks || []).forEach(function (_link: any) {
         var target = _link.target;
         if (node.id == target.id || pathNodes.indexOf(target.id) != -1) {
-            hasCycle = true;
-            console.warn("radiatree can't have rings")
-            return;
+            // hasCycle = true;
+            console.warn("radialTree can't have rings");
+            // return;
+        }else{
+            newOutLinks.push(_link);
+            pathNodes.push(target.id);
+            checkHasCycle(target, pathNodes);
         }
-        pathNodes.push(target.id);
-        checkHasCycle(target, pathNodes);
     });
+    node.outLinks = newOutLinks;
 };
 
 function initNodeNeighbers(node: PlainObject<any>) {
@@ -202,7 +214,7 @@ function calculateNodeX(node: { [x: string]: any; sizeT?: any; }) {
         });
     }
     size = Math.max(0, size - distX);
-    node.sizeT = size;
+    node.sizeT = size * 2;
 
     return size;
 };
@@ -253,11 +265,9 @@ function setRadialLocations() {
 
     nodes.forEach(function (node: PlainObject<any>) {
         var _theta = node.tempx * theta;
-        var _radius = (node.tempy - distY) * deltaRadius;
-
+        var _radius = (node.tempy - distY) * deltaRadius || distX;
         var x = _radius * Math.cos(_theta);
         var y = _radius * Math.sin(_theta);
-
         var posData = newLayoutData();
         posData.finishx = x;
         posData.finishy = y;

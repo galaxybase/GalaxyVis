@@ -23,9 +23,10 @@ export class tNode {
 
     constructor(id: string, attributes: PlainObject<any>) {
         this.id = id;
-        let { radius, isVisible } = attributes
+        let { radius, isVisible, cluster } = attributes
         this.radius = radius;
         this.visible = isVisible;
+        this.cluster = cluster
     }
 
     updateLinks(inLinks: PlainObject<any>[], outLinks: PlainObject<any>[]) {

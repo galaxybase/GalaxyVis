@@ -1,5 +1,10 @@
 
 // @ts-nocheck
+/**
+ * 节点不重叠布局
+ * @param nodes 
+ * @param options 
+ */
 var noverlapLayout: any = function(nodes, options) {
     this.nodes = nodes;
     this.maxMove = options?.maxMove || 10;

@@ -44,7 +44,7 @@ export default function canvasNodeDef(
         borderSize ? Math.ceil(0.06 * size * 1e3) / 1e3 : 0,
     ) //(borderSize * 5 / scale) * scale
     context.globalAlpha = opacity
-    if (image.url != '') {
+    if (image.url != '' && image.url != null) {
         if (opacity != 1.0) {
             drawMainPart(
                 context,
@@ -66,7 +66,7 @@ export default function canvasNodeDef(
             context,
             'anonymous',
         )
-    } else if (icon.content != '') {
+    } else if (icon.content != '' && icon.content != null) {
         // 绘制icon
         drawIcon(data, x, y, size, context)
     }

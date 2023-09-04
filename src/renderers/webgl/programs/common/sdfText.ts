@@ -1,4 +1,5 @@
 import { globalInfo, globalProp } from '../../../../initial/globalProp'
+import { rBound } from '../../../../utils/tinySdf/sdfDrawText'
 import { initAttributeVariable } from '../../shaders/utils'
 import { AbstractProgram, IProgram } from './program'
 
@@ -75,6 +76,8 @@ export abstract class AbstractSDFProgram extends AbstractProgram implements ISDF
         const gl = this.gl
         const ext = this.ext
         // const { arrsVer1, arrsVer2, arrsTex1, arrsTex2, others, fontSizes } = param
+
+        this.graph.reLableTick && rBound(this.graph)
 
         gl.useProgram(this.program)
         

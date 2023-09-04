@@ -1,16 +1,23 @@
 import { PlainObject, tNode } from "../../hierarchy/tclass";
-
+/**
+ * 力导向布局 Fruchterman Reingold (FR)
+ * https://cs.brown.edu/people/rtamassi/gdhandbook/chapters/force-directed.pdf
+ * @param assign 
+ * @param _nodes 
+ * @param _links 
+ * @param options 
+ */
 function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links: any, options: any) {
     var nodes = _nodes;
     var links = _links;
     var area = 1000;
-    var gravity = options?.gravity || 0.5;
-    var speed = options?.speed || 0.028;
-    var iterations = options?.tickNum || 300;
-    var maxDisplace = 10;
-    var mink = options?.k || 240;
+    var gravity = options?.gravity || 0.5; // 重力
+    var speed = options?.speed || 0.028; // 迭代速度
+    var iterations = options?.tickNum || 300; // 迭代次数
+    var maxDisplace = 10; //最大距离
+    var mink = options?.k || 240; //最小库伦常数
     var currentIter = 0;
-    var k = 120;
+    var k = 120; //默认库伦常数
     var nodesCount = nodes.length;
 
     nodes.forEach(function (node: tNode) {
@@ -24,6 +31,7 @@ function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links
 
     area = nodesCount * nodesCount;
     maxDisplace = area / 8;
+    // 计算库伦常数
     k = Math.sqrt(area / (1 + nodesCount));
 
     if (maxDisplace < 300) {
@@ -45,6 +53,7 @@ function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links
 					var dist = Math.sqrt(xDist * xDist + yDist * yDist) + 0.01;
 
 					if (dist > 0) {
+                        // 计算电荷与电荷之间的斥力
 						var repulsiveF = k * k / dist;
 						N1.fr.dx += xDist / dist * repulsiveF;
 						N1.fr.dy += yDist / dist * repulsiveF;
@@ -63,6 +72,7 @@ function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links
 			var xDist = nSource.fr_x - nTarget.fr_x;
 			var yDist = nSource.fr_y - nTarget.fr_y;
 			var dist = Math.sqrt(xDist * xDist + yDist * yDist) + 0.01;
+            // 计算电荷之间的引力
 			var attractiveF = dist * dist / k;
 			if (dist > 0) {
 				nSource.fr.dx -= xDist / dist * attractiveF;
@@ -71,7 +81,7 @@ function genericFruchtermanReingoldLayoutLayout(assign: any, _nodes: any, _links
 				nTarget.fr.dy += yDist / dist * attractiveF;
 			}
 		};
-
+        // 防止越界
         for (var i = 0; i < nodesCount; i++) {
 			var n = nodes[i];
 

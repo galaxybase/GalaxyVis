@@ -1,4 +1,4 @@
-import { isString } from 'lodash'
+import isString from 'lodash/isString'
 import { isIE } from '..'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import { CsvExportOptions, ImageExportOptions, JsonExportOptions, PlainObject, SvgExportOptions, XlsxExportOptions } from '../../types'
@@ -248,28 +248,11 @@ function downloadJson(data: any, filename: string) {
         // @ts-ignore
         window.navigator.msSaveBlob(blob, filename)
     } else {
-        var e = document.createEvent('MouseEvents'),
+        var e = new MouseEvent('click'), // 创建一个单击事件,
             a = document.createElement('a')
         a.download = filename
         a.href = window.URL.createObjectURL(blob)
         a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
-        e.initMouseEvent(
-            'click',
-            true,
-            false,
-            window,
-            0,
-            0,
-            0,
-            0,
-            0,
-            false,
-            false,
-            false,
-            false,
-            0,
-            null,
-        )
         a.dispatchEvent(e)
     }
 }
@@ -425,29 +408,7 @@ function downloadExcel(blob: any, fileName: string) {
         aLink.href = blob
         // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，有时候 file:///模式下不会生效
         aLink.download = fileName
-        var event
-        if (window.MouseEvent) event = new MouseEvent('click')
-        //   移动端
-        else {
-            event = document.createEvent('MouseEvents')
-            event.initMouseEvent(
-                'click',
-                true,
-                false,
-                window,
-                0,
-                0,
-                0,
-                0,
-                0,
-                false,
-                false,
-                false,
-                false,
-                0,
-                null,
-            )
-        }
+        var event = new MouseEvent('click')
         aLink.dispatchEvent(event)
     }
 }
@@ -559,28 +520,11 @@ function downloadCsv(data: any, filename: string) {
         // @ts-ignore
         window.navigator.msSaveBlob(blob, filename)
     } else {
-        let e = document.createEvent('MouseEvents'),
+        let e = new MouseEvent('click'),
             a = document.createElement('a')
         a.download = filename
         a.href = window.URL.createObjectURL(blob)
         a.dataset.downloadurl = ['text/csv', a.download, a.href].join(':')
-        e.initMouseEvent(
-            'click',
-            true,
-            false,
-            window,
-            0,
-            0,
-            0,
-            0,
-            0,
-            false,
-            false,
-            false,
-            false,
-            0,
-            null,
-        )
         a.dispatchEvent(e)
     }
 }

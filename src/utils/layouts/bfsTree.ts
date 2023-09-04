@@ -1,4 +1,4 @@
-import { clone } from "lodash"
+import clone from 'lodash/clone'
 import { basicData } from "../../initial/globalProp"
 
 export function BFSTree(nodes: any, lis: any, edges: any, allNodes?: any) {
@@ -183,4 +183,86 @@ export const comboBfs = (
     }
 
     return combosMap
+}
+
+
+let tindex = 0;
+
+export function initTree(g: any, node: any, root: any) {
+    let st = -1,
+        nodeIndex = -1
+    let q = [],
+        dep: any = new Array(node.length).fill(0)
+    tindex = 0;
+    for (let i = 0; i < node.length; ++i)
+        if (node[i].id == root) {
+            st = i
+            nodeIndex = node[i].index
+            break
+        }
+
+    q.push(node[st].id)
+    dep[nodeIndex] = 1
+
+    let u;
+
+    let usedObj: { [key: string]: boolean } = {}
+
+    let tree = [];
+
+    let tNodeList: { [key: string]: tNode } = {}
+
+    while (q.length) {
+        u = q.shift()
+
+        let neighbors: any = g.neighbors(u)
+
+        for (let i = 0; i < neighbors.length; i++) {
+            let id = neighbors[i]
+            !usedObj[id] && q.push(id);
+
+            !tNodeList[id] && (tNodeList[id] = new tNode(id))
+        }
+
+        usedObj[u] = true
+        !tNodeList[u] && (tNodeList[u] = new tNode(u))
+
+        tNodeList[u].neighbors = neighbors.map((id: string) => {
+            return tNodeList[id]
+        });
+        tree.push(
+            tNodeList[u]
+        )
+    }
+
+    return tree
+}
+var initialRadius = 50,
+    initialAngle = Math.PI * (3 - Math.sqrt(5));
+
+class tNode {
+    [key: string]: any
+    id: string
+    x: number = 0
+    y: number = 0
+    neighbors: any
+
+    constructor(id: string) {
+        this.id = id;
+        var radius = initialRadius * Math.sqrt(0.5 + tindex),
+            angle = tindex * initialAngle;
+        this.x = radius * Math.cos(angle) * 2
+        this.y = radius * Math.sin(angle) * 2
+        // this.x = Math.random() * 1000;
+        // this.y = Math.random() * 1000;
+        tindex++;
+    }
+
+    hasNeighbor(node: tNode) {
+        for (let i = 0; i < this.neighbors.length; i++) {
+            if (this.neighbors[i].id === node.id)
+                return true
+        }
+        return false;
+    }
 }

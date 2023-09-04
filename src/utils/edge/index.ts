@@ -1,4 +1,7 @@
-import { defaultsDeep, merge, cloneDeep, clone } from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
+import defaultsDeep from 'lodash/defaultsDeep'
+import clone from 'lodash/clone'
+import merge from 'lodash/merge'
 import { basicData, globalProp } from '../../initial/globalProp'
 import { originInfo } from '../../initial/originInitial'
 import { TEPLATE } from '../../initial/settings'
@@ -81,6 +84,24 @@ export const edgeChangeAttribute = (that: any, attribute: any, useSet: boolean =
         that.value.attribute = merge(attributes, attribute)
 
         let originEdge = clone(originInfo[that.id].edgeList.get(that.value.id))
+        originEdge = merge(originEdge, attribute)
+
+        originInfo[that.id].edgeList.set(that.value.id, originEdge)
+
+        return true
+    } catch (error) {
+        console.warn(error)
+        return false
+    }
+}
+
+export const edgeChangeAttributes = (that: any, attribute: any) =>{
+    try {
+        attribute = defaultsDeep(that.initAttribute(attribute, false))
+        let attributes = cloneDeep(that.value.attribute)
+        that.value.attribute = merge(attributes, attribute)
+
+        let originEdge = cloneDeep(originInfo[that.id].edgeList.get(that.value.id))
         originEdge = merge(originEdge, attribute)
 
         originInfo[that.id].edgeList.set(that.value.id, originEdge)
@@ -212,14 +233,15 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
         }
     }
 
+    let cn1 = {
+        x: 0,
+        y: 0,
+    },
+        cn2;
     // 非自环边
     if (source.getId() != target.getId()) {
         size > 1 && size % 2 == 0 && lineNumber++
-        let originalNode = {
-            x: 0,
-            y: 0,
-        },
-            po = 5,
+        let po = 5,
             midx = (sourceX + targetX) / 2,
             midy = (sourceY + targetY) / 2, //计算中心点
             distanceX = (targetX - sourceX) * forward,
@@ -232,18 +254,19 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
             // 计算贝塞尔曲线的控制点
             c = -numOfLine / po
         if (XYdistance == 0) {
-            originalNode.x = midx
-            originalNode.y = midy
+            cn1.x = midx
+            cn1.y = midy
         }
-        originalNode.x = midx + moveX * c
-        originalNode.y = midy + moveY * c
+        cn1.x = midx + moveX * c
+        cn1.y = midy + moveY * c
 
-        bezierX = Bezier(sourceX, originalNode.x, targetX, 0.5)
-        bezierY = Bezier(sourceY, originalNode.y, targetY, 0.5)
+        bezierX = Bezier(sourceX, cn1.x, targetX, 0.5)
+        bezierY = Bezier(sourceY, cn1.y, targetY, 0.5)
     } else {
         // 自环边
         if (that.renderer === 'canvas') {
-            let scale = (globalProp.globalScale / that.camera.ratio) * 2.0
+            const ratio =  6 * Math.tan((70 * Math.PI) / 360)
+            let scale = (globalProp.globalScale / ratio) * 2.0
             radius = scale * ((lineNumber) * 40 + radius * 5)
         } else {
             const transform = (basicData[that.id]?.transform || 223)
@@ -257,27 +280,27 @@ export const edgeGetMiddlePoint = (that: any, withOutInit = false, InitAttribute
                 sourceY,
                 radius,
                 false,
-            )
-
+            );
+        cn1 = { x: pot1[0], y: pot1[1] };
+        cn2 = { x: pot2[0], y: pot2[1] };
         let bezierMid = bezier3(
             0.5,
             { x: sourceX, y: sourceY },
             { x: pot1[0], y: pot1[1] },
             { x: pot2[0], y: pot2[1] },
             { x: sourceX, y: sourceY },
-        )
-            ; (bezierX = bezierMid.x), (bezierY = bezierMid.y)
-    }
+        );
 
-    // that.addNode({
-    //     id: "adsad",
-    //     attribute:{
-    //         x: bezierX, y: bezierY
-    //     }
-    // })
+        bezierX = bezierMid.x;
+        bezierY = bezierMid.y;
+    }
 
     return {
         x: bezierX,
         y: bezierY,
+        controlNodes: {
+            cn1,
+            cn2
+        }
     }
 }

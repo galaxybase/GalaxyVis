@@ -2,7 +2,10 @@ import { basicData, globalInfo, globalProp } from '../initial/globalProp'
 import { originInfo } from '../initial/originInitial'
 import { GeoModeOptions, MouseType, PlainObject } from '../types'
 import { animateNodes } from '../utils/graphAnimate'
-import { cloneDeep } from 'lodash'
+import throttle from 'lodash/throttle'
+import cloneDeep from 'lodash/cloneDeep'
+
+import { quadtree } from 'd3-quadtree'
 
 const L = window.L //解决未引入leaflet导致编译失败
 const standards = 1.5
@@ -133,7 +136,10 @@ const DEFAULT_TITLE = {
 export default class geo<T, K> {
     private galaxyvis: any
     private pulsePass: any
+    private particlePass: any
     private graphContainer: HTMLDivElement | null = null;
+    private quadTree: any
+
     public map: any
     public layer: any
     public mapContainer: HTMLElement | undefined
@@ -143,6 +149,7 @@ export default class geo<T, K> {
     public moving: boolean = false
     public minZoomLevel: number
     public maxZoomLevel: number
+    public dsr: number = 1
     constructor(galaxyvis: any) {
         this.galaxyvis = galaxyvis
         this.minZoomLevel = 0
@@ -183,7 +190,13 @@ export default class geo<T, K> {
             canvas.removeEventListener('mousedown', this.galaxyvis.MousedownFunction)
             !allowdDclick && canvas.removeEventListener('dblclick', this.galaxyvis.DoubleClickFunction)
 
-            this.galaxyvis.camera.updateTransform()
+            // fixTransfrom
+            this.getGeoTransform()
+
+            let dsr = this.dsr = 1
+            if (this.galaxyvis.renderer !== "canvas") {
+                dsr = this.dsr = window.outerHeight * this.galaxyvis.camera.aspectRatio / canvas.width;
+            }
 
             // 创建geo的容器和图层
             if (!document.getElementById(`galaxyvis-geo-map-${id}`)) {
@@ -193,7 +206,7 @@ export default class geo<T, K> {
             } else {
                 return reject("The map has already been used")
             }
-            
+
             this.map = new L.Map(this.mapContainer, {
                 attributionControl: attribution ? true : false, //右下角的copyright
                 zoomControl: false, //左上角缩放
@@ -324,7 +337,7 @@ export default class geo<T, K> {
             }
 
             this.galaxyvis.view.setView({
-                zoom: globalProp.defaultZoom,
+                zoom: this.galaxyvis.camera.defaultZoom,
                 x: 0,
                 y: 0,
             })
@@ -366,6 +379,36 @@ export default class geo<T, K> {
             // 设置地图的经纬度和世界缩放等级
             this.map.setView(new L.LatLng(viewPoint.lat, viewPoint.lng), viewZoom)
             this.graphContainer = this.graphicContainer()
+
+            this.quadTree = quadtree()
+                .x((d: any) => d.x)
+                .y((d: any) => d.y);
+            this.quadTree.retrieve = ({
+                x, y, r
+            }: { x: number, y: number, r: number }) => {
+                const xmax = x + r / 2;
+                const ymax = y + r / 2;
+                const ymin = y - r / 2;
+                const xmin = x - r / 2;
+                const results: any[] = [];
+
+                this.quadTree.visit((
+                    node: { length: any; data: any; next: any }, 
+                    x1: number, y1: number, x2: number, y2: number
+                ) => {
+                    if (!node.length) {
+                        do {
+                            let d = node.data;
+                            if (d.x >= xmin && d.x < xmax && d.y >= ymin && d.y < ymax) {
+                                results.push(d);
+                            }
+                        } while (node = node.next);
+                    }
+                    return x1 >= xmax || y1 >= ymax || x2 < xmin || y2 < ymin;
+                });
+                return results;
+            }
+
             this.layer = new L.CanvasLayer({
                 // geo地图的父级
                 container: this.graphContainer,
@@ -382,6 +425,10 @@ export default class geo<T, K> {
                     (this.layer._x = points.x), (this.layer._y = points.y)
 
                     let { width, height } = globalInfo[id].canvasBox
+
+                    this.quadTree.removeAll(this.quadTree.data())
+
+                    var quadTree = this.quadTree
 
                     const ZOOMRATIO = map._zoom / (maxZoomLevel * standards)
                     var nodeData: any = {}
@@ -411,11 +458,17 @@ export default class geo<T, K> {
                                     y: Coords.y - height / 2,
                                 }
                             } else {
+                                nodeData[key] = {
+                                    x: Coords.x - width / 2,
+                                    y: Coords.y - height / 2,
+                                }
+
                                 item.changeAttribute({
                                     x: Coords.x - width / 2,
                                     y: Coords.y - height / 2,
                                 })
                             }
+                            quadTree.add({ ...nodeData[key], id: key })
                         }
 
                     })
@@ -427,16 +480,26 @@ export default class geo<T, K> {
                             nodeAttributes: {
                                 radius(node: any) {
                                     let originNode = originNodes.get(node.getId())
-                                    return originNode.baseRaius * sizeRatio * ZOOMRATIO
+                                    return originNode.baseRaius * sizeRatio * ZOOMRATIO * dsr
                                 },
                                 text(node: any) {
+                                    let { x, y } = node.getPosition()
+                                    let r = 60
+                                    let quadNodes = quadTree.retrieve({ x, y, r });
+                                    if (quadNodes.length > 1 && quadNodes[quadNodes.length - 1].id != node.getId()) {
+                                        return {
+                                            fontSize: 0
+                                        }
+                                    }
+
                                     let fontSize = node.getAttribute(['text', 'fontSize'])
                                     return {
                                         fontSize:
                                             Math.max(
                                                 fontSize * sizeRatio * ZOOMRATIO,
                                                 map._zoom
-                                            ),
+                                            ) * dsr,
+                                        minVisibleSize: 10
                                     }
                                 }
                             },
@@ -448,7 +511,8 @@ export default class geo<T, K> {
                                             Math.max(
                                                 fontSize * sizeRatio * ZOOMRATIO,
                                                 map._zoom
-                                            ),
+                                            ) * dsr,
+                                        minVisibleSize: 10
                                     }
                                 }
                             }
@@ -512,6 +576,13 @@ export default class geo<T, K> {
                     const pulsePass = this.pulsePass;
                     divContainer.insertBefore(pulsePass, divContainer.firstChild)
                 }
+                if (this.galaxyvis.particle && this.particlePass) {
+                    let particleCanvas = this.galaxyvis.particleCanvas;
+                    particleCanvas.stop()
+                    particleCanvas.render()
+                    const particlePass = this.particlePass;
+                    divContainer.insertBefore(particlePass, divContainer.firstChild)
+                }
                 // graph类的鼠标事件回滚
                 canvas.addEventListener('wheel', this.galaxyvis.WheelFunction)
                 canvas.addEventListener('mousedown', this.galaxyvis.MousedownFunction)
@@ -534,6 +605,8 @@ export default class geo<T, K> {
                 geoClass[id] && geoClass[id].destroy() && delete geoClass[id]
                 this.layer = null
                 this.map = null
+                this.quadTree = null;
+                this.galaxyvis.camera.updateTransform()
                 this.galaxyvis.render()
                 resolve(void 0)
             } else {
@@ -555,6 +628,16 @@ export default class geo<T, K> {
         })
 
         geoClass[id] && geoClass[id].update({})
+    }
+
+    getGeoTransform() {
+        let id = this.galaxyvis.id
+        let canvas = this.galaxyvis.gl?.canvas || this.galaxyvis.ctx?.canvas
+        basicData[id].transform = canvas.width / globalProp.globalScale / this.galaxyvis.camera.aspectRatio
+    }
+
+    getGeoDsr() {
+        return this.dsr
     }
 
     /**
@@ -643,19 +726,8 @@ export default class geo<T, K> {
         if (this.layer) return true
         return false
     }
-    /**
-     * 
-     * @param ids 
-     */
-    locate(ids: string | any[]) {
-        if (!ids || ids?.length == 0) {
-            ids = [];
-            let nodeList = this.galaxyvis.getFilterNode()
-            nodeList.forEach((_: any, key: string) => {
-                (ids as Array<any>).push(key)
-            })
-        }
-        if (typeof ids === "string") ids = [ids];
+
+    private tr = throttle((ids) => {
         let len = ids.length
         let nodeList = basicData[this.galaxyvis.id].nodeList
         let o = this.options;
@@ -682,9 +754,9 @@ export default class geo<T, K> {
             }
         }
         if (
-            maxLng != -Infinity && 
-            maxLat != -Infinity && 
-            minLng != Infinity && 
+            maxLng != -Infinity &&
+            maxLat != -Infinity &&
+            minLng != Infinity &&
             minLat != Infinity
         ) {
             let corner1 = L.latLng(minLat, minLng),
@@ -692,6 +764,23 @@ export default class geo<T, K> {
                 bounds = L.latLngBounds(corner1, corner2)
             this.map.fitBounds(bounds)
         }
+    }, 16)
+
+    /**
+     * 
+     * @param ids 
+     */
+    locate(ids: string | any[]) {
+        if (!ids || ids?.length == 0) {
+            ids = [];
+            let nodeList = this.galaxyvis.getFilterNode()
+            nodeList.forEach((_: any, key: string) => {
+                (ids as Array<any>).push(key)
+            })
+        }
+        if (typeof ids === "string") ids = [ids];
+
+        this.tr(ids)
     }
     /**
      * 初始化一个dom
@@ -737,6 +826,12 @@ export default class geo<T, K> {
             const id = this.galaxyvis.id
             const pulsePass = this.pulsePass = document.getElementById("pulse_" + id) as HTMLCanvasElement;
             dom.insertBefore(pulsePass, dom.firstChild)
+        }
+
+        if (this.galaxyvis.particle) {
+            const id = this.galaxyvis.id
+            const particlePass = this.particlePass = document.getElementById("particle_" + id) as HTMLCanvasElement;
+            dom.insertBefore(particlePass, dom.firstChild)
         }
 
         return dom

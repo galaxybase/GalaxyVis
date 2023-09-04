@@ -3,6 +3,7 @@ import { initAttributeVariable } from '../../shaders/utils'
 import { DEFAULT_SETTINGS } from '../../../../initial/settings'
 import { globalInfo, globalProp } from '../../../../initial/globalProp'
 import { initGlTextureBind } from '../../../../utils'
+import { graphTextureMap } from '../../../../utils/node'
 
 const ATTRIBUTES = 11
 
@@ -68,12 +69,19 @@ export abstract class AbstractNodeProgram extends AbstractProgram implements INo
     bind(param: any): void {
         const gl = this.gl
         const ext = this.ext
-        if (globalProp.useIniticon === 0 || (this.graph.thumbnail && !globalProp.useIniticon)) {
+        if (
+            globalProp.useIniticon === 0 || 
+            graphTextureMap[this.graph.id]?.size === 0 || 
+            (this.graph.thumbnail && !globalProp.useIniticon)
+        ) {
             let tex = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
             tex.canvas.width = 128.0
             tex.canvas.height = 128.0
             initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), tex)
-            if (!this.graph.thumbnail) globalProp.useIniticon++
+            if (!this.graph.thumbnail) {
+                globalProp.useIniticon++;  
+                graphTextureMap[this.graph.id].add('')
+            }
             // @ts-ignore
             tex = null
         }

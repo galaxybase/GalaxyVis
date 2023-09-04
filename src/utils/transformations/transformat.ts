@@ -1,5 +1,7 @@
 import { animateNodes } from '../graphAnimate'
-import { cloneDeep, defaultsDeep, isString } from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
+import defaultsDeep from 'lodash/defaultsDeep'
+import isString from 'lodash/isString'
 import { basicData, globalInfo } from '../../initial/globalProp'
 import NodeList from '../../classes/nodeList'
 import { genID } from '..'
@@ -157,7 +159,7 @@ export class transformat<T, K> {
                                 globalInfo[graphId].mergeEdgesTransformat.transformat.isMerge = false
                             })
                         }
-                    } catch { }
+                    } catch (err) { }
                     if (isRender)
                         this.galaxyvis.render(false)
                     resolve((): void => { })
@@ -231,7 +233,7 @@ export class transformat<T, K> {
                                 globalInfo[graphId].mergeEdgesTransformat.transformat.isMerge = false
                             })
                         }
-                    } catch { }
+                    } catch (err) { }
                     if (isRender)
                         this.galaxyvis.render(false)
                     resolve((): void => { })
@@ -443,11 +445,11 @@ export class transformat<T, K> {
                                 (value.getAttribute('isVisible') || value.getAttribute('isFilter')))
                                 this.changed.push(key)
                         })
-                    }
-                    if (globalInfo[graphId].mergeEdgesTransformat && !this.isMerge) {
-                        let { transformat } = globalInfo[graphId].mergeEdgesTransformat
-                        let concatChanged = this.changed.concat(transformat.changed)
-                        this.changed = [...new Set(concatChanged)];
+                        if (globalInfo[graphId].mergeEdgesTransformat && !this.isMerge) {
+                            let { transformat } = globalInfo[graphId].mergeEdgesTransformat
+                            let concatChanged = this.changed.concat(transformat.changed)
+                            this.changed = [...new Set(concatChanged)];
+                        }
                     }
 
                     for (let index = 0, len = this.changed.length; index < len; index++) {

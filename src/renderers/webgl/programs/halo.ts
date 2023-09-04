@@ -25,6 +25,8 @@ export default class HaloProgram extends AbstractHaloProgram {
         this.viewMatrixLocation = viewMatrixLocation
 
         this.edgeHaloProgram = new edgeHaloProgram(gl)
+        // 开启拓展
+        this.ext = this.gl.getExtension('ANGLE_instanced_arrays')
     }
 
     initCollection() {
@@ -80,45 +82,39 @@ export default class HaloProgram extends AbstractHaloProgram {
         if (collection?.floatData?.length) {
             this.bind(new Float32Array(collection.floatData))
             this.render()
-        }else{
-            if(thumbnailInfo[this.graph.id])
+        } else {
+            if (thumbnailInfo[this.graph.id])
                 return this.process()
         }
         this.edgeHaloProgram.refreshProcess()
     }
 
     moveProcess(): void {
-        let { selectedTable: needFresh, drawNodeList, nodeList } = basicData[this.graph.id]
+        let { selectedTable: needFresh } = basicData[this.graph.id]
 
-        let count = 0,
-            needCounts: any = []
+        // let count = 0,
+        //     needCounts: any = []
         if (!needFresh.size) {
             this.refreshProcess()
             this.edgeHaloProgram.moveRefresh()
             return
         }
 
-        // 根据需要跟新的表找到相应的位置
-        needFresh.forEach((val: any, key: string) => {
-            count = 0
-            for (let [keys, val] of drawNodeList) {
-                if (keys == key) {
-                    let node = nodeList.get(key)
-                    let renderHalo = node?.getAttribute('halo')
-                    if (node?.getAttribute('isVisible') && renderHalo && renderHalo.width != 0) {
-                        needCounts.push(count)
-                    }
-                    return
-                } else {
-                    count++
-                }
-            }
-        })
-        if (!needCounts.length) {
-            this.refreshProcess()
-            this.edgeHaloProgram.moveRefresh()
-            return
-        }
+        // // 根据需要跟新的表找到相应的位置
+        // needFresh.forEach((val: any, key: string) => {
+        //     if (drawNodeList.has(key)) {
+        //         let node = nodeList.get(key)
+        //         let renderHalo = node?.getAttribute('halo')
+        //         if (renderHalo && renderHalo.width != 0 && node?.getAttribute('isVisible')) {
+        //             needCounts.push(count)
+        //         }
+        //     } 
+        // })
+        // if (!needCounts.length) {
+        //     this.process()
+        //     this.edgeHaloProgram.moveRefresh()
+        //     return
+        // }
 
         this.process()
         this.edgeHaloProgram.moveRefresh()
@@ -159,9 +155,9 @@ const getHaloAttribute = (graphId: string, data: any) => {
     let { color, width, progress } = halo;
 
     progress == undefined && (progress = 100);
-    
+
     let haloRadius = Number(radius + width / 4)
-    
+
     // 真实的r比例
     let zoomResults: number = parseFloat((haloRadius / globalProp.standardRadius).toFixed(1))
     // let widthResults = parseFloat(((width / 2) / haloRadius).toFixed(1))

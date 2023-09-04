@@ -45,7 +45,7 @@ export default function canvasNodeTriangle(
     backgroundColor = mixColor(graphId, backgroundColor, opacity)
 
     context.globalAlpha = opacity
-    if (image.url != '') {
+    if (image.url != '' && image.url != null) {
         if (opacity != 1.0) {
             drawMainPart(
                 context,
@@ -71,7 +71,7 @@ export default function canvasNodeTriangle(
                 triangleGraphic(context, x, y, size)
             },
         )
-    } else if (icon.content != '') {
+    } else if (icon.content != '' && icon.content != null) {
         // 绘制icon
         drawIcon(data, x, y, size, context)
     }

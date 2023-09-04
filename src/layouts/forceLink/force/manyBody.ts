@@ -1,5 +1,4 @@
-// @ts-ignore
-import { quadtree } from '../../quadtree'
+import { quadtree } from 'd3-quadtree'
 
 import constant from './constant'
 import { jiggle } from './util'

@@ -1,4 +1,4 @@
-import { clone } from "lodash";
+import clone from 'lodash/clone'
 import { basicData, globalInfo, globalProp } from "../../initial/globalProp";
 import { cancelFrame, getContainerHeight, requestFrame, transformCanvasCoord } from "../../utils";
 
@@ -20,18 +20,24 @@ export default class overLay {
         const graphId = graph.id;
         const camera = graph.camera;
         const overlayPass = this.overlayPass = document.getElementById("overlayPass_" + graphId) as HTMLCanvasElement;
-        // 更新比例
-        camera.updateTransform()
 
-        const transform = basicData[graphId]?.transform || 223
         const { nodeList } = basicData[graphId]
         let renderType = graph.getRenderType();
+        const height = getContainerHeight(overlayPass);
 
         let overlayList = globalInfo[graphId].overlay
         // 如果不存在该图层则return
         if (!overlayPass) return;
         // arf
         function tickFrame() {
+            // 更新比例
+            if (graph.geo.enabled())
+                graph.geo.getGeoTransform()
+            else
+                camera.updateTransform()
+
+            const transform = basicData[graphId]?.transform || 223
+            
             if (Object.keys(overlayList)) {
                 for (let key in overlayList) {
                     let item = overlayList[key]
@@ -45,6 +51,8 @@ export default class overLay {
                     let scale = (globalProp.globalScale / ratio) * 2.0
 
                     if (renderType === "webgl") {
+                        scale *= height / window.outerHeight;
+
                         position[0] *= -transform;
                         position[1] *= transform;
                     }

@@ -1,4 +1,5 @@
-import { min, max } from 'lodash'
+import max from 'lodash/max'
+import min from 'lodash/min'
 import { mixColor } from '../../../utils'
 import { bezier2, getPoint, parallelGetCoord, preBezierCalc } from './commom'
 

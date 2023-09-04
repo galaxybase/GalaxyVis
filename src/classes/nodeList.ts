@@ -1,6 +1,6 @@
 import EdgeList from './edgeList'
 import { nodeListLocate } from '../utils/node'
-import { isArray } from 'lodash'
+import isArray from 'lodash/isArray'
 import { AdjacencyOptions, AnimateOptions } from '../types'
 import { ANIMATE_DEFAULTS, basicData } from '../initial/globalProp'
 
@@ -100,7 +100,7 @@ export default class NodeList {
                 let id = this.ids[i];
                 id && this.galaxyvis.getNode(id) && list.push(...this.galaxyvis.getNode(id).getAdjacentNodes(options))
             }
-        } catch { }
+        } catch {}
         list = Array.from(new Set(list))
         return new NodeList(this.galaxyvis, list)
     }
@@ -188,14 +188,13 @@ export default class NodeList {
      */
     public getAdjacentEdges = (options?: AdjacencyOptions) => {
         let list: string[] = []
-
         if (!this.ids || !this.ids?.length)
             return new NodeList(this.galaxyvis, list)
         try {
             this.ids.forEach(id => {
                 id && this.galaxyvis.getNode(id) && list.push(...this.galaxyvis.getNode(id).getAdjacentEdges(options))
             })
-        } catch {}
+        } catch { }
 
         list = Array.from(new Set(list))
         return new EdgeList(this.galaxyvis, list)
@@ -231,10 +230,11 @@ export default class NodeList {
         let promiseList: any[] = []
         let attributeisArray = isArray(attribute) ? true : false
         this.ids.forEach((id, index) => {
+            let cloneAttribute = attribute;
             promiseList.push(
                 this.galaxyvis
                     .getNode(id, useHidden)
-                    ?.setAttributes(attributeisArray ? attribute[index] : attribute, this.isNodeList),
+                    ?.setAttributes(attributeisArray ? cloneAttribute[index] : cloneAttribute, this.isNodeList),
             )
         })
         this.galaxyvis.render();

@@ -2,10 +2,9 @@ import { PlainObject } from '../types'
 import { cancelFrame, requestFrame } from './index'
 import { AnimateOptions } from '../types'
 import { ANIMATE_DEFAULTS, basicData } from '../initial/globalProp'
-import { isArray } from 'lodash'
+import isArray from 'lodash/isArray'
 import easings from './easings'
 
-export let animateFram: number | null = null
 /**
  * 动画的过度效果
  * @param graph 指向整个galaxyvis
@@ -27,6 +26,10 @@ export function animateNodes(
 
     if (!basicData[graph.id]) {
         return () => void 0;
+    }
+
+    if (graph.animateFram){
+        cancelFrame(graph.animateFram)
     }
 
     // 动画缓动方式和延时
@@ -60,7 +63,7 @@ export function animateNodes(
         }
     }
 
-    animateFram = null
+    graph.animateFram = null
 
     const step = () => {
         
@@ -79,6 +82,7 @@ export function animateNodes(
             }
             if (isInLayout) graph.textStatus = true
             graph.render()
+            graph.animateFram = null
             if (typeof callback === 'function') callback()
             return
         }
@@ -100,14 +104,14 @@ export function animateNodes(
         if (isInLayout) graph.textStatus = false
         graph.render()
         // 执行下一帧动画
-        animateFram = requestFrame(step)
+        graph.animateFram = requestFrame(step)
     }
 
     step()
 
     return () => {
-        if (animateFram) {
-            cancelFrame(animateFram)
+        if (graph.animateFram) {
+            cancelFrame(graph.animateFram)
         }
     }
 }

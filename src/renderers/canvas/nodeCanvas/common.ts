@@ -95,7 +95,7 @@ export const drawImage = (
         context.closePath()
         context.clip()
         context.drawImage(image, x - r, y - r, r * 2, r * 2)
-    } catch { }
+    } catch {}
     context.restore()
 }
 const pattern = /[1-9][0-9]*/g

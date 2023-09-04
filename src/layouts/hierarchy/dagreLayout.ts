@@ -7,7 +7,7 @@ import { globalInfo } from '../../initial/globalProp'
 import dagrelLayout from './dagreTree/dagre'
 import { animation } from '../animation'
 import BaseLayout from '../baseLayout'
-import { remove } from 'lodash'
+import remove from 'lodash/remove'
 
 class DagrelLayout extends BaseLayout {
 

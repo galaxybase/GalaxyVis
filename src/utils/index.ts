@@ -122,13 +122,30 @@ export const initText = (that: any) => {
         sdfCreate(that, textSet, that.thumbnail)
     }
 }
+
+let textureGL:{[key:string]: WebGLTexture} = {};
+
+export const removeITextureGL = (graph: any) => {
+    let gl = graph.gl;
+    let id = graph.id + graph.thumbnail;
+
+    textureGL[id] && gl.deleteTexture(textureGL[id]) && delete textureGL[id]
+}
+
 // icon和image
 export const initIconOrImage = async (that: any, data: any) => {
     if (that.renderer !== 'webgl' || that.fast) return
     globalProp.useIniticon++
     const atlas = globalProp.atlas,
         textureCtx = globalProp.textureCtx as CanvasRenderingContext2D
-    const thumbnailGL = thumbnailInfo[that.id]
+    const thumbnailGL = thumbnailInfo[that.id];
+    const gl = that.gl;
+    let id = that.id + that.thumbnail;
+    if(!textureGL[id]){
+        textureGL[id] = gl.createTexture()
+    }
+    const texture = textureGL[id]
+
     // icon类型
     if (data.type == 'icon') {
         // 等待字体加载
@@ -165,16 +182,13 @@ export const initIconOrImage = async (that: any, data: any) => {
                 imageCanvasContext.drawImage(img, (128 - scaleNum) / 2, (128 - scaleNum) / 2, scaleNum, scaleNum)
                 textureInfo.pixels = imageCanvasContext.getImageData(0, 0, 128, 128)
                 textureCtx?.putImageData(textureInfo.pixels, textureInfo.x, textureInfo.y)
-                if (Object.keys(instancesGL).length > 0) {
-                    for (let i in instancesGL) {
-                        let gl = instancesGL[i].gl
-                        initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-                    }
-                    if (thumbnailGL && thumbnailGL.thumbnail) {
-                        let gl = thumbnailGL.gl
-                        initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-                    }
+                initGlTextureBind(gl, gl.TEXTURE0, texture, textureCtx)
+  
+                if (thumbnailGL && thumbnailGL.thumbnail) {
+                    let gl = thumbnailGL.gl
+                    initGlTextureBind(gl, gl.TEXTURE0, texture, textureCtx)
                 }
+
                 that.render()
             } catch (err) {
                 console.warn(err, 'err')
@@ -182,17 +196,29 @@ export const initIconOrImage = async (that: any, data: any) => {
         })
         img.src = url
     }
-    if (Object.keys(instancesGL).length > 0) {
-        for (let i in instancesGL) {
-            let gl = instancesGL[i].gl
-            initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-        }
-        if (thumbnailGL && thumbnailGL.thumbnail) {
-            let gl = thumbnailGL.gl
-            initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
-        }
+
+    initGlTextureBind(gl, gl.TEXTURE0, texture, textureCtx)
+
+    if (thumbnailGL && thumbnailGL.thumbnail) {
+        let gl = thumbnailGL.gl
+        initGlTextureBind(gl, gl.TEXTURE0, texture, textureCtx)
     }
+
     if (that.thumbnail === false) that.render()
+}
+
+export const reBindTexture = (
+    that: any
+) => {
+    const gl = that.gl
+    const textureCtx = globalProp.textureCtx as CanvasRenderingContext2D;
+    initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx);
+
+    const thumbnailGL = thumbnailInfo[that.id]
+    if (thumbnailGL && thumbnailGL.thumbnail) {
+        let gl = thumbnailGL.gl
+        initGlTextureBind(gl, gl.TEXTURE0, gl.createTexture(), textureCtx)
+    }
 }
 
 /**
@@ -761,7 +787,12 @@ export const isWebGLSupported = function () {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                 if (debugInfo) {
                     const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                    return !/SwiftShader/gi.test(renderer);
+                    let supported = !/SwiftShader/gi.test(renderer);
+
+                    var t = gl?.getExtension('WEBGL_lose_context')
+                    t && t.loseContext()
+
+                    return supported
                 }
             }
             return false
@@ -811,7 +842,9 @@ export const transformCanvasCoord = (
     scale: number,
     thumbnail: boolean = false,
 ) => {
-    ; (x += position[0]), (y += position[1])
+    x += position[0];
+    y += position[1];
+
     x *= scale / 2.0
     y *= scale / 2.0
     let width = thumbnail
@@ -943,6 +976,7 @@ export const switchSelfLinePostion = (
  * @returns
  */
 export const getContainerWidth = (container: any) => {
+    if(!container) return 0
     return container.width || container.clientWidth || container.offsetWidth
 }
 
@@ -952,6 +986,7 @@ export const getContainerWidth = (container: any) => {
  * @returns
  */
 export const getContainerHeight = (container: any) => {
+    if(!container) return 0
     return container.height || container.clientHeight || container.offsetHeight
 }
 /**

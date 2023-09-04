@@ -1,6 +1,15 @@
 // @ts-nocheck
 import { tNode } from "../../hierarchy/tclass";
-
+/**
+ * 网格布局kk。 
+ * 依赖于每个顶点之间弹簧的模拟，其强度由两个顶点之间的最短路径的长度决定。
+ * 然后计算每个顶点的势能，即所有弹簧的能量总和。目标是减少布局的全局能量，
+ * 使用 Newton-Raphson 算法逐步移动每个顶点，直到其势能被认为足够低。
+ * https://citeseer.ist.psu.edu/viewdoc/download?doi=10.1.1.13.8444&rep=rep1&type=pdf
+ * @param _nodes 
+ * @param _links 
+ * @param _options 
+ */
 var KKLayout: any = function (_nodes: tNode[], _links: any[], _options) {
     this.nodes = _nodes;
     this.links = _links;
@@ -30,8 +39,8 @@ KKLayout.prototype.resetConfig = function (layoutConfig: { [x: string]: any; }) 
         let num = this.nodes.length;
         this.tickNum =
             num < 50 ?
-            this.tickNum : num < 500 ?
-            num * 15 : num * 30;
+                this.tickNum : num < 500 ?
+                    num * 15 : num * 30;
         this.initAlgo();
     }
 };
@@ -78,9 +87,9 @@ KKLayout.prototype.initAlgo = function () {
 
     var lij = [nodeCount];
     var kij = [nodeCount];
-
+    // 计算最短路径
     var dij = _self.shortPath(nodeCount);
-
+    // 获取最短路劲
     var max_dij = _self.getMaxDij(nodeCount, dij);
 
     _self.getKijLij(L0, max_dij, dij, kij, lij);
@@ -127,7 +136,7 @@ KKLayout.prototype.goAlgo = function () {
         C = 0.0;
     var delta_x, delta_y;
     var old_x, old_y, new_x, new_y;
-
+    // 找到具有最大势能的并返回
     var m = 0;
     var max_delta = -1;
     for (var i = 0; i < nodeCount; i++) {
@@ -170,7 +179,8 @@ KKLayout.prototype.goAlgo = function () {
     new_y = old_y + delta_y;
 
     _self.VECTOR_D1[m] = _self.VECTOR_D2[m] = 0.0;
-
+    // 即整个图形中的能量 由其位置引起的
+    // 位置的delta取决于K
     for (var i = 0; i < nodeCount; i++) {
         if (i == m) {
             continue;
@@ -244,6 +254,7 @@ KKLayout.prototype.getKijLij = function (L0: number, max_dij: number, dij: numbe
 KKLayout.prototype.shortPath = function (nodeCount: number) {
     var _self = this;
     var dij = [nodeCount];
+    // 创建一个邻接矩阵 (infinity = no edge, 1 = edge)
     for (var i = 0; i < nodeCount; i++) {
         dij[i] = [nodeCount];
 
@@ -263,7 +274,7 @@ KKLayout.prototype.shortPath = function (nodeCount: number) {
         dij[i][j] = 1;
         dij[j][i] = 1;
     });
-
+    // Floyd算法 找到每对顶点的最短路径的长度
     for (var k = 0; k < nodeCount; k++) {
         for (var i = 0; i < nodeCount; i++) {
             for (var j = i + 1; j < nodeCount; j++) {

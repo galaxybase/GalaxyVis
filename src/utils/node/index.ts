@@ -1,4 +1,4 @@
-import { coordTransformation, initIconOrImage, initText } from '..'
+import { coordTransformation, initIconOrImage, initText, reBindTexture } from '..'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'
 import { originInfo } from '../../initial/originInitial'
 import { TEPLATE } from '../../initial/settings'
@@ -8,8 +8,11 @@ import { mouseAddClass, mouseRemoveClass } from '../mouse'
 import { updateSDFTextData } from '../../utils'
 import NodeList from '../../classes/nodeList'
 import { AdjacencyOptions, AnimateOptions } from '../../types'
-import { cloneDeep, clone, defaultsDeep, get, merge } from 'lodash'
-
+import clone from 'lodash/clone'
+import defaultsDeep from 'lodash/defaultsDeep'
+import cloneDeep from 'lodash/cloneDeep'
+import get from 'lodash/get'
+import merge from 'lodash/merge'
 /**
  * 多点居中
  * @param that
@@ -101,7 +104,7 @@ export const nodeLocate = (that: any, options?: AnimateOptions) => {
             let offset = that.renderer === 'webgl' ? coordTransformation(that.id, x, y) : [-x, -y]
                 ; (x = offset[0]), (y = offset[1])
             let nowPosition = [x, y, 3]
-            let zoom = globalProp.defaultZoom
+            let zoom = that.camera.defaultZoom
             animateCamera(
                 that,
                 { zoom, position: nowPosition },
@@ -188,7 +191,7 @@ export const nodeSetSelected = (
     let GraphId = that.id;
     let isSelect = that.getAttribute('isSelect')
     let success = 0
-    let {selectedNodes,selectedTable} = basicData[GraphId]
+    let { selectedNodes, selectedTable } = basicData[GraphId]
     if (isSelect !== active) {
         let { id } = that.value
         if (active) {
@@ -272,7 +275,7 @@ export const nodeGetAdjacentEdges = (that: any, options?: AdjacencyOptions) => {
                 ) {
                     let sourceVis = edge.getSource()?.getAttribute("isVisible")
                     let targetVis = edge.getTarget()?.getAttribute("isVisible")
-                    if(sourceVis && targetVis)
+                    if (sourceVis && targetVis)
                         list.push(id)
                 }
             })
@@ -311,6 +314,8 @@ export const nodeChangeAttribute = (that: any, attribute: any, useSet: boolean =
 export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = false) => {
     let attributes
     if (useSet) attributes = clone(that.value.attribute)
+    const IColor = attribute?.color || attribute?.image?.color || 'rgba(255,255,255,0)'
+
     // 文字可能有text：xxx的情况
     if (attribute?.text) {
         if (typeof attribute.text == 'string') {
@@ -350,7 +355,7 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         }
     }
 
-    if (attribute?.image || attributes?.image) {
+    if (attribute?.image) {
         if (typeof attribute.image == 'string') {
             attribute.image = {
                 url: attribute.image,
@@ -358,7 +363,8 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
         }
         if (!useSet) {
             attribute.image = {
-                ...TEPLATE.iconTemplate,
+                ...TEPLATE.imageTemplate,
+                color: IColor,
                 ...attribute.image,
             }
         } else {
@@ -415,49 +421,87 @@ export const nodeInitAttribute = (that: any, attribute: any, useSet: boolean = f
     return attribute
 }
 
+const DefaultTEXT = {
+    scale: 0.5,
+    style: "normal",
+    font: "Arial"
+}
+
+export const graphTextureMap: { [key: string]: Set<string> } = {}
+
 const initBadges = (that: any, badges: { text: any; image: any }) => {
     let { text, image } = badges
     let iconType = image ? 1 : text?.content != '' ? 2 : 3
 
-    if (iconType == 1 && !globalProp.iconMap.has(image)) {
-        let initImage: any = {
-            type: 'image',
-            num: globalProp.iconMap.size,
-            scale: image.scale,
+    if (image) {
+        let { url, scale: iScale } = image
+
+        if (iconType == 1 && !globalProp.iconMap.has(url) && url != "") {
+            let initImage: any = {
+                type: 'image',
+                num: globalProp.iconMap.size,
+                scale: iScale,
+            }
+
+            initIconOrImage(that, {
+                key: url,
+                ...initImage,
+            })
+
+            globalProp.iconMap.set(url, {
+                ...initImage,
+                key: url,
+            })
+
+            graphTextureMap[that.id].add(url)
+
+            initImage = null
+        } else if (
+            iconType == 1 &&
+            globalProp.iconMap.has(url) &&
+            !graphTextureMap[that.id].has(url)
+        ) {
+            graphTextureMap[that.id].add(url)
+            reBindTexture(that)
         }
-
-        initIconOrImage(that, {
-            key: image,
-            ...initImage,
-        })
-
-        globalProp.iconMap.set(image , {
-            ...initImage,
-            key: image.url,
-        })
-        initImage = null
     }
 
-    if (iconType == 2 && !globalProp.iconMap.has(text?.content)) {
+    let rt = {
+        ...DefaultTEXT,
+        ...text
+    }
+
+    let { content, scale, style, font } = rt
+
+    if (iconType == 2 && !globalProp.iconMap.has(content + scale)) {
         let initIcon: any = {
             type: 'icon',
-            style: text?.style || 'normal',
-            scale: text?.scale || 0.5,
+            style,
+            scale,
             num: globalProp.iconMap.size,
-            font: text?.font || 'Arial',
+            font,
         }
 
         initIconOrImage(that, {
-            key: text?.content,
+            key: content,
             ...initIcon,
         })
 
-        globalProp.iconMap.set(text?.content, {
+        globalProp.iconMap.set(content + scale, {
             ...initIcon,
             key: text.content
         })
 
+        graphTextureMap[that.id].add(content + scale)
+
         initIcon = null
+    } else if (
+        iconType == 2 &&
+        globalProp.iconMap.has(content + scale) &&
+        !graphTextureMap[that.id].has(content + scale)
+    ) {
+        graphTextureMap[that.id].add(content + scale)
+        reBindTexture(that)
     }
 }
 
@@ -467,6 +511,20 @@ const initBadges = (that: any, badges: { text: any; image: any }) => {
  */
 export function initWebglAttribute(that: any, attribute: any) {
     let thumbnail = that instanceof String || that == null ? that : that.thumbnail
+
+    !graphTextureMap[that.id] && (graphTextureMap[that.id] = new Set())
+
+    !globalProp.iconMap && (globalProp.iconMap = new Map([
+        [
+            '',
+            {
+                num: 0,
+                style: 'normal',
+                scale: 0.5,
+            },
+        ],
+    ]))
+
     if (attribute) {
         // 处理icon
         if (!globalProp.iconMap.has(attribute.icon?.content) && attribute.icon?.content) {
@@ -482,12 +540,21 @@ export function initWebglAttribute(that: any, attribute: any) {
                 ...initIcon,
             })
 
-            globalProp.iconMap.set(attribute.icon.content, { ...initIcon, key: attribute.icon.content})
+            globalProp.iconMap.set(attribute.icon.content, { ...initIcon, key: attribute.icon.content })
+
+            graphTextureMap[that.id].add(attribute.icon.content)
 
             initIcon = null
+        } else if (
+            attribute.icon && attribute.icon.content != "" &&
+            globalProp.iconMap.has(attribute.icon.content) &&
+            !graphTextureMap[that.id].has(attribute.icon.content)
+        ) {
+            graphTextureMap[that.id].add(attribute.icon.content)
+            reBindTexture(that)
         }
         // 处理图片
-        let color = attribute?.color || 'rgba(255,255,255,0)'
+        let color = attribute?.color || attribute?.image?.color || 'rgba(255,255,255,0)'
         if (!globalProp.iconMap.has(attribute.image?.url + color) && attribute.image?.url) {
             let initImage: any = {
                 type: 'image',
@@ -505,22 +572,35 @@ export function initWebglAttribute(that: any, attribute: any) {
                 key: attribute.image.url,
             })
 
+            graphTextureMap[that.id].add(attribute.image.url + color)
+
             initImage = null
+        } else if (
+            attribute.image && attribute.image.url != "" &&
+            globalProp.iconMap.has(attribute.image.url + color) &&
+            !graphTextureMap[that.id].has(attribute.image.url + color)
+        ) {
+            graphTextureMap[that.id].add(attribute.image.url + color)
+            reBindTexture(that)
         }
         // 处理badge
         if (attribute?.badges) {
             let badges = attribute.badges;
-            if (badges?.bottomRight) {
-                initBadges(that, badges.bottomRight)
-            }
-            if (badges?.bottomLeft) {
-                initBadges(that, badges.bottomLeft)
-            }
-            if (badges?.topLeft) {
-                initBadges(that, badges.topLeft)
-            }
-            if (badges?.topRight) {
-                initBadges(that, badges.topRight)
+            if (Object.keys(badges).length == 0) {
+                attribute.badges = null;
+            } else {
+                if (badges?.bottomRight) {
+                    initBadges(that, badges.bottomRight)
+                }
+                if (badges?.bottomLeft) {
+                    initBadges(that, badges.bottomLeft)
+                }
+                if (badges?.topLeft) {
+                    initBadges(that, badges.topLeft)
+                }
+                if (badges?.topRight) {
+                    initBadges(that, badges.topRight)
+                }
             }
         }
         //处理文字

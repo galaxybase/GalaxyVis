@@ -37,6 +37,7 @@ export const getPoint = (
     // 图标的类型
     let iconType = image.url ? 1 : icon.content != '' ? 2 : 3
     let iconNum: number = image.url ? iconMap.get(image.url + color)?.num : iconMap.get(icon.content)?.num
+    
     let iconColor = floatColor(icon.color || '#fff').rgb
     if (!iconNum) {
         iconNum = 0
@@ -69,7 +70,10 @@ export const getPoint = (
                 y = offsets[1] - direction[postion][1] * (zoomResults) * 0.1 * 0.60
             let iconType = image ? 1 : text?.content != '' ? 2 : 3
             let badgesIconColor = floatColor(text?.color || '#f00').rgb
-            let iconNum: number = image ? iconMap.get(image)?.num : iconMap.get(text?.content || '')?.num
+            let iconNum: number = image ? iconMap.get(image)?.num : iconMap.get(text.content + text.scale)?.num
+            if (!iconNum) {
+                iconNum = 0
+            }
             badgesArr.push({
                 x,
                 y,

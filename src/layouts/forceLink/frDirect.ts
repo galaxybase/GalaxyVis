@@ -4,7 +4,7 @@ import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import { cleartNodeList, tNode, tNodeList } from "../hierarchy/tclass";
 import forceDirectedLayout from "./forceDirected";
 

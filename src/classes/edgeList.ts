@@ -1,5 +1,6 @@
 import NodeList from './nodeList'
 import { basicData } from '../initial/globalProp'
+import isArray from 'lodash/isArray'
 
 /**
  * @class EdgeList
@@ -172,8 +173,13 @@ export default class EdgeList {
      */
     public setAttributes = (attribute: any, useHidden = false) => {
         let promiseList: any[] = []
-        this.ids?.forEach(id => {
-            promiseList.push(this.galaxyvis.getEdge(id, useHidden)?.setAttributes(attribute, this.isEdgeList))
+        let attributeisArray = isArray(attribute) ? true : false
+        
+        this.ids.forEach((id, index) => {
+            let cloneAttribute = attribute;
+            promiseList.push(
+                this.galaxyvis.getEdge(id, useHidden)?.
+                                setAttributes(attributeisArray ? cloneAttribute[index] : cloneAttribute, this.isEdgeList))
         })
         this.galaxyvis.render();
         return Promise.all(promiseList)

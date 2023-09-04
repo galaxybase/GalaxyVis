@@ -36,6 +36,7 @@ import FruchtermanReingoldLayout from '../layouts/forceLink/FruchtermanReingoldL
 import topoCircleLayout from '../layouts/hierarchy/topoCircleLayout'
 import AvoidOverlapLayout from '../layouts/other/avoidOverlapLayout'
 import NeuralLayout from '../layouts/hierarchy/neuralLayout'
+import ForceTreeLayout from '../layouts/hierarchy/forceTreeLayout'
 
 /**
  * @class Layout
@@ -268,4 +269,8 @@ export default class Layout<T, K> {
     public neural = (opts: AnimateType) => {
         return new NeuralLayout(this.galaxyvis, opts).layout()
     }
+
+    public forceTree = (opts: AnimateType) => {
+        return new ForceTreeLayout(this.galaxyvis, opts).layout()
+    } 
 }

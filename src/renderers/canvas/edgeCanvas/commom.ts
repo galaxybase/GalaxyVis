@@ -38,10 +38,11 @@ export const preBezierCalc = (
     num: number,
     po: number | undefined,
     forward: number,
+    dsr: number = 1
 ): any => {
     lineWidth /= 35
     // 根据默认比例缩放当前点的大小
-    let scale = (globalProp.globalScale / ratio) * 2.0,
+    let scale = (globalProp.globalScale / ratio) * 2.0 * dsr,
         width = lineWidth * scale * 150,
         // 根据相机位置更改点的初始位置
         coord = transformCanvasCoord(graphId, sourceX, sourceY, position, scale, thumbnail),

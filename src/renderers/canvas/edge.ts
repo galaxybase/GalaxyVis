@@ -1,4 +1,4 @@
-import { clone } from 'lodash'
+import clone from 'lodash/clone'
 import EdgeList from '../../classes/edgeList'
 import NodeList from '../../classes/nodeList'
 import { globalProp, basicData, globalInfo } from '../../initial/globalProp'
@@ -151,15 +151,20 @@ export default class edgeCanvas {
             this.oldSelectedTable = new Set()
         }
 
-        let adjacentEdges = new NodeList(graph, [...selectedTable]).getAdjacentEdges()
-        let ids = basicData[graphId].adjacentEdges = adjacentEdges.getId()
+        let adjacentEdges = basicData[graphId].selectedEdgeTable
+
         let adjacentMaps = this.adjacentMaps = new Map()
 
-        if (adjacentEdges instanceof EdgeList && ids.length > 0) {
-            for (let i = 0, len = ids.length; i < len; i++) {
-                let key = ids[i]
-                adjacentMaps.set(key, edgeList.get(key))
-            }
+        if (adjacentEdges.size) {
+            adjacentEdges.forEach(async key => {
+                let edges = edgeList.get(key)?.getParallelEdges()
+                if(edges){
+                    edges.forEach((edge: any) => {
+                        const id = edge.getId()
+                        adjacentMaps.set(id, edge)
+                    });
+                }
+            })
         }
 
         if (!selectedTable.size || !isSameSet(selectedTable, this.oldSelectedTable) || viewChange) {
@@ -176,7 +181,7 @@ export default class edgeCanvas {
         if (selectedTable.size) {
             for (let key in this.quad) {
                 if(edgeList.get(key)?.getAttribute('isVisible'))
-                    graph.camera.quad.insert(this.quad[key])
+                    graph.camera.quad.add(this.quad[key])
             }
             graph.ctx.drawImage(this.frameCanvas, 0, 0)
             this.context = graph.ctx;
@@ -192,10 +197,10 @@ export default class edgeCanvas {
         let forwadHashTable: any = new Map()
         for (let [key, values] of orderEdges) {
             let item = values,
-                value = item.value,
-                source = value.source,
-                target = value.target,
-                attribute = item.getAttribute()
+                value = item?.value,
+                source = value?.source,
+                target = value?.target,
+                attribute = item?.getAttribute()
             // 如果被隐藏则跳过
             if (!attribute.isVisible || attribute.opacity == 0.0) continue
             if (!nodeList.has(source) || !nodeList.has(target)) continue
@@ -302,7 +307,7 @@ export default class edgeCanvas {
                     isNode: false,
                     shape: type,
                 }
-                graph.camera.quad.insert(this.quad[key])
+                graph.camera.quad.add(this.quad[key])
             }
             edgeBound = null;
         }

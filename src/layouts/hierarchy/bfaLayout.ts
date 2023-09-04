@@ -5,7 +5,7 @@ import BaseLayout from "../baseLayout"
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
 import { cleartNodeList, tNode, tNodeList } from "./tclass";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import bfaLayout from "./bfa";
 import { getContainerHeight, getContainerWidth } from "../../utils";
 import { EventType } from "../../utils/events";

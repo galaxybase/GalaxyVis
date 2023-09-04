@@ -33,9 +33,12 @@ export default function nodeHalo(
     if (progress == 100) return;
     context.save()
     context.strokeStyle = color
-    context.lineWidth = haloWidth
+    context.lineWidth = haloWidth 
     // context.lineCap = 'round'
     context.beginPath()
+
+    size = size - Math.ceil(0.08 * size * 1e3) / 1e3
+
     if (progress == 0) {
         context.arc(x, y, Number(size) * scale + haloWidth / 2, 0, Math.PI * 2, true)
     }

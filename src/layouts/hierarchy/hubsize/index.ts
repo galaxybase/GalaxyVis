@@ -1,4 +1,9 @@
 // @ts-nocheck
+/**
+ * 组织结构布局
+ * @param nodes 
+ * @param links 
+ */
 var HierarchicalLayout: any = function (nodes, links) {
     this.nodes = nodes;
     this.links = links;

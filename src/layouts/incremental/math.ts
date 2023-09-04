@@ -266,10 +266,7 @@ export function isCrossOver(originPosition: number[][], t: number[]) {
         if (disx + disy <= r) {
             return true
         }
-        if (disx > r || disy > r) {
-            continue
-        }
-        if (disx * disx + disy * disy <= r * r) {
+        if (!(disx > r || disy > r) && disx * disx + disy * disy <= r * r) {
             return true
         }
     }
@@ -1055,8 +1052,14 @@ export class Trigonometric {
             )
         }
         if (
-            vectors(closestMiddleX, closestMiddleY, closestX, closestY, minClosestX, minClosestY) <
-            0
+            vectors(
+                closestMiddleX, 
+                closestMiddleY, 
+                closestX, 
+                closestY, 
+                minClosestX, 
+                minClosestY
+            ) < 0
         ) {
             const t = suffixC,
                 e = closestX,

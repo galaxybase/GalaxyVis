@@ -1,8 +1,8 @@
 import { mat4, vec3 } from 'gl-matrix'
+import throttle from 'lodash/throttle'
 import { basicData, globalInfo, globalProp } from '../initial/globalProp'
-import { getX, getY, vectorAngle } from '../utils'
-import { QuadTree } from '../utils/quadTree'
-import { throttle } from 'lodash'
+import { computeArea, getX, getY, vectorAngle } from '../utils'
+import { quadtree } from 'd3-quadtree'
 
 const Throttle = throttle((events, viewChange, refesh = false) => {
     events.emit('camerarefresh', viewChange, refesh)
@@ -21,6 +21,7 @@ class Camera {
     public zoom: number = globalProp.defaultZoom //当前zoom的层级
     public minZoom: number = globalProp.minZoom //最小zoom
     public maxZoom: number = globalProp.maxZoom //最大zoom
+    public defaultZoom:number = globalProp.defaultZoom
     public hasDragged: boolean = false //开始拖动
     public startCameraX: number = 0 //相机开始位置
     public startCameraY: number = 0
@@ -53,6 +54,15 @@ class Camera {
         gl: WebGLRenderingContext | CanvasRenderingContext2D,
         events: any,
         thumbnail: boolean,
+        {
+            minValue,
+            maxValue,
+            defaultValue
+        }: {
+            minValue: number,
+            maxValue: number,
+            defaultValue: number
+        },
         position: vec3 = [0, 0, 3],
         worldUp: vec3 = [0, 1, 0],
     ) {
@@ -63,6 +73,12 @@ class Camera {
         this.worldUp = worldUp
         this.events = events;
 
+        this.zoom = defaultValue || globalProp.defaultZoom//当前zoom的层级
+        this.minZoom = minValue || globalProp.minZoom//最小zoom
+        this.maxZoom = maxValue || globalProp.maxZoom//最大zoom
+
+        this.defaultZoom = defaultValue || globalProp.defaultZoom
+
         // @ts-ignore
         this.gl = gl
         this.Matrix = mat4.create()
@@ -72,9 +88,75 @@ class Camera {
         let width = this.gl.canvas.width
         let height = this.gl.canvas.height
         this.aspectRatio = width / height
-        this.quad = new QuadTree({ x: 0, y: 0, width, height }, false, 4, 4)
+
+        this.quad = quadtree()
+            .x((d: any) => d.x)
+            .y((d: any) => d.y);
+
+        this.quad.clear = () => {
+            this.quad.removeAll(this.quad.data())
+        }
+
+        this.quad.visitAfter((quad: any) => {
+            if (quad.data) {
+                return (quad.width = quad.data.width / 2, quad.height = quad.data.height / 2)
+            }
+            for (var i = 0; i < 4; ++i) {
+                if (quad[i] && quad[i].width / 2 > quad.width) {
+                    quad.width = quad[i].width / 2
+                }
+                if (quad[i] && quad[i].height / 2 > quad.height) {
+                    quad.height = quad[i].height / 2
+                }
+            }
+        })
+
+        this.quad.retrieve = ({
+            x, y, height, width
+        }: { x: number, y: number, height: number, width: number }) => {
+
+            const xmax = x + width / 2;
+            const ymax = y + height / 2;
+            const ymin = y - height / 2;
+            const xmin = x - width / 2;
+            var results: any[] = [];
+
+            this.quad.visit((node: any, x1: number, y1: number, x2: number, y2: number) => {
+                if (node.length) {
+
+                    return x1 >= xmax + node.width ||
+                        y1 >= ymax + node.height ||
+                        x2 < xmin - node.width ||
+                        y2 < ymin - node.height;
+                }
+
+                if (!node.length) {
+                    do {
+                        let d = node.data;
+
+                        let area = computeArea(
+                            d.x - d.width / 2,
+                            d.y - d.height / 2,
+                            d.x + d.width / 2,
+                            d.y + d.height / 2,
+
+                            xmin, ymin, xmax, ymax
+                        ) || 0
+                        if (
+                            area > 0
+                        ) {
+                            results.push({ ...d, area });
+                        }
+                    } while (node = node.next);
+
+                }
+            });
+            return results
+        }
+
+
         if (!thumbnail)
-            basicData[graphId].transform = width / globalProp.globalScale / this.aspectRatio
+            basicData[graphId].transform = window.outerHeight / globalProp.globalScale
     }
     /**
      * 获得当前的观察矩阵
@@ -98,8 +180,7 @@ class Camera {
      */
     updateTransform() {
         let graphId = this.graphId;
-        let width = this.gl.canvas.width
-        basicData[graphId].transform = width / globalProp.globalScale / this.aspectRatio
+        basicData[graphId].transform = window.outerHeight / globalProp.globalScale
     }
 
     /**
@@ -254,6 +335,49 @@ class Camera {
         this.cameraChange = true
         this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
         Throttle(this.events, viewChange)
+    }
+
+    updateZoom({
+        minValue,
+        maxValue,
+        defaultValue
+    }: {
+        minValue?: number,
+        maxValue?: number,
+        defaultValue?: number
+    }){
+        !minValue && (minValue = this.minZoom)
+        !maxValue && (maxValue = this.maxZoom)
+        !defaultValue && (defaultValue = this.zoom)
+
+        let flag = true;
+
+        if (maxValue < minValue) {
+            flag = false
+        }
+        if (maxValue < 0 || maxValue > 180) {
+            flag = false
+        }
+        if (minValue < 0 || minValue > 180) {
+            flag = false
+        }
+        if (defaultValue < minValue || defaultValue > maxValue) {
+            defaultValue = minValue
+        }
+
+        if (flag) {
+            this.maxZoom = maxValue
+            this.minZoom = minValue
+            this.defaultZoom = this.zoom = defaultValue
+
+            this.ratio = 2 * (this.position[2] * Math.tan((this.zoom * Math.PI) / 360))
+        }
+
+        return {
+            maxValue: this.maxZoom, 
+            minValue: this.minZoom,
+            defaultValue: this.defaultZoom
+        }
     }
 }
 

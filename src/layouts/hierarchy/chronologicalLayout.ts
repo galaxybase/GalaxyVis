@@ -2,7 +2,8 @@ import { AnimateType, LAYOUT_MESSAGE } from "../../types";
 import BaseLayout from "../baseLayout";
 import dagrelLayout from "./dagreTree/dagre";
 import { animation } from "../animation";
-import { forIn, isArray } from "lodash";
+import forIn from 'lodash/forIn'
+import isArray from 'lodash/isArray'
 import { getContainerWidth } from "../../utils";
 import { EventType } from "../../utils/events";
 

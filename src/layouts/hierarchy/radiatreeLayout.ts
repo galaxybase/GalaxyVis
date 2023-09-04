@@ -4,7 +4,7 @@ import BaseLayout from "../baseLayout"
 // @ts-ignore
 import LayoutWorker from 'worker-loader?inline=fallback!../../utils/layouts/layouts.worker'
 import { basicData } from "../../initial/globalProp";
-import { isString } from "lodash";
+import isString from 'lodash/isString'
 import radiatreeLayout, { initRadiaTree } from "./radiatree";
 import { cleartNodeList, tNode, tNodeList } from "./tclass";
 import { EventType } from "../../utils/events";
@@ -108,7 +108,7 @@ class RadiaTreeLayout extends BaseLayout {
      */
     execute(nodes: any[]) {
         try {
-            this.data = radiatreeLayout(nodes, [])
+            this.data = radiatreeLayout(nodes, [], this.options)
             this.ids = []
             this.positions = []
             if (this.options?.incremental)
