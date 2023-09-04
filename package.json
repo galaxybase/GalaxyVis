@@ -23,6 +23,7 @@
         "prepublishOnly": "npm run clean && npm run build && npm run transpile"
     },
     "devDependencies": {
+        "@types/d3-quadtree": "^3.0.2",
         "@types/lodash": "^4.14.173",
         "dat.gui": "^0.7.7",
         "eslint": "^8.10.0",

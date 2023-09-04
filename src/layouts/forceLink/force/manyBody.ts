@@ -19,7 +19,7 @@ export default function forceManyBody() {
         var i,
             n = nodes.length,
             tree = quadtree(nodes, x, y).visitAfter(accumulate)
-        for (alpha = _, i = 0; i < n; ++i) (node = nodes[i]), tree.visit(apply)
+        for (alpha = _, i = 0; i < n; ++i) (node = nodes[i]), tree.visit(apply as any)
     }
 
     function initialize() {

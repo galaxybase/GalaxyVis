@@ -12,7 +12,7 @@ function y(d: any) {
 }
 
 export default function forceCollide(radius?: any) {
-    var nodes: string | any[],
+    var nodes: string[] | any[],
         radii: any[],
         random: any,
         strength = 1,
