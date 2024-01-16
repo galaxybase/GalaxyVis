@@ -435,12 +435,11 @@ const initBadges = (that: any, badges: { text: any; image: any }) => {
 
     if (image) {
         let { url, scale: iScale } = image
-
         if (iconType == 1 && !globalProp.iconMap.has(url) && url != "") {
             let initImage: any = {
                 type: 'image',
                 num: globalProp.iconMap.size,
-                scale: iScale,
+                scale: iScale || 1.0,
             }
 
             initIconOrImage(that, {
