@@ -32,7 +32,7 @@ export default function drawBadges(
         let {
             color, scale, text, stroke, image
         } = badges[badgesArray[i]];
-
+        let { url } = image
         color = color == 'inherit' ? nodeColor : color ? color : '#fff'
         color = mixColor(graphId, color, opacity)
         scale = scale || 0.35
@@ -49,13 +49,16 @@ export default function drawBadges(
         context.save()
         drawMainPart(context, newX, newY, radius, color, null, false)
         // 外环
+        if(!stroke) {
+            stroke = {color: "#fff", width: 0.02}
+        }
         let { color: strokeColor, width: storkeWidth } = stroke
         if (!strokeColor) strokeColor = "#fff"
         storkeWidth = Number(storkeWidth) >= 0 ? storkeWidth / 100 : 0.02
         strokeColor = mixColor(graphId, strokeColor, opacity)
         drawBorder(context, newX, newY, radius + Math.ceil(0.08 * radius * 1e3) / 1e3, strokeColor, (storkeWidth / 0.4) * badgeSize)
         context.globalAlpha = opacity
-        if (image) {
+        if (url) {
             if (opacity != 1.0) {
                 drawMainPart(
                     context,
@@ -71,7 +74,7 @@ export default function drawBadges(
                 graphId,
                 {
                     image: {
-                        url: image,
+                        url,
                         scale: 1.0,
                     },
                 },

@@ -64,16 +64,19 @@ export const getPoint = (
 
             postion = badgesArray[i] || 'bottomRight'
 
+            let { url } = image
+
             let direction = globalProp.direction
 
             let x = offsets[0] + direction[postion][0] * (zoomResults) * 0.1 * 0.60,
                 y = offsets[1] - direction[postion][1] * (zoomResults) * 0.1 * 0.60
-            let iconType = image ? 1 : text?.content != '' ? 2 : 3
+            let iconType = url ? 1 : text?.content != '' ? 2 : 3
             let badgesIconColor = floatColor(text?.color || '#f00').rgb
-            let iconNum: number = image ? iconMap.get(image)?.num : iconMap.get(text.content + text.scale)?.num
+            let iconNum: number = url ? iconMap.get(url)?.num : iconMap.get(text.content + text.scale)?.num
             if (!iconNum) {
                 iconNum = 0
             }
+
             badgesArr.push({
                 x,
                 y,
