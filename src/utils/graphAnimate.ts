@@ -34,10 +34,10 @@ export function animateNodes(
 
     // 动画缓动方式和延时
     let { duration, easing } = ANIMATE_DEFAULTS
-    opts.duration = opts.duration || duration
+    opts.duration = opts.duration != undefined ? opts.duration : duration
     opts.easing = opts.easing || easing
     const options: AnimateOptions = {
-        duration: opts.duration <= 0 ? 1 : opts.duration,
+        duration: opts.duration,
         easing: opts.easing,
     }
     // 动画缓动方式
@@ -69,6 +69,20 @@ export function animateNodes(
         
         if (!basicData[graph.id]) {
             return () => void 0;
+        }
+
+        if (options.duration == 0) {
+            for (const node in targets) {
+                const attrs = targets[node]
+                const id = targetsIsArray ? attrs.id : node
+                basicData[graph.id].nodeList.get(id)?.changeAttribute(attrs)
+            }
+            if (isInLayout) graph.textStatus = true
+            graph.render()
+            graph.animateFram = null
+            if (typeof callback === 'function') callback()
+
+            return
         }
 
         let p = (Date.now() - start) / options.duration
